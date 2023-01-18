@@ -14,7 +14,7 @@ func (repo *mongoStore) CreateUser(user entity.User) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	fmt.Println(user)
-	_, err := repo.col("user").InsertOne(ctx, user)
+	_, err := repo.col(entity.UserCollectionName).InsertOne(ctx, user)
 	if err != nil {
 		errorHandler.Format(errorHandler.DatabaseError, err)
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bitbucket.org/hofng/hofApp/application"
+	"bitbucket.org/hofng/hofApp/domain/entity"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/logger"
 	"bitbucket.org/hofng/hofApp/infrastructure/persistence"
 	"bitbucket.org/hofng/hofApp/interfaces"
@@ -25,7 +26,7 @@ import (
 // @BasePath /hof
 func main() {
 	logger := logger.New()
-	persistence, client, err := persistence.New("mongodb://localhost:27017", "hof", logger)
+	persistence, client, err := persistence.New("mongodb://localhost:27017", entity.UserCollectionName, logger)
 	if err != nil {
 		logger.Fatal("failed to open MongoDB", zap.Error(err))
 	}

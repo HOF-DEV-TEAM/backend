@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-const (
-	NAME = "HOF"
-)
-
 type mongoStore struct {
 	mongoClient  *mongo.Client
 	databaseName string
