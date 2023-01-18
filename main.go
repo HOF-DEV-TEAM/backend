@@ -6,7 +6,9 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/persistence"
 	"bitbucket.org/hofng/hofApp/interfaces"
 	"bitbucket.org/hofng/hofApp/interfaces/Router"
-	"fmt"
+	"context"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 )
@@ -23,22 +25,20 @@ import (
 // @BasePath /hof
 func main() {
 	logger := logger.New()
-	persistence, _, err := persistence.New("secrets.DatabaseURL", "secrets.DatabaseName", logger)
+	persistence, client, err := persistence.New("mongodb://localhost:27017", "hof", logger)
 	if err != nil {
-		//logger.Fatal("failed to open MongoDB", zap.Error(err))
+		logger.Fatal("failed to open MongoDB", zap.Error(err))
 	}
 	applications := application.New(persistence)
 	interfacesHandler := interfaces.New(applications)
 
-	fmt.Println(interfacesHandler)
-
-	//if err := client.Disconnect(context.Background()); err != nil {
-	//	logger.Fatal("failed to disconnect from database", zap.Error(err))
-	//}
 	router := Router.Router("3000", "http://localhost", interfacesHandler)
-
-	//helper.LogEvent("Info", fmt.Sprintf("Started UserServiceApplication on "+"http://localhost"+":"+"3000"+" in "+time.Since(time.Now()).String()))
+	defer func(client *mongo.Client, ctx context.Context) {
+		err := client.Disconnect(ctx)
+		if err != nil {
+			logger.Fatal("failed to disconnect from database", zap.Error(err))
+		}
+	}(client, context.Background())
 
 	log.Fatal(http.ListenAndServe(":"+"3000", router))
-
 }
