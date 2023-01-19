@@ -1,17 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"bitbucket.org/hofng/hofApp/application"
-	"bitbucket.org/hofng/hofApp/domain/entity"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/logger"
-	"bitbucket.org/hofng/hofApp/infrastructure/persistence"
-	"bitbucket.org/hofng/hofApp/interfaces"
-	"bitbucket.org/hofng/hofApp/interfaces/Router"
-	"context"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/zap"
-	"log"
-	"net/http"
 )
 
 // @title HOF BACKEND API
@@ -24,22 +18,19 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost:3000
 // @BasePath /hof
+
 func main() {
 	logger := logger.New()
-	persistence, client, err := persistence.New("mongodb://localhost:27017", entity.UserCollectionName, logger)
+
+	app, err := application.New(logger)
+
 	if err != nil {
-		logger.Fatal("failed to open MongoDB", zap.Error(err))
+		logger.Error(fmt.Sprintf("Fatal error creating application: %v", err))
+		os.Exit(1)
 	}
-	applications := application.New(persistence)
-	interfacesHandler := interfaces.New(applications)
 
-	router := Router.Router("3000", "http://localhost", interfacesHandler)
-	defer func(client *mongo.Client, ctx context.Context) {
-		err := client.Disconnect(ctx)
-		if err != nil {
-			logger.Fatal("failed to disconnect from database", zap.Error(err))
-		}
-	}(client, context.Background())
-
-	log.Fatal(http.ListenAndServe(":"+"3000", router))
+	if err := app.Run(); err != nil {
+		logger.Error(fmt.Sprintf("Fatal error running application: %v", err))
+		os.Exit(1)
+	}
 }
