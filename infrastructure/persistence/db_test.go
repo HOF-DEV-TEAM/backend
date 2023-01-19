@@ -2,11 +2,11 @@ package persistence
 
 import (
 	"bitbucket.org/hofng/hofApp/domain/entity"
-	"bitbucket.org/hofng/hofApp/infrastructure/library/logger"
 	"context"
-	"fmt"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap/zaptest"
 	"log"
 	"math/rand"
@@ -38,11 +38,9 @@ func TestMain(m *testing.M) {
 
 	mongoDbPort = resource.GetPort("27017/tcp")
 	if err := pool.Retry(func() error {
-		var err error
-		connectURL := fmt.Sprintf("mongodb://localhost:%s", mongoDbPort)
-		_, _, err = New(connectURL, "hof", logger.New())
+		_, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
 		if err != nil {
-			return err
+			panic(err)
 		}
 		return nil
 	}); err != nil {
@@ -72,15 +70,12 @@ func TestMongoStore_CreateUser(t *testing.T) {
 			testType: success,
 		},
 	}
-
-	connectURI := fmt.Sprintf("mongodb://localhost:%s", mongoDbPort)
-	repo, client, errRt := New(connectURI, hofDbName, zaptest.NewLogger(t))
-	if errRt != nil {
-		fmt.Println(errRt)
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		panic(err)
 	}
-	assert.NotNil(t, client)
-
-	_, err := client.Database(hofDbName).Collection(entity.UserCollectionName).InsertOne(context.Background(), user)
+	repo := New(client, hofDbName, zaptest.NewLogger(t))
+	_, err = client.Database(hofDbName).Collection(entity.UserCollectionName).InsertOne(context.Background(), user)
 	if err != nil {
 		assert.NoError(t, err)
 		t.Fail()
