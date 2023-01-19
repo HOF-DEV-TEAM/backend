@@ -1,15 +1,16 @@
 package Router
 
 import (
+	httpSwagger "github.com/swaggo/http-swagger"
+	"net/http"
+
 	_ "bitbucket.org/hofng/hofApp/docs"
 	"bitbucket.org/hofng/hofApp/interfaces"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	httpSwagger "github.com/swaggo/http-swagger"
-	"net/http"
 )
 
-func Router(appPort, hostAddress string, httpHandler *interfaces.HTTPHandler) *chi.Mux {
+func Router(httpHandler *interfaces.HTTPHandler) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(cors.Options{
@@ -22,9 +23,8 @@ func Router(appPort, hostAddress string, httpHandler *interfaces.HTTPHandler) *c
 	}))
 
 	router.Mount("/hof", userEndpoints(httpHandler))
-	router.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL(hostAddress+":"+appPort+"/swagger/doc.json"),
-	))
+
+	router.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	return router
 }

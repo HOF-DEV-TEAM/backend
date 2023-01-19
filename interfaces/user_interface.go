@@ -23,7 +23,7 @@ func (httpHandler *HTTPHandler) CreateUser(w http.ResponseWriter, r *http.Reques
 		encodeResult(w, err)
 		return
 	}
-	httpHandler.app.CreateUser(user)
+	httpHandler.repo.CreateUser(user)
 	if err != nil {
 		encodeResult(w, err)
 		return
