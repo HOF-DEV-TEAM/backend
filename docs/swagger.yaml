@@ -1,0 +1,45 @@
+basePath: /hof
+definitions:
+  User:
+    properties:
+      id:
+        description: The ULID of a user
+        example: 01gq092mhjs3bz0d4bca2xjtwv
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: hof.org
+    name: HOF Engineering
+  description: This is the entire doc
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: HOF BACKEND API
+  version: "1.0"
+paths:
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the input paylod
+      parameters:
+      - description: Create user
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/User'
+      summary: Create a new user
+      tags:
+      - users
+swagger: "2.0"
