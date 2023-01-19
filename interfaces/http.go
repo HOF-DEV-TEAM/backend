@@ -1,18 +1,18 @@
 package interfaces
 
 import (
-	"bitbucket.org/hofng/hofApp/application"
+	"bitbucket.org/hofng/hofApp/domain/repository"
 	"encoding/json"
 	"net/http"
 )
 
 type HTTPHandler struct {
-	app application.Applications
+	repo repository.Repositories
 }
 
-func New(app application.Applications) *HTTPHandler {
+func New(repo repository.Repositories) *HTTPHandler {
 	return &HTTPHandler{
-		app: app,
+		repo: repo,
 	}
 }
 
