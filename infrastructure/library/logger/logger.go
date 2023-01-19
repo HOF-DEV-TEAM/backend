@@ -71,7 +71,7 @@ func New(config ...Config) *zap.Logger {
 		}
 	}
 
-	// Lod to stderr by default
+	// Log to stderr by default
 	if len(cfg.OutputPaths) == 0 {
 		cfg.OutputPaths = []string{"stderr"}
 	}
