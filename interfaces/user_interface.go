@@ -3,7 +3,6 @@ package interfaces
 import (
 	"bitbucket.org/hofng/hofApp/domain/entity"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -28,6 +27,5 @@ func (httpHandler *HTTPHandler) CreateUser(w http.ResponseWriter, r *http.Reques
 		encodeResult(w, err)
 		return
 	}
-	fmt.Println(user)
 	encodeResult(w, user)
 }
