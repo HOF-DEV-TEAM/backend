@@ -6,7 +6,7 @@
 <blockquote>
 docker run -d  \
 	  -p 27017:27017 \
-	  --env MONGO_INITDB_DATABASE=roava \
+	  --env MONGO_INITDB_DATABASE=hof \
 	  mongo:4.4.10	
 </blockquote>
 </div>
