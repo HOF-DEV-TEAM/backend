@@ -7,7 +7,6 @@ import (
 	log2 "log"
 	"net/http"
 
-	"bitbucket.org/hofng/hofApp/domain/repository"
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
 	"bitbucket.org/hofng/hofApp/interfaces/Router"
 	"github.com/go-chi/chi/v5"
@@ -20,9 +19,8 @@ import (
 type application struct {
 	logger      *zap.Logger
 	config      *config.ServerConfig
-	sqlClient   *sql.DB
+	db  		*sql.DB
 	router      *chi.Mux
-	repo        repository.Repositories
 }
 
 // New instances a new application
@@ -38,14 +36,14 @@ func New(logger *zap.Logger) (*application, error) {
 		return nil, err
 	}
 	//build application clients
-	app.sqlClient = app.buildSqlClient()
+	app.db = app.buildSqlClient()
 
-	if err := app.sqlClient.PingContext(context.Background()); err != nil {
+	if err := app.db.PingContext(context.Background()); err != nil {
 		app.logger.Info("msg", zap.String("msg", "failed to ping to database"))
 		log2.Fatal(err)
 	}
 
-	defer app.sqlClient.Close()
+	defer app.db.Close()
 
 	if err := app.buildRouter(); err != nil {
 		return nil, err
@@ -80,7 +78,7 @@ func (app *application) buildRouter() error {
 		MaxAge:           300,
 	}))
 
-	Router.BuildRoutes(app.router)
+	Router.BuildRoutes(app.router, app.logger, app.db)
 	
 	return nil
 }

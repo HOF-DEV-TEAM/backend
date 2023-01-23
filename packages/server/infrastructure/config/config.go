@@ -2,10 +2,8 @@ package config
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/caarlos0/env"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/caarlos0/env"	
 	"go.uber.org/zap"
 )
 
@@ -40,15 +38,4 @@ func Read(logger zap.Logger) (*ServerConfig, error) {
 	out := fmt.Sprintf("database: {host: %s port:%s timeout:%d, username-hidden password-hidden}", serverConfig.Database.Host, serverConfig.Database.Port, serverConfig.Database.Timeout)
 	logger.Info(out)
 	return &serverConfig, nil
-}
-
-func (svrConfig *ServerConfig) GetClientOptions() *options.ClientOptions {
-	return options.Client().
-	SetConnectTimeout(time.Duration(svrConfig.Database.Timeout) * time.Second).
-	SetHosts([]string{svrConfig.Database.Host +  svrConfig.Database.Port}).
-	SetAuth(options.Credential{		
-		AuthMechanism: "SCRAM-SHA-256",
-		Username: svrConfig.Database.UserName,
-		Password: svrConfig.Database.Password,
-	})
 }
