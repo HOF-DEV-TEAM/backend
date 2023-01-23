@@ -16,12 +16,12 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Host 		string	`env:"MONGO_HOST,required"`
-	Port 		string 	`env:"MONGO_PORT,required"`
-	Timeout 	int    	`env:"MONGO_CONNECTION_TIMEOUT_SECONDS" envDefault:"10"`
-	DbName 		string 	`env:"MONGO_DB_NAME" envDefault:"accura_server"`
-	UserName 	string 	`env:"MONGO_USERNAME,required"`
-	Password 	string `env:"MONGO_PASSWORD,required"`
+	Host 		string	`env:"HOST,required"`
+	Port 		string 	`env:"PORT,required"`
+	Timeout 	int    	`env:"CONNECTION_TIMEOUT_SECONDS" envDefault:"10"`
+	DbName 		string 	`env:"DB_NAME" envDefault:"hof_backend"`
+	UserName 	string 	`env:"USERNAME,required"`
+	Password 	string  `env:"PASSWORD,required"`
 }
 
 
