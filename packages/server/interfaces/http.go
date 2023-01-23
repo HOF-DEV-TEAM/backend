@@ -1,18 +1,20 @@
 package interfaces
 
 import (
-	"bitbucket.org/hofng/hofApp/domain/repository"
 	"encoding/json"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type HTTPHandler struct {
-	repo repository.Repositories
+	log *zap.Logger
 }
 
-func New(repo repository.Repositories) *HTTPHandler {
+func New(log *zap.Logger) *HTTPHandler {
 	return &HTTPHandler{
-		repo: repo,
+		log: log,
+
 	}
 }
 
