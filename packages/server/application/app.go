@@ -9,8 +9,9 @@ import (
 
 	"bitbucket.org/hofng/hofApp/domain/repository"
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
-
+	"bitbucket.org/hofng/hofApp/interfaces/Router"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"go.uber.org/zap"
@@ -45,24 +46,42 @@ func New(logger *zap.Logger) (*application, error) {
 	}
 
 	defer app.sqlClient.Close()
+
+	if err := app.buildRouter(); err != nil {
+		return nil, err
+	}
+
 	return &app, nil
 }
 
 // Run executes the application
 func (app *application) Run() error {
-	rtr := chi.NewRouter()
 
-	rtr.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Welcome to HOF"))
-	})
 	svr := http.Server{
 		Addr:    fmt.Sprintf(":%d", app.config.HTTPPort),
-		Handler: rtr,
+		Handler: app.router,
 	}
 	err := svr.ListenAndServe()
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (app *application) buildRouter() error {
+	app.router = chi.NewRouter()
+
+	app.router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+
+	Router.BuildRoutes(app.router)
+	
 	return nil
 }
 
@@ -72,8 +91,7 @@ func (app *application) buildConfig() (*config.ServerConfig, error) {
 }
 
 func (app *application) buildSqlClient() *sql.DB {
-	dbUrl := app.getUri(app.config.Database.Host, app.config.Database.Port, app.config.Database.UserName, app.config.Database.Password, app.config.Database.DbName)
-	fmt.Println(dbUrl)
+	dbUrl := app.getUri(app.config.Database.Host, app.config.Database.Port, app.config.Database.UserName, app.config.Database.Password, app.config.Database.DbName)	
 	db, err := sql.Open("pgx", dbUrl)
 
 	if err != nil {

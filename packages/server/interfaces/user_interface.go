@@ -1,9 +1,11 @@
 package interfaces
 
 import (
-	"bitbucket.org/hofng/hofApp/domain/entity"
 	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"bitbucket.org/hofng/hofApp/domain/entity"
 )
 
 // CreateUser godoc
@@ -28,4 +30,23 @@ func (httpHandler *HTTPHandler) CreateUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	encodeResult(w, user)
+}
+
+
+func CreateGetUserHandler() http.HandlerFunc {
+	return func (w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Gets called here")
+		var user entity.User
+		err := json.NewDecoder(r.Body).Decode(&user)
+		if err != nil {
+			encodeResult(w, err)
+			return
+		}
+		// httpHandler.repo.CreateUser(user)
+		if err != nil {
+			encodeResult(w, err)
+			return
+		}
+		encodeResult(w, user)
+	}
 }
