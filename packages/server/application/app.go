@@ -4,14 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	log2 "log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
 	"bitbucket.org/hofng/hofApp/interfaces/Router"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v4/stdlib"
+	"github.com/jackc/tern/migrate"
 
 	"go.uber.org/zap"
 )
@@ -43,8 +48,6 @@ func New(logger *zap.Logger) (*application, error) {
 		log2.Fatal(err)
 	}
 
-	defer app.db.Close()
-
 	if err := app.buildRouter(); err != nil {
 		return nil, err
 	}
@@ -54,7 +57,7 @@ func New(logger *zap.Logger) (*application, error) {
 
 // Run executes the application
 func (app *application) Run() error {
-
+	defer app.db.Close()
 	svr := http.Server{
 		Addr:    fmt.Sprintf(":%d", app.config.HTTPPort),
 		Handler: app.router,
@@ -88,6 +91,31 @@ func (app *application) buildConfig() (*config.ServerConfig, error) {
 	return config.Read(*app.logger)
 }
 
+type EmbeddedF5 struct {
+	dirname string
+	filename string
+	glob string
+}
+
+
+// TODO - Move migration logic to separate module
+func (e EmbeddedF5) ReadDir(dirname string) ([]os.FileInfo, error) {
+	return ioutil.ReadDir(dirname)
+}
+
+func (e EmbeddedF5) ReadFile(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
+}
+
+func (e EmbeddedF5) Glob(pattern string) (matches []string, err error) {
+	return filepath.Glob(pattern)
+}
+
+func NewEmbeddedFS() migrate.MigratorFS {
+	return EmbeddedF5{}
+}
+
+
 func (app *application) buildSqlClient() *sql.DB {
 	dbUrl := app.getUri(app.config.Database.Host, app.config.Database.Port, app.config.Database.UserName, app.config.Database.Password, app.config.Database.DbName)	
 	db, err := sql.Open("pgx", dbUrl)
@@ -97,6 +125,37 @@ func (app *application) buildSqlClient() *sql.DB {
 		log2.Fatal(err)
 	}
 
+	conn, err := db.Conn(context.Background())
+
+	err = conn.Raw(func (driverConn interface{}) error {
+		conn := driverConn.(*stdlib.Conn)		//conn is a *pgx.Conn
+		opts := migrate.MigratorOptions{
+				MigratorFS: NewEmbeddedFS(),
+		}
+
+		schema := "public"
+		table := fmt.Sprintf("%s.schema_version", schema)
+		
+		_, b, _, _ := runtime.Caller(0)
+
+		migrationPath, _ := filepath.Abs(fmt.Sprintf("%s/../migrations/", filepath.Dir(b)))
+		migrator, err := migrate.NewMigratorEx(context.Background(), conn.Conn(), table, &opts)
+
+		migrator.LoadMigrations(migrationPath)
+
+		if err != nil {
+			app.logger.Info("msg", zap.String("msg", "failed to connect to migrator"))
+			log2.Fatal(err)
+		}
+		
+		if err := migrator.Migrate(context.Background()); err != nil {
+			app.logger.Info("msg", zap.String("msg", "failed to run migrations"))
+			log2.Fatal(err)
+		}
+		return nil
+	})
+
+	
 	return db
 }
 

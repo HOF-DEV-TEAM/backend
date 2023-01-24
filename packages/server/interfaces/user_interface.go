@@ -20,18 +20,25 @@ import (
 
 func CreateGetUserHandler(svc user.Service) http.HandlerFunc {
 	return func (w http.ResponseWriter, r *http.Request) {		
-		var user user.User
-		err := json.NewDecoder(r.Body).Decode(&user)
+		var u user.UserJSON
+		err := json.NewDecoder(r.Body).Decode(&u)
+		
 		if err != nil {
 			encodeResult(w, err)
 			return
 		}
 
-		svc.CreateUser(r.Context(), &user)
+		result, err := svc.CreateUser(r.Context(), u.ToUser())
+
 		if err != nil {
-			encodeResult(w, err)
+			EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		encodeResult(w, user)
+
+		var userJSON *user.UserJSON
+
+		userJSON = user.NewJSONUser(result.User)
+		userJSON.NewJWTToken = result.Token
+		encodeResult(w, userJSON)
 	}
 }

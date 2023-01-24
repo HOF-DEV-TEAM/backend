@@ -10,17 +10,135 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, user *User) (*User, error)
+	GetByEmail(ctx context.Context, email string) (*User, error)
+	Close() error
 }
 
 type userRepository struct {
-	db 		*sql.DB
-	log 	*zap.Logger
+	db 				*sql.DB
+	log 			*zap.Logger
+	getEmailStmt 	*sql.Stmt
+	getIdStmt 		*sql.Stmt
 }
 
 func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
 	return &userRepository{db: db, log: logger}
 }
 
+func (r userRepository) Close() error {
+	if r.getEmailStmt != nil {
+		if err := r.getEmailStmt.Close(); err != nil {
+			return err
+		}
+	}
+
+	if r.getIdStmt != nil {
+		if err := r.getIdStmt.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
-	return nil, nil
+	// sql insert query, primary key provided by autoincrement
+	const SQL = "INSERT INTO users (" + 
+		"username," +
+		"password," +
+		"first_name," +
+		"last_name," +
+		"email,"  +
+		"mobile," +
+		"address," +
+		"gender," +
+		"password_hash," +
+		"is_verified" +
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) " +
+		"RETURNING id"
+
+		tx, err := r.db.BeginTx(ctx, nil)
+
+		if err != nil {
+			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+			return nil, err
+		}
+
+		defer tx.Rollback()
+		
+		tmpSmt, err := tx.PrepareContext(ctx, SQL)
+
+		if err != nil {
+			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+			return nil, err
+		}
+		
+		var createdUserId int
+
+		err = tmpSmt.QueryRowContext(ctx, 
+			user.UserName, 
+			user.Password,
+			user.FirstName,
+			user.LastName,
+			user.Email,
+			user.Mobile,
+			user.Address,
+			user.Gender,
+			user.PasswordHash,
+			user.IsVerified,
+		).Scan(&createdUserId)
+
+		if err != nil {
+			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", SQL))
+			return nil, err
+		}
+		
+		err = tx.Commit()
+
+		if err != nil {
+			return nil, err
+		}
+
+		user.ID = createdUserId
+	return user, nil 
+}
+
+func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
+	const SQL = "SELECT " + 
+	"id," + 
+	"email " + 
+	"FROM users WHERE email = $1"
+
+	var err error
+	// first call, prepare statement for reuse
+	if r.getEmailStmt == nil {
+		r.getEmailStmt, err = r.db.PrepareContext(ctx, SQL)
+
+		if err != nil {
+			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+			return nil, err
+		}
+	}
+	
+	var user User
+
+	err = r.getEmailStmt.QueryRowContext(ctx, email).Scan(
+		&user.ID,
+		&user.Email,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	if err != nil {
+		r.log.Info("msg", 
+			zap.String("error querying", ""), 
+			zap.String("error", err.Error()), 
+			zap.String("query", SQL), 
+			zap.String("email", email),
+		)
+		return nil, err
+	}
+	
+	return &user, nil
 }

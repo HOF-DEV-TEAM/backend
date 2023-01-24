@@ -26,8 +26,8 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db  *sql.DB) {
 func buildUserEndpoints(router *chi.Mux, svc user.Service) {
 	userRouter := chi.NewRouter()
 
-	getUserHandler := interfaces.CreateGetUserHandler(svc)
-	userRouter.Get("/", getUserHandler)
+	createUserHandler := interfaces.CreateGetUserHandler(svc)
+	userRouter.Post("/", createUserHandler)
 
 	router.Mount("/user", userRouter)
 }
