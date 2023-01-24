@@ -4,45 +4,56 @@ pipelines:
   default:
     - parallel:
         - step:
-            name: Build and Test
+            name: Build and publish docker image
             script:
               - IMAGE_NAME=$BITBUCKET_REPO_SLUG
-              - docker build -t ${IMAGE_NAME}:multistage -f Dockerfile .
+              - docker build -t ${APP_NAME}:multistage -f Dockerfile .
+              - docker login --username=_ --password=$HEROKU_TOKEN registry.heroku.com
+              - docker tag $APP_NAME registry.heroku.com/$APP_NAME/web
+              - docker push registry.heroku.com/$APP_NAME/web
+              - docker inspect registry.heroku.com/$APP_NAME/web --format={{.Id}} > WEB_DOCKER_IMAGE_ID
             services:
               - docker
             caches:
               - docker
+            artifacts:
+              - WEB_DOCKER_IMAGE_ID
         - step:
-            name: Lint the Dockerfile
-            image: hadolint/hadolint:latest-debian
+            name: deploy-to-heroku
+            deployment: staging
             script:
-              - hadolint Dockerfile
-  branches:
-    master:
-      - step:
-          name: Build and Test
-          script:
-            - IMAGE_NAME=$BITBUCKET_REPO_SLUG
-            - docker build -t ${IMAGE_NAME}:multistage -f Dockerfile.multistage .
-            - docker save ${IMAGE_NAME} --output "${IMAGE_NAME}.tar"
-          services:
-            - docker
-          caches:
-            - docker
-          artifacts:
-            - "*.tar"
-      - step:
-          name: Deploy to Production
-          deployment: Production
-          script:
-            - echo ${DOCKERHUB_PASSWORD} | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-            - IMAGE_NAME=$BITBUCKET_REPO_SLUG
-            - docker load --input "${IMAGE_NAME}.tar"
-            - VERSION="prod-0.1.${BITBUCKET_BUILD_NUMBER}"
-            - IMAGE=${DOCKERHUB_NAMESPACE}/${IMAGE_NAME}
-            - docker tag "${IMAGE_NAME}" "${IMAGE}:${VERSION}"
-            - docker push "${IMAGE}:${VERSION}"
-          services:
-            - docker
+              - export WEB_DOCKER_IMAGE_ID=$(cat WEB_DOCKER_IMAGE_ID)
+              - ./deploy.sh
+              - echo "Done..."
+      
+  # branches:
+  #   master:
+  #     - step:
+  #         name: Build and Test
+  #         script:
+  #           - IMAGE_NAME=$BITBUCKET_REPO_SLUG
+  #           - docker build -t ${IMAGE_NAME}:multistage -f Dockerfile.multistage .
+  #           - docker save ${IMAGE_NAME} --output "${IMAGE_NAME}.tar"
+  #         services:
+  #           - docker
+  #         caches:
+  #           - docker
+  #         artifacts:
+  #           - "*.tar"
+  #     - step:
+  #         name: Deploy to Production
+  #         deployment: Production
+  #         script:
+  #           - echo ${DOCKERHUB_PASSWORD} | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+  #           - IMAGE_NAME=$BITBUCKET_REPO_SLUG
+  #           - docker load --input "${IMAGE_NAME}.tar"
+  #           - VERSION="prod-0.1.${BITBUCKET_BUILD_NUMBER}"
+  #           - IMAGE=${DOCKERHUB_NAMESPACE}/${IMAGE_NAME}
+  #           - docker tag "${IMAGE_NAME}" "${IMAGE}:${VERSION}"
+  #           - docker push "${IMAGE}:${VERSION}"
+  #         services:
+  #           - docker
 
+options:
+  docker: true
 # TODO Add another step for heroku deployment
