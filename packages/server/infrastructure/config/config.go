@@ -14,12 +14,12 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Host 		string	`env:"HOST,required"`
-	Port 		string 	`env:"PORT,required"`
+	Host 		string	`env:"DB_HOST,required"`
+	Port 		string 	`env:"DB_PORT,required"`
 	Timeout 	int    	`env:"CONNECTION_TIMEOUT_SECONDS" envDefault:"10"`
 	DbName 		string 	`env:"DB_NAME" envDefault:"hof_backend"`
-	UserName 	string 	`env:"USERNAME,required"`
-	Password 	string  `env:"PASSWORD,required"`
+	UserName 	string 	`env:"DB_USERNAME,required"`
+	Password 	string  `env:"DB_PASSWORD,required"`
 }
 
 
