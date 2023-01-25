@@ -12,6 +12,7 @@ type AddressJSON string
 
 type UserJSON struct {
 	ID  			int 			`json:"id"`
+	Username 		string 			`json:"usernmae"`
 	Password        string 			`json:"password,omitempty"`
 	Email 			string 			`json:"email"`
 	FirstName 		string 			`json:"first_name"`
@@ -29,9 +30,11 @@ func (u *UserJSON) ToUser() *User {
 		ID: u.ID,
 		Email: u.Email,
 		Password: u.Password,
+		UserName: u.Username,
 		FirstName: u.FirstName,
 		LastName: u.LastName,
 		Address: u.Address,
+		Gender: u.Gender,
 	}
 
 	if u.Mobile != "" {
@@ -47,5 +50,8 @@ func NewJSONUser(u *User) *UserJSON {
 		FirstName: u.FirstName,
 		LastName: u.LastName,
 		Address: u.Address,
+		Mobile: u.Mobile.String,
+		Gender: u.Gender,
+		Username: u.UserName,
 	}
 }
