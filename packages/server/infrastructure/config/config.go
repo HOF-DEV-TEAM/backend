@@ -37,7 +37,24 @@ func Read(logger zap.Logger) (*ServerConfig, error) {
 		}
 	}
 
-	out := fmt.Sprintf("database: {host: %s port:%s timeout:%d, username-hidden password-hidden}", serverConfig.Database.Host, serverConfig.Database.Port, serverConfig.Database.Timeout)
+	format := "database: {host: %s port:%s timeout:%d, username-hidden password-hidden}"
+	out := fmt.Sprintf(format, serverConfig.Database.Host, serverConfig.Database.Port, serverConfig.Database.Timeout)
 	logger.Info(out)
 	return &serverConfig, nil
+}
+
+func (config *ServerConfig) GetUri() string {
+	if len(config.Database.DbUrl) > 0 {
+		return config.Database.DbUrl
+	}
+	
+	format := "postgres://%s:%s@%s:%s/%s"
+	return fmt.Sprintf(
+		format, 
+		config.Database.UserName, 
+		config.Database.Password, 
+		config.Database.Host, 
+		config.Database.Port, 
+		config.Database.DbName,
+	)
 }

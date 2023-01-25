@@ -5,7 +5,7 @@ create table users(
   "last_name" varchar(200) not null,
   "password" varchar(200) not null,
   "email" varchar(200) not null,
-  "mobile" varchar(200) default null,
+  "mobile" varchar(15) default null,
   "address" varchar(100) default null,
   "username" varchar(200) default null,
   "gender" varchar(10) default null,
