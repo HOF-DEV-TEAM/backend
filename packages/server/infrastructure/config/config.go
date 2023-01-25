@@ -9,23 +9,25 @@ import (
 
 
 type ServerConfig struct {
-	HTTPPort 	int `env:"HTTP_SERVE_PORT" envDefault:"80" envWhitelisted:"true"`
+	AppEnv		string 	`env:"APP_ENV" envDefault:"dev" envWhitelisted:"true"`
+	HTTPPort 	int 	`env:"PORT" envDefault:"8080" envWhitelisted:"true"`
 	Database 	DatabaseConfig
 }
 
 type DatabaseConfig struct {
-	Host 		string	`env:"DB_HOST,required"`
-	Port 		string 	`env:"DB_PORT,required"`
+	Host 		string	`env:"DB_HOST"`
+	Port 		string 	`env:"DB_PORT"`
 	Timeout 	int    	`env:"CONNECTION_TIMEOUT_SECONDS" envDefault:"10"`
 	DbName 		string 	`env:"DB_NAME" envDefault:"hof_backend"`
-	UserName 	string 	`env:"DB_USERNAME,required"`
-	Password 	string  `env:"DB_PASSWORD,required"`
+	UserName 	string 	`env:"DB_USERNAME"`
+	Password 	string  `env:"DB_PASSWORD"`
+	DbUrl		string  `env:"DATABASE_URL" envDefault:"" envWhitelisted:"true"`
 }
 
 
 func Read(logger zap.Logger) (*ServerConfig, error) {
 	var serverConfig ServerConfig
-
+	
 	for _, target := range []interface{} {
 		&serverConfig,
 		&serverConfig.Database,

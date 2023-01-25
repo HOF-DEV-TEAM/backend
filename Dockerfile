@@ -32,5 +32,5 @@ RUN apk --no-cache add ca-certificates
 COPY --from=build-stage /main ./
 # COPY --from=node_stage /build ./admin
 RUN chmod +x ./main
-EXPOSE 80 8080 8082
+EXPOSE 8080 8082
 CMD ./main

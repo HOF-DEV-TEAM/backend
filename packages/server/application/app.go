@@ -58,6 +58,11 @@ func New(logger *zap.Logger) (*application, error) {
 // Run executes the application
 func (app *application) Run() error {
 	defer app.db.Close()
+
+	app.router.Get("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Write([]byte("Welcome to HOF Server.."))
+	})
+
 	svr := http.Server{
 		Addr:    fmt.Sprintf(":%d", app.config.HTTPPort),
 		Handler: app.router,
@@ -160,6 +165,10 @@ func (app *application) buildSqlClient() *sql.DB {
 }
 
 func (app *application) getUri(host, port, username, password, dbName string) string {
+	if len(app.config.Database.DbUrl) > 0 {
+		return app.config.Database.DbUrl
+	}
+	
 	format := "postgres://%s:%s@%s:%s/%s"
 	return fmt.Sprintf(format, username, password, host, port, dbName)
 }
