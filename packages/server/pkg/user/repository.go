@@ -11,6 +11,7 @@ import (
 type Repository interface {
 	Create(ctx context.Context, user *User) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
+	Login(ctx context.Context, email, password string) (*User, error)
 	Close() error
 }
 
@@ -104,8 +105,16 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 
 func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	const SQL = "SELECT " + 
-	"id," + 
-	"email " + 
+	"id," +
+	"username," +
+	"password," +
+	"first_name," +
+	"last_name," +
+	"email,"  +
+	"mobile," +
+	"address," +
+	"gender," +	
+	"is_verified " +
 	"FROM users WHERE email = $1"
 
 	var err error
@@ -123,7 +132,15 @@ func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, er
 
 	err = r.getEmailStmt.QueryRowContext(ctx, email).Scan(
 		&user.ID,
+		&user.UserName,
+		&user.Password,
+		&user.FirstName,
+		&user.LastName,		
 		&user.Email,
+		&user.Mobile,
+		&user.Address,
+		&user.Gender,
+		&user.IsVerified,
 	)
 
 	if err == sql.ErrNoRows {
@@ -141,4 +158,23 @@ func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, er
 	}
 	
 	return &user, nil
+}
+
+
+func (r userRepository) Login(ctx context.Context, email, password string) (*User, error) {
+	existingUser, err := r.GetByEmail(ctx, email)
+	
+	if err == sql.ErrNoRows {
+		return nil, ErrUserPwd
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if password != existingUser.Password {
+		return nil, ErrUserPwd
+	}
+
+	return existingUser, nil
 }

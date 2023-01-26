@@ -3,15 +3,19 @@ package config
 import (
 	"fmt"
 
-	"github.com/caarlos0/env"	
+	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
+	"github.com/caarlos0/env"
+	"github.com/go-chi/jwtauth/v5"
 	"go.uber.org/zap"
 )
 
 
+const JWTSecret = "J4P46Blk1QC1FYJgQ4aa2iB5SaLmBopv3"
 type ServerConfig struct {
 	AppEnv		string 	`env:"APP_ENV" envDefault:"dev" envWhitelisted:"true"`
 	HTTPPort 	int 	`env:"PORT" envDefault:"8080" envWhitelisted:"true"`
 	Database 	DatabaseConfig
+	Security    security.SecurityConfig
 }
 
 type DatabaseConfig struct {
@@ -31,14 +35,21 @@ func Read(logger zap.Logger) (*ServerConfig, error) {
 	for _, target := range []interface{} {
 		&serverConfig,
 		&serverConfig.Database,
+		&serverConfig.Security,
 	} {
 		if err := env.Parse(target); err != nil {
 			return &serverConfig, err
 		}
 	}
 
+	var tokenAuth *jwtauth.JWTAuth
+
+	tokenAuth = jwtauth.New("HS256", []byte(JWTSecret), nil)
+	serverConfig.Security.TokenAuth = tokenAuth
+
 	format := "database: {host: %s port:%s timeout:%d, username-hidden password-hidden}"
 	out := fmt.Sprintf(format, serverConfig.Database.Host, serverConfig.Database.Port, serverConfig.Database.Timeout)
+
 	logger.Info(out)
 	return &serverConfig, nil
 }
