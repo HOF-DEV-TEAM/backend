@@ -25,6 +25,11 @@ type UserJSON struct {
 }
 
 
+type LoginRequestJSON struct {
+	Email 		string `json:"email"`
+	Password 	string `json:"password"`
+}
+
 func (u *UserJSON) ToUser() *User {
 	result := &User{
 		ID: u.ID,

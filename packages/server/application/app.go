@@ -80,7 +80,14 @@ func (app *application) buildRouter() error {
 		MaxAge:           300,
 	}))
 
-	Router.BuildRoutes(app.router, app.logger, app.db)
+
+
+	Router.BuildRoutes(
+		app.router, 
+		app.logger, 
+		app.db, 
+		app.config,
+	)
 	
 	return nil
 }

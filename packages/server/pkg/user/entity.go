@@ -66,3 +66,8 @@ type User struct {
 	PasswordHash		sql.NullString		`sql:"password_hash"`
 	IsVerified			IsVerifiedEnum 		`sql:"is_verified"`
 } // @name User
+
+type LoginUser struct {
+	Email		string `validate:"required,email"`
+	Password 	string `validate:"required"`
+}

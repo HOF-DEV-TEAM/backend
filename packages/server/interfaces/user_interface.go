@@ -42,3 +42,28 @@ func CreateGetUserHandler(svc user.Service) http.HandlerFunc {
 		encodeResult(w, userJSON)
 	}
 }
+
+func CreatePostLoginHandler(svc user.Service) http.HandlerFunc {
+	return func (w http.ResponseWriter, r *http.Request) {		
+		var req user.LoginRequestJSON
+		err := json.NewDecoder(r.Body).Decode(&req)
+		
+		if err != nil {
+			encodeResult(w, err)
+			return
+		}
+
+		result, err := svc.Login(r.Context(), req.Email, req.Password)
+
+		if err != nil {
+			EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		var userJSON *user.UserJSON
+
+		userJSON = user.NewJSONUser(result.User)
+		userJSON.NewJWTToken = result.Token
+		encodeResult(w, userJSON)
+	}
+}
