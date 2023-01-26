@@ -1,8 +1,8 @@
 image: atlassian/default-image:3
 
 pipelines:
-  default:
-    - parallel:
+  branches:
+    master:
         - step:
             name: Build and publish docker image
             script:
