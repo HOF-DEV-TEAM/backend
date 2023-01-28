@@ -1,6 +1,8 @@
 package errorHandler
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	DatabaseError              = 1001
@@ -12,6 +14,7 @@ const (
 	InvalidRequest             = 1007
 	InvalidTransactionPin      = 1008
 	CustomerBlockedError       = 1009
+	InvalidPassword            = 1010
 )
 
 var (
@@ -25,6 +28,7 @@ var (
 		InvalidRequest:             "InvalidRequest",
 		InvalidTransactionPin:      "InvalidTransactionPassword",
 		CustomerBlockedError:       "CustomerBlockedError",
+		InvalidPassword:            "InvalidPassword",
 	}
 
 	errorMessages = map[int]string{
@@ -37,6 +41,7 @@ var (
 		InvalidRequest:             "invalid request parameters",
 		InvalidTransactionPin:      "Invalid transaction password",
 		CustomerBlockedError:       "customer blocked error",
+		InvalidPassword:            "Password must be the same",
 	}
 )
 

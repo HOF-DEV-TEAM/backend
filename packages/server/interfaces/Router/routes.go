@@ -15,7 +15,7 @@ import (
 	"github.com/go-chi/jwtauth/v5"
 )
 
-func BuildRoutes(router *chi.Mux, logger *zap.Logger, db  *sql.DB, config *config.ServerConfig) {
+func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config.ServerConfig) {
 	router.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	userRepo := user.NewRepository(db, logger)
@@ -23,7 +23,7 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db  *sql.DB, config *confi
 
 	// TODO - group routing better
 	//setup routes
-	router.Group(func (r chi.Router){		
+	router.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verify(config.Security.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 	})
@@ -33,22 +33,25 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db  *sql.DB, config *confi
 		buildUserEndpoints(router, userService)
 		buildSessionEndpoints(router, userService)
 	})
-	
+
 }
 
 func buildUserEndpoints(router *chi.Mux, svc user.Service) {
 	userRouter := chi.NewRouter()
 
 	createUserHandler := interfaces.CreateGetUserHandler(svc)
-	userRouter.Post("/", createUserHandler)
+	forgotPasswordHandler := interfaces.ForgotPasswordHandler(svc)
+	resetPasswordHandler := interfaces.ResetPasswordHandler(svc)
 
+	userRouter.Post("/", createUserHandler)
+	userRouter.Post("/forgotPassword", forgotPasswordHandler)
+	userRouter.Post("/resetPassword/{token}", resetPasswordHandler)
 	router.Mount("/user", userRouter)
 }
 
-
 func buildSessionEndpoints(router *chi.Mux, svc user.Service) {
 	sessionsRouter := chi.NewRouter()
-           
+
 	createLoginHandler := interfaces.CreatePostLoginHandler(svc)
 	sessionsRouter.Post("/login", createLoginHandler)
 	router.Mount("/session", sessionsRouter)
