@@ -21,16 +21,24 @@ COPY packages/server .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-w" -a -o /main .
 
 # Bundle the admin app
-# FROM node:14.15-alpine3.12 AS node_stage
-# COPY --from=build-stage /app/packages/admin ./
-# RUN npm install
-# RUN npm run build
+FROM node:14.15-alpine3.12 AS node_stage
+
+WORKDIR /usr/src/app
+
+# Install Git for fetching packages
+RUN --mount=type=ssh apk add git openssh openssl
+
+RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts
+
+RUN --mount=type=ssh git clone git@bitbucket.org:hofng/hof-admin.git .
+RUN npm install
+RUN npm run build
 
 # PRODUCTION STAGE
 FROM alpine:${ALPINE_VERSION}
 RUN apk --no-cache add ca-certificates
 COPY --from=build-stage /main ./
-# COPY --from=node_stage /build ./admin
+COPY --from=node_stage /build ./admin
 RUN chmod +x ./main
 EXPOSE 8080 8082
 CMD ./main

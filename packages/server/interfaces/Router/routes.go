@@ -2,6 +2,10 @@ package Router
 
 import (
 	"database/sql"
+	"errors"
+	"net/http"
+	"os"
+	"path/filepath"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
@@ -23,6 +27,23 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db  *sql.DB, config *confi
 
 	// TODO - group routing better
 	//setup routes
+
+	//Serve static admin bundle
+	router.Get("/admin", func(w http.ResponseWriter, r *http.Request) {
+        workDir, _ := os.Getwd()
+        filesDir := filepath.Join(workDir, "admin")
+
+		staticFilePath := filesDir+r.URL.Path
+
+        if _, err := os.Stat(filesDir + r.URL.Path); errors.Is(err, os.ErrNotExist) {
+
+			staticFilePath = filepath.Join(filesDir, "index.html")
+        }
+		
+		w.WriteHeader(http.StatusOK)
+		http.ServeFile(w, r, staticFilePath)
+    })
+
 	router.Group(func (r chi.Router){		
 		r.Use(jwtauth.Verify(config.Security.TokenAuth))
 		r.Use(jwtauth.Authenticator)
