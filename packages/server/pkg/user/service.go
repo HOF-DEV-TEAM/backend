@@ -165,7 +165,10 @@ func (svc *userService) ForgotPassword(request ForgotPasswordPayload) (*User, er
 	}
 	var charset = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	passwordResetToken := EncodeString(randStr(10, charset, seededRand))
+	
+	//TODO - fix EncodeString
+
+	passwordResetToken := randStr(10, charset, seededRand)
 
 	user, err := svc.repo.ForgotPassword(request, passwordResetToken)
 	if err != nil {
