@@ -15,25 +15,32 @@ type HTTPHandler struct {
 func New(log *zap.Logger) *HTTPHandler {
 	return &HTTPHandler{
 		log: log,
-
 	}
 }
 
-func encodeResult(w http.ResponseWriter, result interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-
-	json.NewEncoder(w).Encode(&result)
+type DefaultResponse struct {
+	Message string `json:"message"`
+	Success bool   `json:"success"`
+	Code    int    `json:"code"`
 }
 
+func encodeResult(w http.ResponseWriter, response interface{}, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+
+	err := json.NewEncoder(w).Encode(&response)
+	if err != nil {
+		return
+	}
+}
 
 func EncodeJSONError(_ context.Context, err error, w http.ResponseWriter) {
-    if err == nil {
-        panic("encodeError with nil error")
-    }
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusBadRequest)
-    _ = json.NewEncoder(w).Encode(map[string]interface{}{
-        "error": err.Error(),
-    })
+	if err == nil {
+		panic("encodeError with nil error")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": err.Error(),
+	})
 }

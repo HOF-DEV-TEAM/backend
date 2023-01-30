@@ -3,28 +3,28 @@ package user
 import (
 	"database/sql"
 	"errors"
+	"time"
 )
 
 type IsVerifiedEnum uint16
 
 const (
-	Unverfified 				= IsVerifiedEnum(0)
-	PhoneVerified 				= IsVerifiedEnum(1)
-	EmailVerified 				= IsVerifiedEnum(2)
-	EmailAndPhoneVerified 		= IsVerifiedEnum(3)
-	
+	Unverfified           = IsVerifiedEnum(0)
+	PhoneVerified         = IsVerifiedEnum(1)
+	EmailVerified         = IsVerifiedEnum(2)
+	EmailAndPhoneVerified = IsVerifiedEnum(3)
 )
 
 func (e IsVerifiedEnum) String() string {
 	switch e {
 	case Unverfified:
-			return "0"
+		return "0"
 	case PhoneVerified:
-			return "1"
+		return "1"
 	case EmailVerified:
-			return "2"
+		return "2"
 	case EmailAndPhoneVerified:
-			return "3"
+		return "3"
 	default:
 		return "invalid"
 	}
@@ -36,7 +36,7 @@ func (e IsVerifiedEnum) MarshalText() ([]byte, error) {
 }
 
 // UnMarshalText interface implementation IsVerifiedEnum into text.
-func (e *IsVerifiedEnum) UnMarshalText(from [] byte)  error {
+func (e *IsVerifiedEnum) UnMarshalText(from []byte) error {
 	switch string(from) {
 	case "o":
 		*e = Unverfified
@@ -54,20 +54,35 @@ func (e *IsVerifiedEnum) UnMarshalText(from [] byte)  error {
 
 type User struct {
 	// The ULID of a user
-	ID    				int 				`sql:"id"`
-	UserName			string 				`sql:"username"`
-	Password			string				`sql:"password" validate:"min=6"`
-	FirstName      		string 				`sql:"first_name" validate:"required"`
-	LastName	   		string				`sql:"last_name" validate:"required"`
-	Email				string 				`sql:"email" validate:"required,email"`
-	Mobile				sql.NullString		`sql:"mobile"`
-	Address				string		`sql:"address"`
-	Gender				string				`sql:"gender"`
-	PasswordHash		sql.NullString		`sql:"password_hash"`
-	IsVerified			IsVerifiedEnum 		`sql:"is_verified"`
+	ID           int            `sql:"id"`
+	UserName     string         `sql:"username"`
+	Password     string         `sql:"password" validate:"min=6"`
+	FirstName    string         `sql:"first_name" validate:"required"`
+	LastName     string         `sql:"last_name" validate:"required"`
+	Email        string         `sql:"email" validate:"required,email"`
+	Mobile       sql.NullString `sql:"mobile"`
+	Address      string         `sql:"address"`
+	Gender       string         `sql:"gender"`
+	PasswordHash sql.NullString `sql:"password_hash"`
+	IsVerified   IsVerifiedEnum `sql:"is_verified"`
 } // @name User
 
 type LoginUser struct {
-	Email		string `validate:"required,email"`
-	Password 	string `validate:"required"`
+	Email    string `validate:"required,email"`
+	Password string `validate:"required"`
+}
+type UserPasswordToken struct {
+	ID                 int       `sql:"id"`
+	Email              string    `json:"email" validate:"required,email"`
+	PasswordResetToken string    `sql:"password_reset_token"`
+	PasswordResetAt    time.Time `sql:"password_reset_at"`
+}
+type ForgotPasswordPayload struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPasswordPayload struct {
+	Email           string `json:"email" validate:"required,email"`
+	Password        string `json:"password" validate:"min=6" binding:"required"`
+	PasswordConfirm string `json:"password_confirm" validate:"min=6" binding:"required"`
 }

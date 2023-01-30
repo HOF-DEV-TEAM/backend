@@ -4,14 +4,14 @@ import "encoding/json"
 
 // Herror defines an HOF error structure
 type Herror struct {
-	code      int
-	errorType string
-	message   string
-	status    int
-	detail    string
-	traceID   string
-	instance  string
-	help      string
+	ErrorCode     int    `json:"code"`
+	TypeError     string `json:"error_type"`
+	ErrorMessage  string `json:"message"`
+	ErrorStatus   int    `json:"status"`
+	ErrorDetails  string `json:"detail"`
+	ErrorTraceID  string `json:"trace_id"`
+	ErrorInstance string `json:"instance"`
+	ErrorHelp     string `json:"help"`
 }
 
 // Ensure Herror implements error interface
@@ -19,42 +19,42 @@ var _ error = &Herror{}
 
 // Code getter
 func (t *Herror) Code() int {
-	return t.code
+	return t.ErrorCode
 }
 
 // ErrorType getter
 func (t *Herror) ErrorType() string {
-	return t.errorType
+	return t.TypeError
 }
 
 // Message getter
 func (t *Herror) Message() string {
-	return t.message
+	return t.ErrorMessage
 }
 
 // Status getter
 func (t *Herror) Status() int {
-	return t.status
+	return t.ErrorStatus
 }
 
 // Detail getter
 func (t *Herror) Detail() string {
-	return t.detail
+	return t.ErrorDetails
 }
 
 // TraceID getter
 func (t *Herror) TraceID() string {
-	return t.traceID
+	return t.ErrorTraceID
 }
 
 // Instance getter
 func (t *Herror) Instance() string {
-	return t.instance
+	return t.ErrorInstance
 }
 
 // Help getter
 func (t *Herror) Help() string {
-	return t.help
+	return t.ErrorHelp
 }
 
 // herrorError represents the json sharable model of a HOF Herror
@@ -75,14 +75,14 @@ func (t *Herror) Error() string {
 	// Get model json string
 	jsonBytes, _ := json.Marshal(
 		herrorError{
-			Code:      t.code,
-			ErrorType: t.errorType,
-			Message:   t.message,
-			Status:    t.status,
-			Detail:    t.detail,
-			TraceID:   t.traceID,
-			Instance:  t.instance,
-			Help:      t.help,
+			Code:      t.ErrorCode,
+			ErrorType: t.TypeError,
+			Message:   t.ErrorMessage,
+			Status:    t.ErrorStatus,
+			Detail:    t.ErrorDetails,
+			TraceID:   t.ErrorTraceID,
+			Instance:  t.ErrorInstance,
+			Help:      t.ErrorHelp,
 		})
 
 	return string(jsonBytes)
@@ -96,10 +96,10 @@ func NewHerror(
 	detail string,
 ) *Herror {
 	herror := &Herror{
-		code:      code,
-		errorType: errorType,
-		message:   message,
-		detail:    detail,
+		ErrorCode:    code,
+		TypeError:    errorType,
+		ErrorMessage: message,
+		ErrorDetails: detail,
 	}
 	return herror
 }

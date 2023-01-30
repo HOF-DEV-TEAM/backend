@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/pkg/user"
@@ -17,14 +18,13 @@ import (
 // @Success 200 {object} User
 // @Router /user [post]
 
-
 func CreateGetUserHandler(svc user.Service) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {		
+	return func(w http.ResponseWriter, r *http.Request) {
 		var u user.UserJSON
 		err := json.NewDecoder(r.Body).Decode(&u)
-		
+
 		if err != nil {
-			encodeResult(w, err)
+			encodeResult(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -39,17 +39,17 @@ func CreateGetUserHandler(svc user.Service) http.HandlerFunc {
 
 		userJSON = user.NewJSONUser(result.User)
 		userJSON.NewJWTToken = result.Token
-		encodeResult(w, userJSON)
+		encodeResult(w, userJSON, http.StatusOK)
 	}
 }
 
 func CreatePostLoginHandler(svc user.Service) http.HandlerFunc {
-	return func (w http.ResponseWriter, r *http.Request) {		
+	return func(w http.ResponseWriter, r *http.Request) {
 		var req user.LoginRequestJSON
 		err := json.NewDecoder(r.Body).Decode(&req)
-		
+
 		if err != nil {
-			encodeResult(w, err)
+			encodeResult(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -64,6 +64,50 @@ func CreatePostLoginHandler(svc user.Service) http.HandlerFunc {
 
 		userJSON = user.NewJSONUser(result.User)
 		userJSON.NewJWTToken = result.Token
-		encodeResult(w, userJSON)
+		encodeResult(w, userJSON, http.StatusOK)
+	}
+}
+
+func ForgotPasswordHandler(svc user.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request user.ForgotPasswordPayload
+		err := json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			encodeResult(w, err, http.StatusInternalServerError)
+			return
+		}
+		_, err = svc.ForgotPassword(request)
+		if err != nil {
+			encodeResult(w, err, http.StatusInternalServerError)
+			return
+		}
+		encodeResult(w, request, http.StatusOK)
+	}
+}
+
+func ResetPasswordHandler(svc user.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var resetPasswordRequest user.ResetPasswordPayload
+		err := json.NewDecoder(r.Body).Decode(&resetPasswordRequest)
+		if err != nil {
+			encodeResult(w, err, http.StatusInternalServerError)
+			return
+		}
+		passwordTokenParam := chi.URLParam(r, "token")
+
+		_, err = svc.VerifyPasswordToken(resetPasswordRequest, passwordTokenParam)
+		if err != nil {
+			encodeResult(w, err, http.StatusBadRequest)
+			return
+		}
+
+		_, err = svc.ResetPassword(resetPasswordRequest)
+		if err != nil {
+			encodeResult(w, err, http.StatusBadRequest)
+			return
+
+		}
+
+		encodeResult(w, DefaultResponse{Message: "success", Code: http.StatusOK, Success: true}, http.StatusOK)
 	}
 }
