@@ -16,11 +16,12 @@ var (
 	ErrQueryRepository       = errors.New("there was an error executing the query")
 	ErrFieldRequired         = errors.New("field is required")
 	ErrNotFound              = errors.New("not found")
+	ErrWrongInput			 = errors.New("wrong input")
 	ErrUnauthoriedRequest    = errors.New("unauthorized request. please check your credentials")	
 )
 
 type Service interface {
-	GetAudioMessages(ctx context.Context) (GetAudiosMessagesResponse, error)	
+	GetAudioMessages(ctx context.Context, seriesId string) (GetAudiosMessagesResponse, error)	
 	CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error)
 	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
 	GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error)
@@ -155,9 +156,10 @@ func (svc *audioMessageService) GetAudioSeries(ctx context.Context) (GetAudiosSe
 	return result, nil
 }
 
-func (svc *audioMessageService) GetAudioMessages(ctx context.Context) (GetAudiosMessagesResponse, error) { 
+func (svc *audioMessageService) GetAudioMessages(ctx context.Context, seriesId string) (GetAudiosMessagesResponse, error) { 
 	result := GetAudiosMessagesResponse{}
-	audioMessages, count, err := svc.repo.GetAudioMessages(ctx)
+	
+	audioMessages, count, err := svc.repo.GetAudioMessages(ctx, seriesId)
 
 	if err == sql.ErrNoRows {
 		return result, err

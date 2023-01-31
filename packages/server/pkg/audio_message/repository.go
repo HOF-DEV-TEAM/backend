@@ -3,6 +3,7 @@ package audio_message
 import (
 	"context"
 	"database/sql"
+	"strconv"
 
 	"go.uber.org/zap"
 )
@@ -10,7 +11,7 @@ import (
 type Repository interface {
 	CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error)
 	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
-	GetAudioMessages(ctx context.Context)([]*AudioMessage, int, error)
+	GetAudioMessages(ctx context.Context, seriesId string)([]*AudioMessage, int, error)	
 	GetAudioSeries(ctx context.Context)([]*AudioSeries, int, error)
 	Close() error
 }
@@ -204,29 +205,35 @@ func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSer
 	return audioSeries, 0, nil
 }
 
-//TODO: implement pagination
-func (r audioMessageRepository) GetAudioMessages(ctx context.Context) ([]*AudioMessage, int, error) {
-	const SQL = "SELECT * FROM audio_messages" 
-
+func (r audioMessageRepository) getAudioMessages(ctx context.Context, query string, queryParams []interface{}) ([]*AudioMessage, int, error) {
 	var audioMessages []*AudioMessage
-	getAudioMessagesStmt, err := r.db.PrepareContext(ctx, SQL)
+	getAudioMessagesStmt, err := r.db.PrepareContext(ctx, query)
 
 	if err != nil {
 		r.log.Info("msg",
 			zap.String("error querying", ""),
 			zap.String("error", err.Error()),
-			zap.String("query", SQL),		
+			zap.String("query", query),		
 		)
 		return audioMessages, 0, err
 	}
 
-	rows, err := getAudioMessagesStmt.QueryContext(ctx)
-
-	defer rows.Close()
+	rows, err := getAudioMessagesStmt.QueryContext(ctx, queryParams...)	
 
 	if err == sql.ErrNoRows {
 		return audioMessages, 0, err
 	}
+
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", query),		
+		)
+		return audioMessages, 0, err
+	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var as AudioMessage
@@ -245,7 +252,7 @@ func (r audioMessageRepository) GetAudioMessages(ctx context.Context) ([]*AudioM
 			r.log.Info("msg",
 			zap.String("error querying", ""),
 			zap.String("error", err.Error()),
-			zap.String("query", SQL),		
+			zap.String("query", query),		
 		)
 			return audioMessages, 0, err
 		}
@@ -255,3 +262,26 @@ func (r audioMessageRepository) GetAudioMessages(ctx context.Context) ([]*AudioM
 
 	return audioMessages, 0, nil
 }
+
+
+//TODO: implement pagination
+func (r audioMessageRepository) GetAudioMessages(ctx context.Context, seriesId string) ([]*AudioMessage, int, error) {
+	var sqlStmt string	
+	sqlStmt = "SELECT * FROM audio_messages" 
+
+	var queryParams []interface{}
+
+	if seriesId != "" {
+		sqlStmt = sqlStmt + " WHERE series_id = $1"
+		id, err := strconv.Atoi(seriesId)
+
+		if err != nil {
+			return nil, 0, ErrWrongInput
+		}
+
+		queryParams = append(queryParams, id)
+	
+	}	
+	return r.getAudioMessages(ctx, sqlStmt, queryParams)
+}
+
