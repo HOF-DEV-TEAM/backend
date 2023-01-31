@@ -1,5 +1,5 @@
 
-create table users(
+create table if not exists users(
   "id" serial primary key,  
   "first_name" varchar(200) not null,
   "last_name" varchar(200) not null,

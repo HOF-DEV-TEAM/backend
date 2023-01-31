@@ -195,7 +195,7 @@ func (r userRepository) ForgotPassword(request ForgotPasswordPayload, passwordRe
 		PasswordResetAt:    time.Now().Add(time.Minute * 15),
 	}
 
-	getQuery := `SELECT id FROM userPasswordToken WHERE email = $1`
+	getQuery := `SELECT id FROM user_password_token WHERE email = $1`
 	tmpSmt, err := r.db.Prepare(getQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getQuery))
@@ -206,7 +206,7 @@ func (r userRepository) ForgotPassword(request ForgotPasswordPayload, passwordRe
 	row := tmpSmt.QueryRow(request.Email).Scan(&userPasswordTokenID)
 	switch {
 	case row == sql.ErrNoRows:
-		sqlQuery := `INSERT INTO userPasswordToken(email, password_reset_token, password_reset_at) VALUES ($1, $2, $3) RETURNING id`
+		sqlQuery := `INSERT INTO user_password_token(email, password_reset_token, password_reset_at) VALUES ($1, $2, $3) RETURNING id`
 		tmpSmt, err := r.db.Prepare(sqlQuery)
 		if err != nil {
 			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
@@ -219,7 +219,7 @@ func (r userRepository) ForgotPassword(request ForgotPasswordPayload, passwordRe
 			return nil, errorHandler.Format(errorHandler.DatabaseError, err)
 		}
 	case row != sql.ErrNoRows:
-		sqlQuery := `UPDATE userPasswordToken SET password_reset_token=$2, password_reset_at=$3 WHERE email = $1 RETURNING id`
+		sqlQuery := `UPDATE user_password_token SET password_reset_token=$2, password_reset_at=$3 WHERE email = $1 RETURNING id`
 
 		tmpSmt, err := r.db.Prepare(sqlQuery)
 		if err != nil {
@@ -238,7 +238,7 @@ func (r userRepository) ForgotPassword(request ForgotPasswordPayload, passwordRe
 }
 
 func (r *userRepository) VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error) {
-	sqlQuery := `SELECT password_reset_token FROM userPasswordToken WHERE email = $1 AND password_reset_token=$2`
+	sqlQuery := `SELECT password_reset_token FROM user_password_token WHERE email = $1 AND password_reset_token=$2`
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))

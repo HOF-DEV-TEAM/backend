@@ -82,7 +82,7 @@ type SignUpUser struct {
 
 type UserPasswordToken struct {
 	ID                 int       `sql:"id"`
-	Email              string    `json:"email" validate:"required,email"`
+	Email              string    `sql:"email" validate:"required,email"`
 	PasswordResetToken string    `sql:"password_reset_token"`
 	PasswordResetAt    time.Time `sql:"password_reset_at"`
 }
