@@ -1,0 +1,257 @@
+package audio_message
+
+import (
+	"context"
+	"database/sql"
+
+	"go.uber.org/zap"
+)
+
+type Repository interface {
+	CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error)
+	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
+	GetAudioMessages(ctx context.Context)([]*AudioMessage, int, error)
+	GetAudioSeries(ctx context.Context)([]*AudioSeries, int, error)
+	Close() error
+}
+
+type audioMessageRepository struct {
+	db           *sql.DB
+	log          *zap.Logger
+	getEmailStmt *sql.Stmt
+	getIdStmt    *sql.Stmt
+}
+
+func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
+	return &audioMessageRepository{db: db, log: logger}
+}
+
+
+func (r audioMessageRepository) Close() error {
+	if r.getEmailStmt != nil {
+		if err := r.getEmailStmt.Close(); err != nil {
+			return err
+		}
+	}
+
+	if r.getIdStmt != nil {
+		if err := r.getIdStmt.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {
+	// sql insert query, primary key provided by autoincrement
+	const SQL = "INSERT INTO audio_messages (" +
+		"title," +
+		"author," +
+		"image_url," +
+		"audio_url," +
+		"description," +
+		"date_added," +
+		"last_updated," +
+		"series_id" +		
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) " +
+		"RETURNING id"
+
+	tx, err := r.db.BeginTx(ctx, nil)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	tmpSmt, err := tx.PrepareContext(ctx, SQL)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	var createdAudioMessageId int
+
+	err = tmpSmt.QueryRowContext(ctx,
+		audioMessage.Title,
+		audioMessage.Author,
+		audioMessage.ImageUrl,
+		audioMessage.AudioUrl,
+		audioMessage.Description,
+		audioMessage.DateAdded,
+		audioMessage.LastUpdated,
+		audioMessage.SeriesID,	
+	).Scan(&createdAudioMessageId)
+
+	if err != nil {
+		r.log.Info("error", zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return nil, err
+	}
+
+	audioMessage.ID = createdAudioMessageId
+	return audioMessage, nil
+}
+
+
+func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error) {
+	// sql insert query, primary key provided by autoincrement
+	const SQL = "INSERT INTO audio_series (" +
+		"title," +
+		"author," +
+		"image_url," +		
+		"description," +
+		"date_added," +
+		"last_updated" +			
+		") VALUES ($1, $2, $3, $4, $5, $6) " +
+		"RETURNING id"
+
+	tx, err := r.db.BeginTx(ctx, nil)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	tmpSmt, err := tx.PrepareContext(ctx, SQL)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	var createdAudioSeriesId int
+
+	err = tmpSmt.QueryRowContext(ctx,
+		audioSeries.Title,
+		audioSeries.Author,
+		audioSeries.ImageUrl,
+		audioSeries.Description,
+		audioSeries.DateAdded,
+		audioSeries.LastUpdated,			
+	).Scan(&createdAudioSeriesId)
+
+	if err != nil {
+		r.log.Info("error", zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return nil, err
+	}
+
+	audioSeries.ID = createdAudioSeriesId
+	return audioSeries, nil
+}
+
+func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSeries, int, error) {
+	const SQL = "SELECT * FROM audio_series" 
+
+	var audioSeries []*AudioSeries
+	getAudioSeriesStmt, err := r.db.PrepareContext(ctx, SQL)
+
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", SQL),		
+		)
+		return audioSeries, 0, err
+	}
+
+	rows, err := getAudioSeriesStmt.QueryContext(ctx)
+
+	defer rows.Close()
+
+	if err == sql.ErrNoRows {
+		return audioSeries, 0, err
+	}
+
+	for rows.Next() {
+		var as AudioSeries
+
+		if err := rows.Scan(
+			&as.ID, 
+			&as.Title,
+			&as.Author,		
+			&as.Description,	
+			&as.ImageUrl,
+			&as.DateAdded,
+			&as.LastUpdated,			
+		); err != nil {
+			r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", SQL),		
+		)
+			return audioSeries, 0, err
+		}
+
+		audioSeries = append(audioSeries, &as)
+	}	
+
+	return audioSeries, 0, nil
+}
+
+//TODO: implement pagination
+func (r audioMessageRepository) GetAudioMessages(ctx context.Context) ([]*AudioMessage, int, error) {
+	const SQL = "SELECT * FROM audio_messages" 
+
+	var audioMessages []*AudioMessage
+	getAudioMessagesStmt, err := r.db.PrepareContext(ctx, SQL)
+
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", SQL),		
+		)
+		return audioMessages, 0, err
+	}
+
+	rows, err := getAudioMessagesStmt.QueryContext(ctx)
+
+	defer rows.Close()
+
+	if err == sql.ErrNoRows {
+		return audioMessages, 0, err
+	}
+
+	for rows.Next() {
+		var as AudioMessage
+
+		if err := rows.Scan(
+			&as.ID, 
+			&as.Title,
+			&as.Author,		
+			&as.ImageUrl,
+			&as.AudioUrl,
+			&as.Description,				
+			&as.DateAdded,
+			&as.LastUpdated,	
+			&as.SeriesID,		
+		); err != nil {
+			r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", SQL),		
+		)
+			return audioMessages, 0, err
+		}
+
+		audioMessages = append(audioMessages, &as)
+	}	
+
+	return audioMessages, 0, nil
+}

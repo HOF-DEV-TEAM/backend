@@ -1,0 +1,177 @@
+package audio_message
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+
+	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
+	"github.com/go-playground/validator"
+	"go.uber.org/zap"
+)
+
+
+var (
+	ErrQueryRepository       = errors.New("there was an error executing the query")
+	ErrFieldRequired         = errors.New("field is required")
+	ErrNotFound              = errors.New("not found")
+	ErrUnauthoriedRequest    = errors.New("unauthorized request. please check your credentials")	
+)
+
+type Service interface {
+	GetAudioMessages(ctx context.Context) (GetAudiosMessagesResponse, error)	
+	CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error)
+	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
+	GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error)
+}
+
+type audioMessageService struct {
+	repo   Repository
+	log    *zap.Logger
+	config *security.SecurityConfig
+}
+
+func NewService(repo Repository, log *zap.Logger, config *security.SecurityConfig) Service {
+	return &audioMessageService{log: log, repo: repo, config: config}
+}
+
+func (s *audioMessageService) validateStruct(audioMessage *AudioMessage) error {
+	validate := validator.New()
+
+	return validate.Struct(audioMessage)
+}
+
+func (s *audioMessageService) validateAudioSeriesStruct(audioSeries *AudioSeries) error {
+	validate := validator.New()
+
+	return validate.Struct(audioSeries)
+}
+
+
+func (svc *audioMessageService) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {
+
+	err := svc.validateStruct(audioMessage)
+
+	if err != nil {
+		tErr, ok := err.(validator.ValidationErrors)
+
+		if !ok {
+			return nil, fmt.Errorf("unknown validation error")
+		}
+
+		for _, e := range tErr {
+			switch e.StructField() {
+			case "Title":
+				return nil, ErrFieldRequired
+			case "Author":
+				return nil, ErrFieldRequired
+			case "AudioUrl":
+				return nil, ErrFieldRequired
+			default:
+				svc.log.Info("untyped validation error", zap.String("field", e.StructField()))
+			}
+		}
+		return nil, err
+	}
+
+	result, err := svc.repo.CreateAudioMessage(ctx, audioMessage)
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	if err != nil {
+		svc.log.Error("msg",
+			zap.String("method", "CreateAudioMessage"),
+			zap.String("error", err.Error()),
+		)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+
+func (svc *audioMessageService) CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error) {
+
+	err := svc.validateAudioSeriesStruct(audioSeries)
+
+	if err != nil {
+		tErr, ok := err.(validator.ValidationErrors)
+
+		if !ok {
+			return nil, fmt.Errorf("unknown validation error")
+		}
+
+		for _, e := range tErr {
+			switch e.StructField() {
+			case "Title":
+				return nil, ErrFieldRequired		
+			case "ImageUrl":
+				return nil, ErrFieldRequired
+			default:
+				svc.log.Info("untyped validation error", zap.String("field", e.StructField()))
+			}
+		}
+		return nil, err
+	}
+
+	result, err := svc.repo.CreateAudioSeries(ctx, audioSeries)
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	if err != nil {
+		svc.log.Error("msg",
+			zap.String("method", "CreateAudioSeries"),
+			zap.String("error", err.Error()),
+		)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (svc *audioMessageService) GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error) { 
+	result := GetAudiosSeriesResponse{}
+	audioSeries, count, err := svc.repo.GetAudioSeries(ctx)
+
+	if err == sql.ErrNoRows {
+		return result, err
+	}
+	
+	result.AudioSeries = []*AudioSeriesJSON{}
+
+	for _, as := range audioSeries {
+		result.AudioSeries = append(result.AudioSeries, NewJSONAudioSeries(as))
+	}
+
+	result.Pagination = PageResponse{
+		TotalResults: int32(count),
+	}
+
+	return result, nil
+}
+
+func (svc *audioMessageService) GetAudioMessages(ctx context.Context) (GetAudiosMessagesResponse, error) { 
+	result := GetAudiosMessagesResponse{}
+	audioMessages, count, err := svc.repo.GetAudioMessages(ctx)
+
+	if err == sql.ErrNoRows {
+		return result, err
+	}
+	
+	result.AudioMessages = []*AudioMessageJSON{}
+
+	for _, as := range audioMessages {
+		result.AudioMessages = append(result.AudioMessages, NewJSONAudioMessage(as))
+	}
+
+	result.Pagination = PageResponse{
+		TotalResults: int32(count),
+	}
+
+	return result, nil
+}

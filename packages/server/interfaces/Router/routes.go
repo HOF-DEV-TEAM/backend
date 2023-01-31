@@ -12,6 +12,7 @@ import (
 
 	_ "bitbucket.org/hofng/hofApp/docs"
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
+	"bitbucket.org/hofng/hofApp/pkg/audio_message"
 	"bitbucket.org/hofng/hofApp/pkg/user"
 
 	"bitbucket.org/hofng/hofApp/interfaces"
@@ -48,7 +49,13 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 		r.Use(jwtauth.Verify(config.Security.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
+		audioMessageRepo := audio_message.NewRepository(db, logger)
+		audioMessageService := audio_message.NewService(audioMessageRepo, logger, &config.Security)
+
+
 		buildUserEndpoints(router, userService)
+		buildAudioMessageEndpoints(router, audioMessageService)
+		buildAudioSeriesEndpoints(router, audioMessageService)
 	})
 
 	//unprotected routes
@@ -78,4 +85,28 @@ func buildSessionEndpoints(router *chi.Mux, svc user.Service) {
 	sessionsRouter.Post("/reset_password/{token}", resetPasswordHandler)
 
 	router.Mount("/session", sessionsRouter)
+}
+
+func buildAudioMessageEndpoints (router *chi.Mux, svc audio_message.Service) {
+	audioMessageRouter := chi.NewRouter()
+
+	createAudioMessageHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioMessageHandler, svc)
+	getAudioMessagesHandler := interfaces.NewHTTPHandler(interfaces.GetAudioMessagesHandler, svc)
+
+	audioMessageRouter.Get("/", getAudioMessagesHandler)
+	audioMessageRouter.Post("/", createAudioMessageHandler)
+
+	router.Mount("/audio_message", audioMessageRouter)
+}
+
+func buildAudioSeriesEndpoints (router *chi.Mux, svc audio_message.Service) {
+	audioSeriesRouter := chi.NewRouter()
+
+	createAudioSeriesHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioSeriesHandler, svc)
+	getAudioSeriesHandler := interfaces.NewHTTPHandler(interfaces.GetAudioSeriesHandler, svc)
+
+	audioSeriesRouter.Post("/", createAudioSeriesHandler)
+	audioSeriesRouter.Get("/", getAudioSeriesHandler)
+
+	router.Mount("/audio_series", audioSeriesRouter)
 }
