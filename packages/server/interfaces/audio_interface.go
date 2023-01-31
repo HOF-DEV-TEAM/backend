@@ -47,7 +47,10 @@ func CreateAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interf
 
 func GetAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 
-	result, err := svc.(audio_message.Service).GetAudioMessages(r.Context())
+	//TODO: Make this a robust search type
+	seriesId := r.URL.Query().Get("series_id")
+	
+	result, err := svc.(audio_message.Service).GetAudioMessages(r.Context(), seriesId)
 
 	if err != nil {
 		EncodeJSONError(r.Context(), err, w)
@@ -55,6 +58,7 @@ func GetAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interfa
 	}
 	encodeResult(w, result, http.StatusOK)
 }
+
 
 func GetAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 
