@@ -33,7 +33,7 @@ type Service interface {
 	SignUp(ctx context.Context, user *SignUpUser) (*User, error)
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	Login(ctx context.Context, email, password string) (*UserAndToken, error)
-	ForgotPassword(request ForgotPasswordPayload) (*User, error)
+	ForgotPassword(request ForgotPasswordPayload) (interface{}, error)
 	VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error)
 	ResetPassword(request ResetPasswordPayload) (int, error)
 }
@@ -59,7 +59,6 @@ func (s *userService) validateSignUpStruct(user *SignUpUser) error {
 
 	return validate.Struct(user)
 }
-
 
 func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, error) {
 
@@ -93,12 +92,12 @@ func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, er
 	password := fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(user.Password))))
 
 	result, err := svc.repo.Create(
-		ctx, 
+		ctx,
 		&User{
-			Email: user.Email, 
-			Password: password, 
-			FirstName: user.FirstName, 
-			LastName: user.LastName,
+			Email:     user.Email,
+			Password:  password,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
 		})
 
 	if err == sql.ErrNoRows {
@@ -220,7 +219,7 @@ func randStr(n int, charset []byte, seededRand *rand.Rand) string {
 	return string(b)
 }
 
-func (svc *userService) ForgotPassword(request ForgotPasswordPayload) (*User, error) {
+func (svc *userService) ForgotPassword(request ForgotPasswordPayload) (interface{}, error) {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
@@ -228,18 +227,18 @@ func (svc *userService) ForgotPassword(request ForgotPasswordPayload) (*User, er
 	}
 	var charset = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	
-	//TODO - fix EncodeString
-
-	passwordResetToken := randStr(10, charset, seededRand)
+	passwordResetToken := EncodeString(randStr(10, charset, seededRand))
 
 	user, err := svc.repo.ForgotPassword(request, passwordResetToken)
 	if err != nil {
 		return nil, err
 	}
 	// TODO insert mailer function
+	// Temporary return statement pending the mail
 	fmt.Println(user)
-	return nil, nil
+	return struct {
+		URL string `json:"url"`
+	}{fmt.Sprint("https://hof-backend.herokuapp.com/user/resetPassword/", passwordResetToken)}, nil
 }
 
 func (svc *userService) VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error) {

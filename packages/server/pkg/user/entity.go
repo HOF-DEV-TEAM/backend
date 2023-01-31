@@ -3,7 +3,6 @@ package user
 import (
 	"database/sql"
 	"errors"
-	"time"
 )
 
 type IsVerifiedEnum uint16
@@ -53,7 +52,6 @@ func (e *IsVerifiedEnum) UnMarshalText(from []byte) error {
 }
 
 type User struct {
-	// The ULID of a user
 	ID           int            `sql:"id"`
 	UserName     string         `sql:"username"`
 	Password     string         `sql:"password" validate:"min=6"`
@@ -65,7 +63,7 @@ type User struct {
 	Gender       string         `sql:"gender"`
 	PasswordHash sql.NullString `sql:"password_hash"`
 	IsVerified   IsVerifiedEnum `sql:"is_verified"`
-} // @name User
+}
 
 type LoginUser struct {
 	Email    string `validate:"required,email"`
@@ -73,25 +71,32 @@ type LoginUser struct {
 }
 
 type SignUpUser struct {
-	FirstName    	string         	`validate:"required"`
-	LastName     	string         	`validate:"required"`
-	Email   	 	string 			`validate:"required,email"`
-	Password 		string 			`validate:"required"`
+	FirstName string `validate:"required"`
+	LastName  string `validate:"required"`
+	Email     string `validate:"required,email"`
+	Password  string `validate:"required"`
 }
-
 
 type UserPasswordToken struct {
-	ID                 int       `sql:"id"`
-	Email              string    `sql:"email" validate:"required,email"`
-	PasswordResetToken string    `sql:"password_reset_token"`
-	PasswordResetAt    time.Time `sql:"password_reset_at"`
-}
-type ForgotPasswordPayload struct {
-	Email string `json:"email" validate:"required,email"`
+	ID                 int    `sql:"id"`
+	Email              string `sql:"email" validate:"required,email"`
+	PasswordResetToken string `sql:"password_reset_token"`
+	PasswordResetAt    int64  `sql:"password_reset_at"`
 }
 
+type ForgotPasswordPayload struct {
+	// The ULID of ForgotPasswordPayload
+	Email string `json:"email" validate:"required,email"`
+} // @name ForgotPasswordPayload
+
+// ForgotPasswordResponse temporary response pending an email client
+type ForgotPasswordResponse struct {
+	URL string `json:"url"`
+} // @name ForgotPasswordResponse
+
 type ResetPasswordPayload struct {
+	// The ULID of ResetPasswordPayload
 	Email           string `json:"email" validate:"required,email"`
 	Password        string `json:"password" validate:"min=6" binding:"required"`
 	PasswordConfirm string `json:"password_confirm" validate:"min=6" binding:"required"`
-}
+} // @name ResetPasswordPayload

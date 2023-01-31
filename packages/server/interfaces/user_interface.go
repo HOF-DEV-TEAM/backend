@@ -8,16 +8,15 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/user"
 )
 
-// CreateUser godoc
+// CreateGetUserHandler godoc
 // @Summary Create a new user
-// @Description Create a new user with the input paylod
-// @Tags users
+// @Description Create a new user with the input payload
+// @Tags SignUp
 // @Accept  json
 // @Produce  json
-// @Param user body User true "Create user"
-// @Success 200 {object} User
-// @Router /user [post]
-
+// @Param SignUpUserRequestJSON body SignUpUserRequestJSON true "Create user"
+// @Success 200 {object} UserJSON
+// @Router /session/sign_up [post]
 func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var u user.SignUpUserRequestJSON
 	err := json.NewDecoder(r.Body).Decode(&u)
@@ -36,6 +35,15 @@ func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{
 	encodeResult(w, user.NewJSONUser(result), http.StatusOK)
 }
 
+// CreateSignInHandler godoc
+// @Summary Create a new sign in session for a user
+// @Description Create a new sign in session with the input payload
+// @Tags Login
+// @Accept  json
+// @Produce  json
+// @Param LoginRequestJSON body LoginRequestJSON true "Sign in user"
+// @Success 200 {object} UserSession
+// @Router /session/sign_in [post]
 func CreateSignInHandler(svc user.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req user.LoginRequestJSON
@@ -54,15 +62,24 @@ func CreateSignInHandler(svc user.Service) http.HandlerFunc {
 		}
 
 		encodeResult(
-			w, 
+			w,
 			user.UserSession{
-				User: user.NewJSONUser(result.User), 
+				User:  user.NewJSONUser(result.User),
 				Token: result.Token,
-			}, 
+			},
 			http.StatusOK)
-		}
+	}
 }
 
+// ForgotPasswordHandler godoc
+// @Summary User forgets their password
+// @Description User can request for a password change with the input payload
+// @Tags ForgotPassword
+// @Accept  json
+// @Produce  json
+// @Param ForgotPasswordPayload body ForgotPasswordPayload true "Forgot password"
+// @Success 200 {object} ForgotPasswordResponse
+// @Router /session/forgot_password [post]
 func ForgotPasswordHandler(svc user.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request user.ForgotPasswordPayload
@@ -71,15 +88,24 @@ func ForgotPasswordHandler(svc user.Service) http.HandlerFunc {
 			encodeResult(w, err, http.StatusInternalServerError)
 			return
 		}
-		_, err = svc.ForgotPassword(request)
+		url, err := svc.ForgotPassword(request)
 		if err != nil {
 			encodeResult(w, err, http.StatusInternalServerError)
 			return
 		}
-		encodeResult(w, request, http.StatusOK)
+		encodeResult(w, url, http.StatusOK)
 	}
 }
 
+// ResetPasswordHandler godoc
+// @Summary User can reset their password
+// @Description User can insert new passwords for a password change with the input payload
+// @Tags ResetPassword
+// @Accept  json
+// @Produce  json
+// @Param ResetPasswordPayload body ResetPasswordPayload true "Reset password"
+// @Success 200 {object} DefaultResponse
+// @Router /session/reset_password/{url-param} [post]
 func ResetPasswordHandler(svc user.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequest user.ResetPasswordPayload

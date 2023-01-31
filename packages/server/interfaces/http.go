@@ -12,8 +12,7 @@ type HTTPHandler struct {
 	log *zap.Logger
 }
 
-
-func NewHTTPHandler(fn func (wr http.ResponseWriter, rd *http.Request, svc interface{}), svc interface{}) http.HandlerFunc {
+func NewHTTPHandler(fn func(wr http.ResponseWriter, rd *http.Request, svc interface{}), svc interface{}) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fn(w, r, svc)
 	}
@@ -23,7 +22,7 @@ type DefaultResponse struct {
 	Message string `json:"message"`
 	Success bool   `json:"success"`
 	Code    int    `json:"code"`
-}
+} // @name DefaultResponse
 
 func encodeResult(w http.ResponseWriter, response interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json")

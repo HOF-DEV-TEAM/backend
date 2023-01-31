@@ -1,11 +1,153 @@
 basePath: /hof
 definitions:
-  User:
+  AudioMessageJSON:
     properties:
-      id:
-        description: The ULID of a user
-        example: 01gq092mhjs3bz0d4bca2xjtwv
+      audio_url:
         type: string
+      author:
+        type: string
+      date_added:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      last_updated:
+        type: string
+      series_id:
+        type: integer
+      title:
+        type: string
+    type: object
+  AudioSeriesJSON:
+    properties:
+      author:
+        type: string
+      date_added:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      last_updated:
+        type: string
+      title:
+        type: string
+    type: object
+  DefaultResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  ForgotPasswordPayload:
+    properties:
+      email:
+        description: The ULID of ForgotPasswordPayload
+        type: string
+    required:
+    - email
+    type: object
+  ForgotPasswordResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  GetAudiosMessagesResponse:
+    properties:
+      audio_messages:
+        items:
+          $ref: '#/definitions/AudioMessageJSON'
+        type: array
+      pagination:
+        $ref: '#/definitions/PageResponse'
+    type: object
+  GetAudiosSeriesResponse:
+    properties:
+      audio_series:
+        items:
+          $ref: '#/definitions/AudioSeriesJSON'
+        type: array
+      pagination:
+        $ref: '#/definitions/PageResponse'
+    type: object
+  LoginRequestJSON:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  PageResponse:
+    properties:
+      totalResults:
+        type: integer
+    type: object
+  ResetPasswordPayload:
+    properties:
+      email:
+        description: The ULID of ResetPasswordPayload
+        type: string
+      password:
+        minLength: 6
+        type: string
+      password_confirm:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    - password_confirm
+    type: object
+  SignUpUserRequestJSON:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+    type: object
+  UserJSON:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      id:
+        type: integer
+      is_verified:
+        type: integer
+      last_name:
+        type: string
+      mobile:
+        type: string
+      newToken:
+        type: string
+      password:
+        type: string
+      usernmae:
+        type: string
+    type: object
+  UserSession:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/UserJSON'
     type: object
 host: localhost:3000
 info:
@@ -20,26 +162,168 @@ info:
   title: HOF BACKEND API
   version: "1.0"
 paths:
-  /user:
+  /audio_message/:
     post:
       consumes:
       - application/json
-      description: Create a new user with the input paylod
+      description: Admin will be able to create/insert new audio messages with the
+        input payload
       parameters:
-      - description: Create user
+      - description: Create audio messages
         in: body
-        name: user
+        name: AudioMessageJSON
         required: true
         schema:
-          $ref: '#/definitions/User'
+          $ref: '#/definitions/AudioMessageJSON'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/AudioMessageJSON'
+      summary: Admin can create new audio messages
+      tags:
+      - CreateAudioMessages
+  /audio_messages/:
+    get:
+      consumes:
+      - application/json
+      description: Users can now retrieve and see an audio message
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GetAudiosMessagesResponse'
+      summary: Get an audio message
+      tags:
+      - GetAudioMessages
+  /audio_series/:
+    get:
+      consumes:
+      - application/json
+      description: Users can now retrieve and see an audio series
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GetAudiosSeriesResponse'
+      summary: Get an audio series
+      tags:
+      - GetAudioSeries
+    post:
+      consumes:
+      - application/json
+      description: Admin will be able to create/insert new audio series with the input
+        payload
+      parameters:
+      - description: Create audio series
+        in: body
+        name: AudioSeriesJSON
+        required: true
+        schema:
+          $ref: '#/definitions/AudioSeriesJSON'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AudioSeriesJSON'
+      summary: Admin can create new audio series
+      tags:
+      - CreateAudioSeries
+  /session/forgot_password:
+    post:
+      consumes:
+      - application/json
+      description: User can request for a password change with the input payload
+      parameters:
+      - description: Forgot password
+        in: body
+        name: ForgotPasswordPayload
+        required: true
+        schema:
+          $ref: '#/definitions/ForgotPasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ForgotPasswordResponse'
+      summary: User forgets their password
+      tags:
+      - ForgotPassword
+  /session/reset_password/{url-param}:
+    post:
+      consumes:
+      - application/json
+      description: User can insert new passwords for a password change with the input
+        payload
+      parameters:
+      - description: Reset password
+        in: body
+        name: ResetPasswordPayload
+        required: true
+        schema:
+          $ref: '#/definitions/ResetPasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/DefaultResponse'
+      summary: User can reset their password
+      tags:
+      - ResetPassword
+  /session/sign_in:
+    post:
+      consumes:
+      - application/json
+      description: Create a new sign in session with the input payload
+      parameters:
+      - description: Sign in user
+        in: body
+        name: LoginRequestJSON
+        required: true
+        schema:
+          $ref: '#/definitions/LoginRequestJSON'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserSession'
+      summary: Create a new sign in session for a user
+      tags:
+      - Login
+  /session/sign_up:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the input payload
+      parameters:
+      - description: Create user
+        in: body
+        name: SignUpUserRequestJSON
+        required: true
+        schema:
+          $ref: '#/definitions/SignUpUserRequestJSON'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/UserJSON'
       summary: Create a new user
       tags:
-      - users
+      - SignUp
 swagger: "2.0"
