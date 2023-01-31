@@ -71,6 +71,15 @@ type LoginUser struct {
 	Email    string `validate:"required,email"`
 	Password string `validate:"required"`
 }
+
+type SignUpUser struct {
+	FirstName    	string         	`validate:"required"`
+	LastName     	string         	`validate:"required"`
+	Email   	 	string 			`validate:"required,email"`
+	Password 		string 			`validate:"required"`
+}
+
+
 type UserPasswordToken struct {
 	ID                 int       `sql:"id"`
 	Email              string    `json:"email" validate:"required,email"`

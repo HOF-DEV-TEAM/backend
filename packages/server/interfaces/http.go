@@ -12,9 +12,10 @@ type HTTPHandler struct {
 	log *zap.Logger
 }
 
-func New(log *zap.Logger) *HTTPHandler {
-	return &HTTPHandler{
-		log: log,
+
+func NewHTTPHandler(fn func (wr http.ResponseWriter, rd *http.Request, svc interface{}), svc interface{}) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(w, r, svc)
 	}
 }
 

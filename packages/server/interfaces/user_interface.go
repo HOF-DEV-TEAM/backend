@@ -18,32 +18,25 @@ import (
 // @Success 200 {object} User
 // @Router /user [post]
 
-func CreateGetUserHandler(svc user.Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var u user.UserJSON
-		err := json.NewDecoder(r.Body).Decode(&u)
+func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	var u user.SignUpUserRequestJSON
+	err := json.NewDecoder(r.Body).Decode(&u)
 
-		if err != nil {
-			encodeResult(w, err, http.StatusInternalServerError)
-			return
-		}
-
-		result, err := svc.CreateUser(r.Context(), u.ToUser())
-
-		if err != nil {
-			EncodeJSONError(r.Context(), err, w)
-			return
-		}
-
-		var userJSON *user.UserJSON
-
-		userJSON = user.NewJSONUser(result.User)
-		userJSON.NewJWTToken = result.Token
-		encodeResult(w, userJSON, http.StatusOK)
+	if err != nil {
+		encodeResult(w, err, http.StatusInternalServerError)
+		return
 	}
+
+	result, err := svc.(user.Service).SignUp(r.Context(), u.ToSignUpUser())
+
+	if err != nil {
+		EncodeJSONError(r.Context(), err, w)
+		return
+	}
+	encodeResult(w, user.NewJSONUser(result), http.StatusOK)
 }
 
-func CreatePostLoginHandler(svc user.Service) http.HandlerFunc {
+func CreateSignInHandler(svc user.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req user.LoginRequestJSON
 		err := json.NewDecoder(r.Body).Decode(&req)
@@ -60,12 +53,14 @@ func CreatePostLoginHandler(svc user.Service) http.HandlerFunc {
 			return
 		}
 
-		var userJSON *user.UserJSON
-
-		userJSON = user.NewJSONUser(result.User)
-		userJSON.NewJWTToken = result.Token
-		encodeResult(w, userJSON, http.StatusOK)
-	}
+		encodeResult(
+			w, 
+			user.UserSession{
+				User: user.NewJSONUser(result.User), 
+				Token: result.Token,
+			}, 
+			http.StatusOK)
+		}
 }
 
 func ForgotPasswordHandler(svc user.Service) http.HandlerFunc {

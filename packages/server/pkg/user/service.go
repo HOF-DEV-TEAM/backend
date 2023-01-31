@@ -30,7 +30,8 @@ var (
 )
 
 type Service interface {
-	CreateUser(ctx context.Context, user *User) (*UserAndToken, error)
+	SignUp(ctx context.Context, user *SignUpUser) (*User, error)
+	CreateUser(ctx context.Context, user *User) (*User, error)
 	Login(ctx context.Context, email, password string) (*UserAndToken, error)
 	ForgotPassword(request ForgotPasswordPayload) (*User, error)
 	VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error)
@@ -53,7 +54,69 @@ func (s *userService) validateStruct(user *User) error {
 	return validate.Struct(user)
 }
 
-func (svc *userService) CreateUser(ctx context.Context, user *User) (*UserAndToken, error) {
+func (s *userService) validateSignUpStruct(user *SignUpUser) error {
+	validate := validator.New()
+
+	return validate.Struct(user)
+}
+
+
+func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, error) {
+
+	err := svc.validateSignUpStruct(user)
+
+	if err != nil {
+		tErr, ok := err.(validator.ValidationErrors)
+
+		if !ok {
+			return nil, fmt.Errorf("unknown validation error")
+		}
+
+		for _, e := range tErr {
+			switch e.StructField() {
+			case "Email":
+				return nil, ErrEmailRequired
+			default:
+				svc.log.Info("untyped validation error", zap.String("field", e.StructField()))
+			}
+		}
+		return nil, err
+	}
+
+	_, err = svc.repo.GetByEmail(ctx, user.Email)
+	if err == nil {
+		// user exists
+		return nil, ErrUserExists
+	}
+
+	// leading and trailing whitespaces
+	password := fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(user.Password))))
+
+	result, err := svc.repo.Create(
+		ctx, 
+		&User{
+			Email: user.Email, 
+			Password: password, 
+			FirstName: user.FirstName, 
+			LastName: user.LastName,
+		})
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	if err != nil {
+		svc.log.Error("msg",
+			zap.String("method", "Create"),
+			zap.String("error", err.Error()),
+		)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (svc *userService) CreateUser(ctx context.Context, user *User) (*User, error) {
 
 	err := svc.validateStruct(user)
 
@@ -98,7 +161,7 @@ func (svc *userService) CreateUser(ctx context.Context, user *User) (*UserAndTok
 		return nil, err
 	}
 
-	return &UserAndToken{User: result, Token: ""}, nil
+	return result, nil
 }
 
 func (svc *userService) Login(ctx context.Context, email, password string) (*UserAndToken, error) {

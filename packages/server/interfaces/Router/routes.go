@@ -47,33 +47,35 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 	router.Group(func (r chi.Router){		
 		r.Use(jwtauth.Verify(config.Security.TokenAuth))
 		r.Use(jwtauth.Authenticator)
+
+		buildUserEndpoints(router, userService)
 	})
 
 	//unprotected routes
-	router.Group(func(r chi.Router) {
-		buildUserEndpoints(router, userService)
+	router.Group(func(r chi.Router) {		
 		buildSessionEndpoints(router, userService)
 	})
 
 }
 
+
 func buildUserEndpoints(router *chi.Mux, svc user.Service) {
 	userRouter := chi.NewRouter()
-
-	createUserHandler := interfaces.CreateGetUserHandler(svc)
-	forgotPasswordHandler := interfaces.ForgotPasswordHandler(svc)
-	resetPasswordHandler := interfaces.ResetPasswordHandler(svc)
-
-	userRouter.Post("/", createUserHandler)
-	userRouter.Post("/forgotPassword", forgotPasswordHandler)
-	userRouter.Post("/resetPassword/{token}", resetPasswordHandler)
 	router.Mount("/user", userRouter)
 }
 
 func buildSessionEndpoints(router *chi.Mux, svc user.Service) {
 	sessionsRouter := chi.NewRouter()
 
-	createLoginHandler := interfaces.CreatePostLoginHandler(svc)
-	sessionsRouter.Post("/login", createLoginHandler)
+	signInHandler := interfaces.CreateSignInHandler(svc)	
+	signUpUserHandler := interfaces.NewHTTPHandler(interfaces.CreateGetUserHandler, svc)
+	forgotPasswordHandler := interfaces.ForgotPasswordHandler(svc)
+	resetPasswordHandler := interfaces.ResetPasswordHandler(svc)
+
+	sessionsRouter.Post("/sign_in", signInHandler)
+	sessionsRouter.Post("/sign_up", signUpUserHandler)
+	sessionsRouter.Post("/forgot_password", forgotPasswordHandler)
+	sessionsRouter.Post("/reset_password/{token}", resetPasswordHandler)
+
 	router.Mount("/session", sessionsRouter)
 }

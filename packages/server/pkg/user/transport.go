@@ -8,6 +8,11 @@ type UserAndToken struct {
 	Token  	string
 }
 
+type UserSession struct {
+	User 		*UserJSON 		`json:"user"`
+	Token 		string 			`json:"token"`
+}
+
 type AddressJSON string
 
 type UserJSON struct {
@@ -29,6 +34,13 @@ type LoginRequestJSON struct {
 	Email 		string `json:"email"`
 	Password 	string `json:"password"`
 }
+type SignUpUserRequestJSON struct {
+	FirstName 		string 			`json:"first_name"`
+	LastName 		string 			`json:"last_name"`
+	Email 			string			`json:"email"`
+	Password 		string 			`json:"password"`
+}
+
 
 func (u *UserJSON) ToUser() *User {
 	result := &User{
@@ -47,6 +59,18 @@ func (u *UserJSON) ToUser() *User {
 	}
 	return result
 }
+
+func (u *SignUpUserRequestJSON) ToSignUpUser() *SignUpUser {
+	result := &SignUpUser{		
+		Email: u.Email,
+		Password: u.Password,
+		FirstName: u.FirstName,
+		LastName: u.LastName,
+	}
+
+	return result
+}
+
 
 func NewJSONUser(u *User) *UserJSON {
 	return &UserJSON{
