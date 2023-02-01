@@ -17,9 +17,9 @@
     "host": "localhost:3000",
     "basePath": "/hof",
     "paths": {
-        "/user": {
+        "/audio_message/": {
             "post": {
-                "description": "Create a new user with the input paylod",
+                "description": "Admin will be able to create/insert new audio messages with the input payload",
                 "consumes": [
                     "application/json"
                 ],
@@ -27,17 +27,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "CreateAudioMessages"
                 ],
-                "summary": "Create a new user",
+                "summary": "Admin can create new audio messages",
                 "parameters": [
                     {
-                        "description": "Create user",
-                        "name": "user",
+                        "description": "Create audio messages",
+                        "name": "AudioMessageJSON",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/User"
+                            "$ref": "#/definitions/AudioMessageJSON"
                         }
                     }
                 ],
@@ -45,7 +45,221 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/User"
+                            "$ref": "#/definitions/AudioMessageJSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/audio_messages/": {
+            "get": {
+                "description": "Users can now retrieve and see an audio message",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GetAudioMessages"
+                ],
+                "summary": "Get an audio message",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GetAudiosMessagesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/audio_series/": {
+            "get": {
+                "description": "Users can now retrieve and see an audio series",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GetAudioSeries"
+                ],
+                "summary": "Get an audio series",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GetAudiosSeriesResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Admin will be able to create/insert new audio series with the input payload",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CreateAudioSeries"
+                ],
+                "summary": "Admin can create new audio series",
+                "parameters": [
+                    {
+                        "description": "Create audio series",
+                        "name": "AudioSeriesJSON",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AudioSeriesJSON"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/AudioSeriesJSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/forgot_password": {
+            "post": {
+                "description": "User can request for a password change with the input payload",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ForgotPassword"
+                ],
+                "summary": "User forgets their password",
+                "parameters": [
+                    {
+                        "description": "Forgot password",
+                        "name": "ForgotPasswordPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ForgotPasswordPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ForgotPasswordResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/reset_password/{url-param}": {
+            "post": {
+                "description": "User can insert new passwords for a password change with the input payload",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ResetPassword"
+                ],
+                "summary": "User can reset their password",
+                "parameters": [
+                    {
+                        "description": "Reset password",
+                        "name": "ResetPasswordPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ResetPasswordPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/DefaultResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/sign_in": {
+            "post": {
+                "description": "Create a new sign in session with the input payload",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Login"
+                ],
+                "summary": "Create a new sign in session for a user",
+                "parameters": [
+                    {
+                        "description": "Sign in user",
+                        "name": "LoginRequestJSON",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LoginRequestJSON"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/UserSession"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/sign_up": {
+            "post": {
+                "description": "Create a new user with the input payload",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SignUp"
+                ],
+                "summary": "Create a new user",
+                "parameters": [
+                    {
+                        "description": "Create user",
+                        "name": "SignUpUserRequestJSON",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SignUpUserRequestJSON"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/UserJSON"
                         }
                     }
                 }
@@ -53,13 +267,230 @@
         }
     },
     "definitions": {
-        "User": {
+        "AudioMessageJSON": {
             "type": "object",
             "properties": {
+                "audio_url": {
+                    "type": "string"
+                },
+                "author": {
+                    "type": "string"
+                },
+                "date_added": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
                 "id": {
-                    "description": "The ULID of a user",
+                    "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "series_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "AudioSeriesJSON": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "date_added": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "DefaultResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "ForgotPasswordPayload": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "description": "The ULID of ForgotPasswordPayload",
+                    "type": "string"
+                }
+            }
+        },
+        "ForgotPasswordResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "GetAudiosMessagesResponse": {
+            "type": "object",
+            "properties": {
+                "audio_messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AudioMessageJSON"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/PageResponse"
+                }
+            }
+        },
+        "GetAudiosSeriesResponse": {
+            "type": "object",
+            "properties": {
+                "audio_series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AudioSeriesJSON"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/PageResponse"
+                }
+            }
+        },
+        "LoginRequestJSON": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "PageResponse": {
+            "type": "object",
+            "properties": {
+                "totalResults": {
+                    "type": "integer"
+                }
+            }
+        },
+        "ResetPasswordPayload": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "password_confirm"
+            ],
+            "properties": {
+                "email": {
+                    "description": "The ULID of ResetPasswordPayload",
+                    "type": "string"
+                },
+                "password": {
                     "type": "string",
-                    "example": "01gq092mhjs3bz0d4bca2xjtwv"
+                    "minLength": 6
+                },
+                "password_confirm": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
+        "SignUpUserRequestJSON": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "UserJSON": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_verified": {
+                    "type": "integer"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "mobile": {
+                    "type": "string"
+                },
+                "newToken": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "usernmae": {
+                    "type": "string"
+                }
+            }
+        },
+        "UserSession": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/UserJSON"
                 }
             }
         }

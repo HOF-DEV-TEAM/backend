@@ -189,34 +189,41 @@ func (r userRepository) ForgotPassword(request ForgotPasswordPayload, passwordRe
 		return nil, errorHandler.Format(errorHandler.DatabaseError, err)
 	}
 
+	err = r.GetUserPasswordToken(user, request.Email, passwordResetToken)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r userRepository) GetUserPasswordToken(user *User, email, passwordResetToken string) error {
 	userPasswordToken := UserPasswordToken{
 		Email:              user.Email,
 		PasswordResetToken: passwordResetToken,
-		PasswordResetAt:    time.Now().Add(time.Minute * 15),
+		PasswordResetAt:    time.Now().Add(time.Minute * 15).Unix(),
 	}
-
 	getQuery := `SELECT id FROM user_password_token WHERE email = $1`
 	tmpSmt, err := r.db.Prepare(getQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getQuery))
-		return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+		return errorHandler.Format(errorHandler.DatabaseError, err)
 	}
 
 	var userPasswordTokenID int
-	row := tmpSmt.QueryRow(request.Email).Scan(&userPasswordTokenID)
+	row := tmpSmt.QueryRow(email).Scan(&userPasswordTokenID)
 	switch {
 	case row == sql.ErrNoRows:
 		sqlQuery := `INSERT INTO user_password_token(email, password_reset_token, password_reset_at) VALUES ($1, $2, $3) RETURNING id`
 		tmpSmt, err := r.db.Prepare(sqlQuery)
 		if err != nil {
 			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+			return errorHandler.Format(errorHandler.DatabaseError, err)
 		}
 
 		err = tmpSmt.QueryRow(userPasswordToken.Email, userPasswordToken.PasswordResetToken, userPasswordToken.PasswordResetAt).Scan(&userPasswordTokenID)
 		if err != nil {
 			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+			return errorHandler.Format(errorHandler.DatabaseError, err)
 		}
 	case row != sql.ErrNoRows:
 		sqlQuery := `UPDATE user_password_token SET password_reset_token=$2, password_reset_at=$3 WHERE email = $1 RETURNING id`
@@ -224,28 +231,28 @@ func (r userRepository) ForgotPassword(request ForgotPasswordPayload, passwordRe
 		tmpSmt, err := r.db.Prepare(sqlQuery)
 		if err != nil {
 			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+			return errorHandler.Format(errorHandler.DatabaseError, err)
 		}
 
 		err = tmpSmt.QueryRow(userPasswordToken.Email, userPasswordToken.PasswordResetToken, userPasswordToken.PasswordResetAt).Scan(&userPasswordTokenID)
 		if err != nil {
 			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+			return errorHandler.Format(errorHandler.DatabaseError, err)
 		}
 	}
-
-	return user, nil
+	return nil
 }
 
 func (r *userRepository) VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error) {
-	sqlQuery := `SELECT password_reset_token FROM user_password_token WHERE email = $1 AND password_reset_token=$2`
+	currentTime := time.Now().Unix()
+	sqlQuery := `SELECT password_reset_token FROM user_password_token WHERE email = $1 AND password_reset_token=$2 AND password_reset_at >= $3`
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return "", errorHandler.Format(errorHandler.DatabaseError, err)
 	}
 	var userPasswordToken UserPasswordToken
-	row := stmt.QueryRow(request.Email, passwordTokenParam)
+	row := stmt.QueryRow(request.Email, passwordTokenParam, currentTime)
 	if err := row.Scan(&userPasswordToken.PasswordResetToken); err != nil {
 		return "", errorHandler.Format(errorHandler.DatabaseError, err)
 	}
