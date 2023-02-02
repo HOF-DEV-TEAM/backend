@@ -289,10 +289,8 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 
 	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
-		if err != nil {
-			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return nil, errorHandler.Format(errorHandler.DatabaseError, err)
-		}
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return nil, errorHandler.Format(errorHandler.DatabaseError, err)
 	}
 	var audioMessage AudioMessage
 	err = stmt.QueryRowContext(ctx, messageId).Scan(
