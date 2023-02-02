@@ -237,6 +237,21 @@ paths:
       summary: Admin can create new audio series
       tags:
       - CreateAudioSeries
+  /id/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Users can now retrieve and see an audio message
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AudioMessageJSON'
+      summary: Get an audio message
+      tags:
+      - GetAnAudioMessage
   /session/forgot_password:
     post:
       consumes:
@@ -259,7 +274,7 @@ paths:
       summary: User forgets their password
       tags:
       - ForgotPassword
-  /session/reset_password/{url-param}:
+  /session/reset_password/{password_token}:
     post:
       consumes:
       - application/json

@@ -31,27 +31,26 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 
 	//Serve static admin bundle
 	router.Get("/admin", func(w http.ResponseWriter, r *http.Request) {
-        workDir, _ := os.Getwd()
-        filesDir := filepath.Join(workDir, "admin")
+		workDir, _ := os.Getwd()
+		filesDir := filepath.Join(workDir, "admin")
 
-		staticFilePath := filesDir+r.URL.Path
+		staticFilePath := filesDir + r.URL.Path
 
-        if _, err := os.Stat(filesDir + r.URL.Path); errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(filesDir + r.URL.Path); errors.Is(err, os.ErrNotExist) {
 
 			staticFilePath = filepath.Join(filesDir, "index.html")
-        }
-		
+		}
+
 		w.WriteHeader(http.StatusOK)
 		http.ServeFile(w, r, staticFilePath)
-    })
+	})
 
-	router.Group(func (r chi.Router){		
+	router.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verify(config.Security.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
 		audioMessageRepo := audio_message.NewRepository(db, logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, logger, &config.Security)
-
 
 		buildUserEndpoints(router, userService)
 		buildAudioMessageEndpoints(router, audioMessageService)
@@ -59,12 +58,11 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 	})
 
 	//unprotected routes
-	router.Group(func(r chi.Router) {		
+	router.Group(func(r chi.Router) {
 		buildSessionEndpoints(router, userService)
 	})
 
 }
-
 
 func buildUserEndpoints(router *chi.Mux, svc user.Service) {
 	userRouter := chi.NewRouter()
@@ -74,7 +72,7 @@ func buildUserEndpoints(router *chi.Mux, svc user.Service) {
 func buildSessionEndpoints(router *chi.Mux, svc user.Service) {
 	sessionsRouter := chi.NewRouter()
 
-	signInHandler := interfaces.CreateSignInHandler(svc)	
+	signInHandler := interfaces.CreateSignInHandler(svc)
 	signUpUserHandler := interfaces.NewHTTPHandler(interfaces.CreateGetUserHandler, svc)
 	forgotPasswordHandler := interfaces.ForgotPasswordHandler(svc)
 	resetPasswordHandler := interfaces.ResetPasswordHandler(svc)
@@ -87,19 +85,21 @@ func buildSessionEndpoints(router *chi.Mux, svc user.Service) {
 	router.Mount("/session", sessionsRouter)
 }
 
-func buildAudioMessageEndpoints (router *chi.Mux, svc audio_message.Service) {
+func buildAudioMessageEndpoints(router *chi.Mux, svc audio_message.Service) {
 	audioMessageRouter := chi.NewRouter()
 
 	createAudioMessageHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioMessageHandler, svc)
 	getAudioMessagesHandler := interfaces.NewHTTPHandler(interfaces.GetAudioMessagesHandler, svc)
+	getAudioMessageByIDHandler := interfaces.NewHTTPHandler(interfaces.GetAudioMessageByIDHandler, svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
+	audioMessageRouter.Get("/id/{id}", getAudioMessageByIDHandler)
 
 	router.Mount("/audio_message", audioMessageRouter)
 }
 
-func buildAudioSeriesEndpoints (router *chi.Mux, svc audio_message.Service) {
+func buildAudioSeriesEndpoints(router *chi.Mux, svc audio_message.Service) {
 	audioSeriesRouter := chi.NewRouter()
 
 	createAudioSeriesHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioSeriesHandler, svc)

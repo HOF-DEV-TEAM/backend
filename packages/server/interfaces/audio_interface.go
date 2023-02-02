@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
@@ -98,6 +99,23 @@ func GetAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface
 	if err != nil {
 		EncodeJSONError(r.Context(), err, w)
 		return
+	}
+	encodeResult(w, result, http.StatusOK)
+}
+
+// GetAudioMessageByIDHandler godoc
+// @Summary Get an audio message
+// @Description Users can now retrieve and see an audio message
+// @Tags GetAnAudioMessage
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} AudioMessageJSON
+// @Router /id/{id} [get]
+func GetAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	messageIdParam := chi.URLParam(r, "id")
+	result, err := svc.(audio_message.Service).GetAudioMessageByID(r.Context(), messageIdParam)
+	if err != nil {
+		encodeResult(w, err, http.StatusBadRequest)
 	}
 	encodeResult(w, result, http.StatusOK)
 }

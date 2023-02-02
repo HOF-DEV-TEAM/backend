@@ -105,7 +105,7 @@ func ForgotPasswordHandler(svc user.Service) http.HandlerFunc {
 // @Produce  json
 // @Param ResetPasswordPayload body ResetPasswordPayload true "Reset password"
 // @Success 200 {object} DefaultResponse
-// @Router /session/reset_password/{url-param} [post]
+// @Router /session/reset_password/{password_token} [post]
 func ResetPasswordHandler(svc user.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequest user.ResetPasswordPayload
