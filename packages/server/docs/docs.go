@@ -136,6 +136,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/id/{id}": {
+            "get": {
+                "description": "Users can now retrieve and see an audio message",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GetAnAudioMessage"
+                ],
+                "summary": "Get an audio message",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/AudioMessageJSON"
+                        }
+                    }
+                }
+            }
+        },
         "/session/forgot_password": {
             "post": {
                 "description": "User can request for a password change with the input payload",
@@ -170,7 +193,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/session/reset_password/{url-param}": {
+        "/session/reset_password/{password_token}": {
             "post": {
                 "description": "User can insert new passwords for a password change with the input payload",
                 "consumes": [

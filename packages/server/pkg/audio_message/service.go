@@ -11,20 +11,20 @@ import (
 	"go.uber.org/zap"
 )
 
-
 var (
-	ErrQueryRepository       = errors.New("there was an error executing the query")
-	ErrFieldRequired         = errors.New("field is required")
-	ErrNotFound              = errors.New("not found")
-	ErrWrongInput			 = errors.New("wrong input")
-	ErrUnauthoriedRequest    = errors.New("unauthorized request. please check your credentials")	
+	ErrQueryRepository    = errors.New("there was an error executing the query")
+	ErrFieldRequired      = errors.New("field is required")
+	ErrNotFound           = errors.New("not found")
+	ErrWrongInput         = errors.New("wrong input")
+	ErrUnauthoriedRequest = errors.New("unauthorized request. please check your credentials")
 )
 
 type Service interface {
-	GetAudioMessages(ctx context.Context, seriesId string) (GetAudiosMessagesResponse, error)	
+	GetAudioMessages(ctx context.Context, seriesId string) (GetAudiosMessagesResponse, error)
 	CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error)
 	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
 	GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error)
+	GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessageJSON, error)
 }
 
 type audioMessageService struct {
@@ -48,7 +48,6 @@ func (s *audioMessageService) validateAudioSeriesStruct(audioSeries *AudioSeries
 
 	return validate.Struct(audioSeries)
 }
-
 
 func (svc *audioMessageService) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {
 
@@ -93,7 +92,6 @@ func (svc *audioMessageService) CreateAudioMessage(ctx context.Context, audioMes
 	return result, nil
 }
 
-
 func (svc *audioMessageService) CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error) {
 
 	err := svc.validateAudioSeriesStruct(audioSeries)
@@ -108,7 +106,7 @@ func (svc *audioMessageService) CreateAudioSeries(ctx context.Context, audioSeri
 		for _, e := range tErr {
 			switch e.StructField() {
 			case "Title":
-				return nil, ErrFieldRequired		
+				return nil, ErrFieldRequired
 			case "ImageUrl":
 				return nil, ErrFieldRequired
 			default:
@@ -135,14 +133,14 @@ func (svc *audioMessageService) CreateAudioSeries(ctx context.Context, audioSeri
 	return result, nil
 }
 
-func (svc *audioMessageService) GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error) { 
+func (svc *audioMessageService) GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error) {
 	result := GetAudiosSeriesResponse{}
 	audioSeries, count, err := svc.repo.GetAudioSeries(ctx)
 
 	if err == sql.ErrNoRows {
 		return result, err
 	}
-	
+
 	result.AudioSeries = []*AudioSeriesJSON{}
 
 	for _, as := range audioSeries {
@@ -156,15 +154,15 @@ func (svc *audioMessageService) GetAudioSeries(ctx context.Context) (GetAudiosSe
 	return result, nil
 }
 
-func (svc *audioMessageService) GetAudioMessages(ctx context.Context, seriesId string) (GetAudiosMessagesResponse, error) { 
+func (svc *audioMessageService) GetAudioMessages(ctx context.Context, seriesId string) (GetAudiosMessagesResponse, error) {
 	result := GetAudiosMessagesResponse{}
-	
+
 	audioMessages, count, err := svc.repo.GetAudioMessages(ctx, seriesId)
 
 	if err == sql.ErrNoRows {
 		return result, err
 	}
-	
+
 	result.AudioMessages = []*AudioMessageJSON{}
 
 	for _, as := range audioMessages {
@@ -176,4 +174,14 @@ func (svc *audioMessageService) GetAudioMessages(ctx context.Context, seriesId s
 	}
 
 	return result, nil
+}
+
+func (svc *audioMessageService) GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessageJSON, error) {
+	audioMessage, err := svc.repo.GetAudioMessageByID(ctx, messageId)
+	if err != nil {
+		return nil, err
+	}
+
+	audioMessageJSON := NewJSONAudioMessage(audioMessage)
+	return audioMessageJSON, nil
 }
