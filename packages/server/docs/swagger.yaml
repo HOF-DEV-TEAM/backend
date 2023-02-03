@@ -252,6 +252,21 @@ paths:
       summary: Get an audio message
       tags:
       - GetAnAudioMessage
+  /series_id/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Users can now retrieve and see an audio series
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AudioSeriesJSON'
+      summary: Get an audio series
+      tags:
+      - GetAnAudioSeries
   /session/forgot_password:
     post:
       consumes:

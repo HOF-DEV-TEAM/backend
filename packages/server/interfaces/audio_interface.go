@@ -119,3 +119,20 @@ func GetAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc inte
 	}
 	encodeResult(w, result, http.StatusOK)
 }
+
+// GetAudioSeriesByIDHandler godoc
+// @Summary Get an audio series
+// @Description Users can now retrieve and see an audio series
+// @Tags GetAnAudioSeries
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} AudioSeriesJSON
+// @Router /series_id/{id} [get]
+func GetAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	seriesIdParam := chi.URLParam(r, "id")
+	result, err := svc.(audio_message.Service).GetAudioSeriesByID(r.Context(), seriesIdParam)
+	if err != nil {
+		encodeResult(w, err, http.StatusBadRequest)
+	}
+	encodeResult(w, result, http.StatusOK)
+}

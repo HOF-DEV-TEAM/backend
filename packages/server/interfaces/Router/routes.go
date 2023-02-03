@@ -104,9 +104,11 @@ func buildAudioSeriesEndpoints(router *chi.Mux, svc audio_message.Service) {
 
 	createAudioSeriesHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioSeriesHandler, svc)
 	getAudioSeriesHandler := interfaces.NewHTTPHandler(interfaces.GetAudioSeriesHandler, svc)
+	getAudioSeriesByIDHandler := interfaces.NewHTTPHandler(interfaces.GetAudioSeriesByIDHandler, svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
+	audioSeriesRouter.Get("/series_id/{id}", getAudioSeriesByIDHandler)
 
 	router.Mount("/audio_series", audioSeriesRouter)
 }
