@@ -17,7 +17,7 @@ type AudioMessage struct {
 type AudioSeries struct {
 	ID          int            `sql:"id"`
 	Title       string         `sql:"title" validate:"required"`
-	Author      string         `sql:"image_url"`
+	Author      string         `sql:"author"`
 	ImageUrl    string         `sql:"image_url" validate:"required"`
 	DateAdded   sql.NullString `sql:"date_added"`
 	LastUpdated sql.NullString `sql:"last_updated"`

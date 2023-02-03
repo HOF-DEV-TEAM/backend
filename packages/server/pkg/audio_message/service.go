@@ -25,6 +25,7 @@ type Service interface {
 	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
 	GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error)
 	GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessageJSON, error)
+	GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeriesJSON, error)
 }
 
 type audioMessageService struct {
@@ -184,4 +185,14 @@ func (svc *audioMessageService) GetAudioMessageByID(ctx context.Context, message
 
 	audioMessageJSON := NewJSONAudioMessage(audioMessage)
 	return audioMessageJSON, nil
+}
+
+func (svc *audioMessageService) GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeriesJSON, error) {
+	audioSeries, err := svc.repo.GetAudioSeriesByID(ctx, seriesId)
+	if err != nil {
+		return nil, err
+	}
+
+	audioSeriesJSON := NewJSONAudioSeries(audioSeries)
+	return audioSeriesJSON, nil
 }

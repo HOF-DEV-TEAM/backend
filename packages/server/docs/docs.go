@@ -159,6 +159,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/series_id/{id}": {
+            "get": {
+                "description": "Users can now retrieve and see an audio series",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GetAnAudioSeries"
+                ],
+                "summary": "Get an audio series",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/AudioSeriesJSON"
+                        }
+                    }
+                }
+            }
+        },
         "/session/forgot_password": {
             "post": {
                 "description": "User can request for a password change with the input payload",

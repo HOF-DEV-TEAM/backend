@@ -15,6 +15,7 @@ type Repository interface {
 	GetAudioMessages(ctx context.Context, seriesId string) ([]*AudioMessage, int, error)
 	GetAudioSeries(ctx context.Context) ([]*AudioSeries, int, error)
 	GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessage, error)
+	GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeries, error)
 	Close() error
 }
 
@@ -310,4 +311,30 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 
 	}
 	return &audioMessage, nil
+}
+
+func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeries, error) {
+	sqlQuery := `SELECT * FROM audio_series WHERE id=$1`
+
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+	}
+	var audioSeries AudioSeries
+	err = stmt.QueryRowContext(ctx, seriesId).Scan(
+		&audioSeries.ID,
+		&audioSeries.Title,
+		&audioSeries.Author,
+		&audioSeries.Description,
+		&audioSeries.ImageUrl,
+		&audioSeries.DateAdded,
+		&audioSeries.LastUpdated,
+	)
+	if err != nil {
+		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return nil, errorHandler.Format(errorHandler.DatabaseNotFoundError, err)
+
+	}
+	return &audioSeries, nil
 }
