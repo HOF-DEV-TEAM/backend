@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-chi/jwtauth/v5"
+	"github.com/go-chi/jwtauth"
 )
 
 var (
@@ -31,7 +31,11 @@ type jwtClaims struct {
 func (s *SecurityConfig) PutUserIDAndSign(claims map[string]interface{}, userId int) (string, error) {
 	claims["user_id"] = userId
 
+	jwtauth.SetIssuedNow(claims)
+	jwtauth.SetExpiry(claims, time.Now().Add(time.Hour * 2))
 	_, tokenString, err := s.TokenAuth.Encode(claims)	
+
+
 	
 	if err != nil {
 		return "", err
