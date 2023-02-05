@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-chi/jwtauth/v5"
+	"github.com/go-chi/jwtauth"
 )
 
 var (
@@ -12,6 +12,7 @@ var (
 )
 
 type SecurityConfig struct {
+	JWTSecret 		string `env:"JWT_SECRET"`
 	JWTKeyString 	string `env:"JWT_SIGNING_KEY"`
 	JWTExpiration 	time.Duration
 	TokenAuth		*jwtauth.JWTAuth
@@ -27,11 +28,21 @@ type jwtClaims struct {
 	LoggedInUserId 	int 	`json:"userId"`
 }
 
+func (s *SecurityConfig) GernerateTokenAuth() {
+	var tokenAuth *jwtauth.JWTAuth
+
+	tokenAuth = jwtauth.New("HS256", []byte(s.JWTSecret), nil)
+	s.TokenAuth = tokenAuth
+}
 
 func (s *SecurityConfig) PutUserIDAndSign(claims map[string]interface{}, userId int) (string, error) {
 	claims["user_id"] = userId
 
+	jwtauth.SetIssuedNow(claims)
+	jwtauth.SetExpiry(claims, time.Now().Add(time.Hour * 2))
 	_, tokenString, err := s.TokenAuth.Encode(claims)	
+
+
 	
 	if err != nil {
 		return "", err

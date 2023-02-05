@@ -16,11 +16,12 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/user"
 
 	"bitbucket.org/hofng/hofApp/interfaces"
+	"bitbucket.org/hofng/hofApp/pkg/uploader"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth/v5"
+	"github.com/go-chi/jwtauth"
 )
 
-func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config.ServerConfig) {
+func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config.ServerConfig, awsClient *uploader.AWSClient) {
 	router.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	userRepo := user.NewRepository(db, logger)
@@ -46,30 +47,32 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 	})
 
 	router.Group(func(r chi.Router) {
-		r.Use(jwtauth.Verify(config.Security.TokenAuth))
+		r.Use(jwtauth.Verifier(config.Security.TokenAuth))
 		r.Use(jwtauth.Authenticator)
 
 		audioMessageRepo := audio_message.NewRepository(db, logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, logger, &config.Security)
+		uploaderService := uploader.NewService(awsClient)
 
-		buildUserEndpoints(router, userService)
-		buildAudioMessageEndpoints(router, audioMessageService)
-		buildAudioSeriesEndpoints(router, audioMessageService)
+		buildUserEndpoints(r, userService)
+		buildAudioMessageEndpoints(r, audioMessageService)
+		buildAudioSeriesEndpoints(r, audioMessageService)
+		buildUploadEndpoints(r, uploaderService)
 	})
 
 	//unprotected routes
 	router.Group(func(r chi.Router) {
-		buildSessionEndpoints(router, userService)
+		buildSessionEndpoints(r, userService)
 	})
 
 }
 
-func buildUserEndpoints(router *chi.Mux, svc user.Service) {
+func buildUserEndpoints(router chi.Router, svc user.Service) {
 	userRouter := chi.NewRouter()
 	router.Mount("/user", userRouter)
 }
 
-func buildSessionEndpoints(router *chi.Mux, svc user.Service) {
+func buildSessionEndpoints(router chi.Router, svc user.Service) {
 	sessionsRouter := chi.NewRouter()
 
 	signInHandler := interfaces.CreateSignInHandler(svc)
@@ -85,7 +88,7 @@ func buildSessionEndpoints(router *chi.Mux, svc user.Service) {
 	router.Mount("/session", sessionsRouter)
 }
 
-func buildAudioMessageEndpoints(router *chi.Mux, svc audio_message.Service) {
+func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	audioMessageRouter := chi.NewRouter()
 
 	createAudioMessageHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioMessageHandler, svc)
@@ -99,7 +102,7 @@ func buildAudioMessageEndpoints(router *chi.Mux, svc audio_message.Service) {
 	router.Mount("/audio_message", audioMessageRouter)
 }
 
-func buildAudioSeriesEndpoints(router *chi.Mux, svc audio_message.Service) {
+func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	audioSeriesRouter := chi.NewRouter()
 
 	createAudioSeriesHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioSeriesHandler, svc)
@@ -111,4 +114,9 @@ func buildAudioSeriesEndpoints(router *chi.Mux, svc audio_message.Service) {
 	audioSeriesRouter.Get("/series_id/{id}", getAudioSeriesByIDHandler)
 
 	router.Mount("/audio_series", audioSeriesRouter)
+}
+
+func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
+	uploadFileHandler := interfaces.NewHTTPHandler(interfaces.UploadFile, svc)
+	router.Post("/upload", uploadFileHandler)
 }

@@ -10,6 +10,8 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
 	"bitbucket.org/hofng/hofApp/infrastructure/db"
 	"bitbucket.org/hofng/hofApp/interfaces/Router"
+	"bitbucket.org/hofng/hofApp/pkg/uploader"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
@@ -19,6 +21,7 @@ type application struct {
 	logger      *zap.Logger
 	config      *config.ServerConfig
 	db  		*sql.DB
+	awsClient 	*uploader.AWSClient
 	router      *chi.Mux
 }
 
@@ -36,6 +39,7 @@ func New(logger *zap.Logger) (*application, error) {
 	}
 	//build application clients
 	app.db = app.buildSqlClient()
+	app.awsClient = app.getAwsS3Uploader()
 
 	if err := app.db.PingContext(context.Background()); err != nil {
 		app.logger.Info("msg", zap.String("msg", "failed to ping to database"))
@@ -87,6 +91,7 @@ func (app *application) buildRouter() error {
 		app.logger, 
 		app.db, 
 		app.config,
+		app.awsClient,
 	)
 	
 	return nil
@@ -112,4 +117,12 @@ func (app *application) buildSqlClient() *sql.DB {
 
 
 	return dbConn
+}
+
+// Allow aws fail silently?
+func (app *application) getAwsS3Uploader() *uploader.AWSClient {	
+	awsClient := uploader.AWSClient{Config: app.config, Log: app.logger}
+	awsClient.ConnectAWS()
+
+	return &awsClient
 }
