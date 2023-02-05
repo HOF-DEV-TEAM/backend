@@ -1,0 +1,46 @@
+package uploader
+
+import (
+	"bytes"
+	"context"
+
+	"bitbucket.org/hofng/hofApp/infrastructure/config"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"go.uber.org/zap"
+)
+
+type AWSClient struct {
+	Config	 	*config.ServerConfig
+	Log 		*zap.Logger
+	Session 	*session.Session
+	S3Uploader 	*s3manager.Uploader
+}
+
+func(awsClient *AWSClient) ConnectAWS () {
+	awsConfig := &aws.Config{
+        Region: aws.String(awsClient.Config.AwsConfiguration.Region),
+        Credentials: credentials.NewStaticCredentials(
+			awsClient.Config.AwsConfiguration.Endpoint, 
+			awsClient.Config.AwsConfiguration.Secret, 
+			"",
+		),
+    }
+    awsSession := session.New(awsConfig)
+
+	awsClient.Session = awsSession
+    awsClient.S3Uploader = s3manager.NewUploader(awsSession)
+}
+
+
+func(awsClient *AWSClient) Upload (ctx context.Context, fileHandler FileHandler) (*s3manager.UploadOutput, error)  {
+	input := &s3manager.UploadInput{
+        Bucket:      aws.String(awsClient.Config.AwsConfiguration.Bucket), // bucket's name
+        Key:         aws.String(fileHandler.FileName),        // files destination location
+        Body:        bytes.NewReader(fileHandler.File),                   // content of the file
+        ContentType: aws.String(fileHandler.ContentType),                 // content type
+    }
+    return awsClient.S3Uploader.UploadWithContext(ctx, input)
+}

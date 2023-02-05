@@ -16,11 +16,12 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/user"
 
 	"bitbucket.org/hofng/hofApp/interfaces"
+	"bitbucket.org/hofng/hofApp/pkg/uploader"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
 )
 
-func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config.ServerConfig) {
+func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config.ServerConfig, awsClient *uploader.AWSClient) {
 	router.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	userRepo := user.NewRepository(db, logger)
@@ -51,10 +52,12 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 
 		audioMessageRepo := audio_message.NewRepository(db, logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, logger, &config.Security)
+		uploaderService := uploader.NewService(awsClient)
 
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
 		buildAudioSeriesEndpoints(r, audioMessageService)
+		buildUploadEndpoints(r, uploaderService)
 	})
 
 	//unprotected routes
@@ -111,4 +114,9 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	audioSeriesRouter.Get("/series_id/{id}", getAudioSeriesByIDHandler)
 
 	router.Mount("/audio_series", audioSeriesRouter)
+}
+
+func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
+	uploadFileHandler := interfaces.NewHTTPHandler(interfaces.UploadFile, svc)
+	router.Post("/upload", uploadFileHandler)
 }
