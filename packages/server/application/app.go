@@ -84,6 +84,8 @@ func (app *application) buildRouter() error {
 		MaxAge:           300,
 	}))
 
+	//TODO: makeshift to attach claim to context
+	app.router.Use(app.config.Security.AddClaimToContext)
 
 
 	Router.BuildRoutes(
