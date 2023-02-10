@@ -80,7 +80,7 @@ func(db *Database) RunMigration (dbConn *sql.DB) error {
 			return err
 		}
 	
-		migrationPath, _ := filepath.Abs(fmt.Sprintf("%s/migrations/", dir))
+		migrationPath := filepath.Join(dir, "migrations")
 		
 		db.Log.Info("msg", zap.String("migrationPath", migrationPath))
 		
