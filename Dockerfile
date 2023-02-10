@@ -38,6 +38,7 @@ WORKDIR /usr/src/app
 FROM alpine:${ALPINE_VERSION}
 RUN apk --no-cache add ca-certificates
 COPY --from=build-stage /main ./
+COPY packages/server/migrations ./migrations
 # COPY --from=node_stage /build ./admin
 RUN chmod +x ./main
 EXPOSE 8080 8082
