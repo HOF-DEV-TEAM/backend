@@ -81,6 +81,9 @@ func(db *Database) RunMigration (dbConn *sql.DB) error {
 		}
 	
 		migrationPath, _ := filepath.Abs(fmt.Sprintf("%s/migrations/", dir))
+		
+		db.Log.Info("msg", zap.String("migrationPath", migrationPath))
+		
 		migrator, err := migrate.NewMigratorEx(context.Background(), conn.Conn(), table, &opts)
 	
 		migrator.LoadMigrations(migrationPath)
