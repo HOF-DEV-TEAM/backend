@@ -50,7 +50,9 @@ func Read(logger zap.Logger) (*ServerConfig, error) {
 		}
 	}
 
-	serverConfig.Security.GernerateTokenAuth()
+	serverConfig.Security.JWTContextKey = security.JWTContextKey
+	serverConfig.Security.JWTClaimsContextKey = security.JWTClaimsContextKey
+	serverConfig.Security.JWTExpiration = security.JWTLifeTime
 
 	out := serverConfig.formartUri()
 	logger.Info(out)

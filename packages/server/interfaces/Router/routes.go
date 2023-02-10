@@ -17,8 +17,7 @@ import (
 
 	"bitbucket.org/hofng/hofApp/interfaces"
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth"
+	"github.com/go-chi/chi/v5"	
 )
 
 func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config.ServerConfig, awsClient *uploader.AWSClient) {
@@ -47,8 +46,8 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 	})
 
 	router.Group(func(r chi.Router) {
-		r.Use(jwtauth.Verifier(config.Security.TokenAuth))
-		r.Use(jwtauth.Authenticator)
+		r.Use(config.Security.Verifier())
+		r.Use(config.Security.Authenticator)
 
 		audioMessageRepo := audio_message.NewRepository(db, logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, logger, &config.Security)

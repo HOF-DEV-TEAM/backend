@@ -11,8 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
-	"github.com/go-chi/jwtauth/v5"
+	"bitbucket.org/hofng/hofApp/infrastructure/library/security"	
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
@@ -192,17 +191,17 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 	}
 
 	// recover claims from JWT
-	_, claims, err := jwtauth.FromContext(ctx)
+	claims, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim)
 
-	if err != nil {
+	if !ok {
 		svc.log.Info("msg",
-			zap.String("JWTError", "broken"),
-			zap.String("error", err.Error()),
+		zap.String("JWTError", "broken"),
+		zap.String(svc.config.JWTContextKey, ""),
 		)
 	}
 
-	updatedJWTToken, err := svc.config.PutUserIDAndSign(claims, result.ID)
-
+	updatedJWTToken, err := claims.PutUserIDAndSign(svc.config, result.ID)
+	
 	if err != nil {
 		return nil, err
 	}
