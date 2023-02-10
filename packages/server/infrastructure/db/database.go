@@ -8,7 +8,6 @@ import (
 	log2 "log"
 	"os"
 	"path/filepath"
-	"runtime"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
 	"github.com/jackc/pgx/v4/stdlib"
@@ -74,9 +73,14 @@ func(db *Database) RunMigration (dbConn *sql.DB) error {
 		schema := "public"
 		table := fmt.Sprintf("%s.schema_version", schema)
 		
-		_, b, _, _ := runtime.Caller(0)
+		dir, err := os.Getwd()
+
+		if err != nil {
+			db.Log.Info("msg", zap.String("msg", "incorrect migration path"))
+			return err
+		}
 	
-		migrationPath, _ := filepath.Abs(fmt.Sprintf("%s/../../migrations/", filepath.Dir(b)))
+		migrationPath, _ := filepath.Abs(fmt.Sprintf("%s/migrations/", dir))
 		migrator, err := migrate.NewMigratorEx(context.Background(), conn.Conn(), table, &opts)
 	
 		migrator.LoadMigrations(migrationPath)
