@@ -64,7 +64,7 @@ func (config *ServerConfig) formartUri() string {
 	host := config.Database.Host
 	port := config.Database.Port
 	timeout := config.Database.Timeout
-
+	
 	if config.Database.DbUrl != "" {
 		if connString, err := url.Parse(config.Database.DbUrl); err == nil {
 			result := strings.Split(connString.Host, ":")

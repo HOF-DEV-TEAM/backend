@@ -1,36 +1,32 @@
-package Router
+package application
 
-import (
-	"database/sql"
+import (	
 	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	httpSwagger "github.com/swaggo/http-swagger"
-	"go.uber.org/zap"
 
-	_ "bitbucket.org/hofng/hofApp/docs"
-	"bitbucket.org/hofng/hofApp/infrastructure/config"
+	_ "bitbucket.org/hofng/hofApp/docs"	
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
 	"bitbucket.org/hofng/hofApp/pkg/user"
-
-	"bitbucket.org/hofng/hofApp/interfaces"
+	
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
 	"github.com/go-chi/chi/v5"	
 )
 
-func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config.ServerConfig, awsClient *uploader.AWSClient) {
-	router.Handle("/swagger/*", httpSwagger.WrapHandler)
+func (app *application) buildRoutes () {
+	app.router.Handle("/swagger/*", httpSwagger.WrapHandler)
 
-	userRepo := user.NewRepository(db, logger)
-	userService := user.NewService(userRepo, logger, &config.Security)
+	userRepo := user.NewRepository(app.db, app.logger)
+	userService := user.NewService(userRepo, app.logger, &app.config.Security)
 
 	// TODO - group routing better
 	//setup routes
 
 	//Serve static admin bundle
-	router.Get("/admin", func(w http.ResponseWriter, r *http.Request) {
+	app.router.Get("/admin", func(w http.ResponseWriter, r *http.Request) {
 		workDir, _ := os.Getwd()
 		filesDir := filepath.Join(workDir, "admin")
 
@@ -45,13 +41,13 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 		http.ServeFile(w, r, staticFilePath)
 	})
 
-	router.Group(func(r chi.Router) {
-		r.Use(config.Security.Verifier())
-		r.Use(config.Security.Authenticator)
+	app.router.Group(func(r chi.Router) {
+		r.Use(app.config.Security.Verifier())
+		r.Use(app.config.Security.Authenticator)
 
-		audioMessageRepo := audio_message.NewRepository(db, logger)
-		audioMessageService := audio_message.NewService(audioMessageRepo, logger, &config.Security)
-		uploaderService := uploader.NewService(awsClient)
+		audioMessageRepo := audio_message.NewRepository(app.db, app.logger)
+		audioMessageService := audio_message.NewService(audioMessageRepo, app.logger, &app.config.Security)
+		uploaderService := uploader.NewService(app.awsClient)
 
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
@@ -60,7 +56,7 @@ func BuildRoutes(router *chi.Mux, logger *zap.Logger, db *sql.DB, config *config
 	})
 
 	//unprotected routes
-	router.Group(func(r chi.Router) {
+	app.router.Group(func(r chi.Router) {
 		buildSessionEndpoints(r, userService)
 	})
 
@@ -74,10 +70,10 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 func buildSessionEndpoints(router chi.Router, svc user.Service) {
 	sessionsRouter := chi.NewRouter()
 
-	signInHandler := interfaces.CreateSignInHandler(svc)
-	signUpUserHandler := interfaces.NewHTTPHandler(interfaces.CreateGetUserHandler, svc)
-	forgotPasswordHandler := interfaces.ForgotPasswordHandler(svc)
-	resetPasswordHandler := interfaces.ResetPasswordHandler(svc)
+	signInHandler := user.CreateSignInHandler(svc)
+	signUpUserHandler := NewHTTPHandler(user.CreateGetUserHandler, svc)
+	forgotPasswordHandler := user.ForgotPasswordHandler(svc)
+	resetPasswordHandler := user.ResetPasswordHandler(svc)
 
 	sessionsRouter.Post("/sign_in", signInHandler)
 	sessionsRouter.Post("/sign_up", signUpUserHandler)
@@ -90,9 +86,9 @@ func buildSessionEndpoints(router chi.Router, svc user.Service) {
 func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	audioMessageRouter := chi.NewRouter()
 
-	createAudioMessageHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioMessageHandler, svc)
-	getAudioMessagesHandler := interfaces.NewHTTPHandler(interfaces.GetAudioMessagesHandler, svc)
-	getAudioMessageByIDHandler := interfaces.NewHTTPHandler(interfaces.GetAudioMessageByIDHandler, svc)
+	createAudioMessageHandler := NewHTTPHandler(audio_message.CreateAudioMessageHandler, svc)
+	getAudioMessagesHandler := NewHTTPHandler(audio_message.GetAudioMessagesHandler, svc)
+	getAudioMessageByIDHandler := NewHTTPHandler(audio_message.GetAudioMessageByIDHandler, svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
@@ -104,9 +100,9 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	audioSeriesRouter := chi.NewRouter()
 
-	createAudioSeriesHandler := interfaces.NewHTTPHandler(interfaces.CreateAudioSeriesHandler, svc)
-	getAudioSeriesHandler := interfaces.NewHTTPHandler(interfaces.GetAudioSeriesHandler, svc)
-	getAudioSeriesByIDHandler := interfaces.NewHTTPHandler(interfaces.GetAudioSeriesByIDHandler, svc)
+	createAudioSeriesHandler := NewHTTPHandler(audio_message.CreateAudioSeriesHandler, svc)
+	getAudioSeriesHandler := NewHTTPHandler(audio_message.GetAudioSeriesHandler, svc)
+	getAudioSeriesByIDHandler := NewHTTPHandler(audio_message.GetAudioSeriesByIDHandler, svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
@@ -116,6 +112,6 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 }
 
 func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
-	uploadFileHandler := interfaces.NewHTTPHandler(interfaces.UploadFile, svc)
+	uploadFileHandler := NewHTTPHandler(uploader.UploadFile, svc)
 	router.Post("/upload", uploadFileHandler)
 }

@@ -11,12 +11,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	ErrQueryRepository    = errors.New("there was an error executing the query")
-	ErrFieldRequired      = errors.New("field is required")
-	ErrNotFound           = errors.New("not found")
-	ErrWrongInput         = errors.New("wrong input")
-	ErrUnauthoriedRequest = errors.New("unauthorized request. please check your credentials")
+var (	
+	ErrFieldRequired      = errors.New("field is required")	
+	ErrWrongInput         = errors.New("wrong input")	
 )
 
 type Service interface {

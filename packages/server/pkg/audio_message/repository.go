@@ -1,11 +1,11 @@
 package audio_message
 
 import (
-	"bitbucket.org/hofng/hofApp/infrastructure/library/errorHandler"
 	"context"
 	"database/sql"
 	"strconv"
 
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"go.uber.org/zap"
 )
 
@@ -291,7 +291,7 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+		return nil, err
 	}
 	var audioMessage AudioMessage
 	err = stmt.QueryRowContext(ctx, messageId).Scan(
@@ -307,7 +307,7 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 	)
 	if err != nil {
 		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return nil, errorHandler.Format(errorHandler.DatabaseNotFoundError, err)
+		return nil, http_helper.ErrNotFound
 
 	}
 	return &audioMessage, nil
@@ -319,7 +319,7 @@ func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId
 	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+		return nil, err
 	}
 	var audioSeries AudioSeries
 	err = stmt.QueryRowContext(ctx, seriesId).Scan(
@@ -333,7 +333,7 @@ func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId
 	)
 	if err != nil {
 		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return nil, errorHandler.Format(errorHandler.DatabaseNotFoundError, err)
+		return nil, http_helper.ErrNotFound
 
 	}
 	return &audioSeries, nil
