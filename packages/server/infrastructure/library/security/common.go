@@ -2,11 +2,11 @@ package security
 
 import (
 	"context"
-	"errors"	
+	"errors"
 	"net/http"
 	"strings"
 	"time"
-
+	
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -113,60 +113,4 @@ func VerifyRequest(r *http.Request, findTokenFns ...func(r *http.Request) string
 		return "", ErrNoTokenFound
 	}
 	return tokenString, nil
-}
-
-//TODO: change this into a callback that returns a middlware
-func (config *SecurityConfig) Authenticator(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tokenString,  err := config.FromContext(r.Context())
-		if err != nil {
-			EncodeJSONError(ErrUnauthorized, w)
-			return
-		}
-
-		claims := &JWTClaim{}
-		token, err := jwt.ParseWithClaims((tokenString), claims, func(t *jwt.Token) (interface{}, error) {			
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {							
-				return nil, ErrUnauthorized
-			}
-			
-			return []byte(config.JWTSecret), nil
-		})
-
-		if err != nil {
-			if e, ok := err.(*jwt.ValidationError); ok {
-				switch {
-				case e.Errors&jwt.ValidationErrorMalformed !=0:
-					//Token is malformed
-					EncodeJSONError(ErrUnauthorized, w)
-					return
-				case e.Errors&jwt.ValidationErrorExpired !=0:
-					//Token is expired
-					EncodeJSONError(ErrUnauthorized, w)
-					return
-				case e.Errors&jwt.ValidationErrorNotValidYet !=0:					
-					//Token is not active yet
-					EncodeJSONError(ErrUnauthorized, w)
-					return
-				case e.Inner != nil:
-					EncodeJSONError(e.Inner, w)
-					return
-				}
-			}
-		}
-		if !token.Valid {			
-			EncodeJSONError(ErrUnauthorized, w)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), config.JWTClaimsContextKey, claims)
-		
-		// Token is authenticated, pass it through
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func (v *JWTClaim) PutUserIDAndSign(config *SecurityConfig, userId int) (string, error){
-	v.JWTClaimsMain.LoggedInUserId = userId
-	return v.Sign(config)
 }

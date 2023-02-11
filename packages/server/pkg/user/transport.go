@@ -1,6 +1,13 @@
 package user
 
-import "database/sql"
+import (
+	"database/sql"
+	"encoding/json"
+	"net/http"
+
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
+	"github.com/go-chi/chi"
+)
 
 type UserAndToken struct {
 	User  *User
@@ -79,5 +86,134 @@ func NewJSONUser(u *User) *UserJSON {
 		Mobile:    u.Mobile.String,
 		Gender:    u.Gender,
 		Username:  u.UserName,
+	}
+}
+
+// CreateGetUserHandler godoc
+// @Summary Create a new user
+// @Description Create a new user with the input payload
+// @Tags SignUp
+// @Accept  json
+// @Produce  json
+// @Param SignUpUserRequestJSON body SignUpUserRequestJSON true "Create user"
+// @Success 200 {object} UserJSON
+// @Router /session/sign_up [post]
+func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	var u SignUpUserRequestJSON
+	err := json.NewDecoder(r.Body).Decode(&u)
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	result, err := svc.(Service).SignUp(r.Context(), u.ToSignUpUser())
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+	payload := NewJSONUser(result)
+	
+	http_helper.EncodeResult(w, payload, http.StatusOK)
+}
+
+// CreateSignInHandler godoc
+// @Summary Create a new sign in session for a user
+// @Description Create a new sign in session with the input payload
+// @Tags Login
+// @Accept  json
+// @Produce  json
+// @Param LoginRequestJSON body LoginRequestJSON true "Sign in user"
+// @Success 200 {object} UserSession
+// @Router /session/sign_in [post]
+func CreateSignInHandler(svc Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req LoginRequestJSON
+		err := json.NewDecoder(r.Body).Decode(&req)
+
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		result, err := svc.Login(r.Context(), req.Email, req.Password)
+
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		payload := UserSession{
+			User:  NewJSONUser(result.User),
+			Token: result.Token,
+		}			
+
+		http_helper.EncodeResult(w, payload, http.StatusOK)		
+	}
+}
+
+// ForgotPasswordHandler godoc
+// @Summary User forgets their password
+// @Description User can request for a password change with the input payload
+// @Tags ForgotPassword
+// @Accept  json
+// @Produce  json
+// @Param ForgotPasswordPayload body ForgotPasswordPayload true "Forgot password"
+// @Success 200 {object} ForgotPasswordResponse
+// @Router /session/forgot_password [post]
+func ForgotPasswordHandler(svc Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request ForgotPasswordPayload
+		err := json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		url, err := svc.ForgotPassword(request)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, url, http.StatusOK)
+	}
+}
+
+// ResetPasswordHandler godoc
+// @Summary User can reset their password
+// @Description User can insert new passwords for a password change with the input payload
+// @Tags ResetPassword
+// @Accept  json
+// @Produce  json
+// @Param ResetPasswordPayload body ResetPasswordPayload true "Reset password"
+// @Success 200 {object} DefaultResponse
+// @Router /session/reset_password/{password_token} [post]
+func ResetPasswordHandler(svc Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var resetPasswordRequest ResetPasswordPayload
+		err := json.NewDecoder(r.Body).Decode(&resetPasswordRequest)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		passwordTokenParam := chi.URLParam(r, "token")
+
+		_, err = svc.VerifyPasswordToken(resetPasswordRequest, passwordTokenParam)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		_, err = svc.ResetPassword(resetPasswordRequest)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+
+		}
+
+		payload := http_helper.DefaultResponse{Message: "success", Code: http.StatusOK, Success: true}
+		
+		http_helper.EncodeResult(w, payload, http.StatusOK)
 	}
 }

@@ -1,13 +1,13 @@
-package interfaces
+package uploader
 
 import (
-	"bytes"
+	"bytes"	
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 
-	"bitbucket.org/hofng/hofApp/pkg/uploader"
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 )
 
 func UploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
@@ -21,7 +21,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
     if err != nil {
         fmt.Println("Error Retrieving the File")
         fmt.Println(err)
-		encodeResult(w, err, http.StatusInternalServerError)
+		http_helper.EncodeJSONError(r.Context(), err, w)
         return
     }
 	defer file.Close()
@@ -33,21 +33,21 @@ func UploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
 
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, file); err != nil {		
-		encodeResult(w, err, http.StatusInternalServerError)
+		http_helper.EncodeJSONError(r.Context(), err, w)
 	}
 
-	fileHandler := uploader.FileHandler{
+	fileHandler := FileHandler{
 		FileName: handler.Filename, 
 		FileSize: handler.Size,
 		File: buf.Bytes(),
 	}
 
-	result, err := svc.(uploader.Service).UploadFile(r.Context(), fileHandler)
+	result, err := svc.(Service).UploadFile(r.Context(), fileHandler)
 
 	if err != nil {
-		EncodeJSONError(r.Context(), err, w)
+		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	encodeResult(w, result, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)	
 }
 

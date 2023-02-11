@@ -8,8 +8,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
-	"bitbucket.org/hofng/hofApp/infrastructure/db"
-	"bitbucket.org/hofng/hofApp/interfaces/Router"
+	"bitbucket.org/hofng/hofApp/infrastructure/db"	
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
 
 	"github.com/go-chi/chi/v5"
@@ -87,14 +86,7 @@ func (app *application) buildRouter() error {
 	//TODO: makeshift to attach claim to context
 	app.router.Use(app.config.Security.AddClaimToContext)
 
-
-	Router.BuildRoutes(
-		app.router, 
-		app.logger, 
-		app.db, 
-		app.config,
-		app.awsClient,
-	)
+	app.buildRoutes()
 	
 	return nil
 }

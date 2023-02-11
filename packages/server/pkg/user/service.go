@@ -1,31 +1,19 @@
 package user
 
 import (
-	"bitbucket.org/hofng/hofApp/infrastructure/library/errorHandler"
 	"context"
 	"crypto/md5"
-	"database/sql"
-	"errors"
+	"database/sql"	
 	"fmt"
 	"math/rand"
 	"strings"
 	"time"
+	
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 
-	"bitbucket.org/hofng/hofApp/infrastructure/library/security"	
+	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
-)
-
-//TODO: Better error handling
-
-var (
-	ErrQueryRepository       = errors.New("there was an error executing the query")
-	ErrUserPwd               = errors.New("invalid login credentials")
-	ErrEmptyLoginCredentials = errors.New("invalid login credentials")
-	ErrEmailRequired         = errors.New("email is required")
-	ErrNotFound              = errors.New("not found")
-	ErrUnauthoriedRequest    = errors.New("unauthorized request. please check your credentials")
-	ErrUserExists            = errors.New("user with the same email address already exists")
 )
 
 type Service interface {
@@ -73,7 +61,7 @@ func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, er
 		for _, e := range tErr {
 			switch e.StructField() {
 			case "Email":
-				return nil, ErrEmailRequired
+				return nil, http_helper.ErrEmailRequired
 			default:
 				svc.log.Info("untyped validation error", zap.String("field", e.StructField()))
 			}
@@ -84,7 +72,7 @@ func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, er
 	_, err = svc.repo.GetByEmail(ctx, user.Email)
 	if err == nil {
 		// user exists
-		return nil, ErrUserExists
+		return nil, http_helper.ErrUserExists
 	}
 
 	// leading and trailing whitespaces
@@ -128,7 +116,7 @@ func (svc *userService) CreateUser(ctx context.Context, user *User) (*User, erro
 		for _, e := range tErr {
 			switch e.StructField() {
 			case "Email":
-				return nil, ErrEmailRequired
+				return nil, http_helper.ErrEmailRequired
 			default:
 				svc.log.Info("untyped validation error", zap.String("field", e.StructField()))
 			}
@@ -139,7 +127,7 @@ func (svc *userService) CreateUser(ctx context.Context, user *User) (*User, erro
 	_, err = svc.repo.GetByEmail(ctx, user.Email)
 	if err == nil {
 		// user exists
-		return nil, ErrUserExists
+		return nil, http_helper.ErrUserExists
 	}
 
 	// leading and trailing whitespaces
@@ -170,7 +158,7 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 
 	// If either Email or Password field is empty
 	if err != nil {
-		return nil, ErrEmptyLoginCredentials
+		return nil, http_helper.ErrEmptyLoginCredentials
 	}
 
 	// md5 hash prior to sending it to repository
@@ -178,7 +166,7 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 
 	result, err := svc.repo.Login(ctx, email, hashedPassword)
 
-	if err == ErrUserPwd {
+	if err == http_helper.ErrUserPwd {
 		return nil, err
 	}
 
@@ -187,7 +175,7 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 			zap.String("method", "Login"),
 			zap.String("error", err.Error()),
 		)
-		return nil, ErrQueryRepository
+		return nil, http_helper.ErrQueryRepository
 	}
 
 	// recover claims from JWT
@@ -261,7 +249,7 @@ func (svc *userService) ResetPassword(request ResetPasswordPayload) (int, error)
 	}
 
 	if request.Password != request.PasswordConfirm {
-		return 0, errorHandler.Format(errorHandler.InvalidRequest, errors.New(errorHandler.Message(errorHandler.InvalidRequest)))
+		return 0, http_helper.ErrInvalidAccount
 	}
 
 	request.Password = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.Password))))

@@ -1,11 +1,11 @@
 package user
 
 import (
-	"bitbucket.org/hofng/hofApp/infrastructure/library/errorHandler"
 	"context"
 	"database/sql"
 	"time"
 
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"go.uber.org/zap"
 )
 
@@ -168,7 +168,7 @@ func (r userRepository) Login(ctx context.Context, email, password string) (*Use
 	existingUser, err := r.GetByEmail(ctx, email)
 
 	if err == sql.ErrNoRows {
-		return nil, ErrUserPwd
+		return nil, http_helper.ErrUserPwd
 	}
 
 	if err != nil {
@@ -176,7 +176,7 @@ func (r userRepository) Login(ctx context.Context, email, password string) (*Use
 	}
 
 	if password != existingUser.Password {
-		return nil, ErrUserPwd
+		return nil, http_helper.ErrUserPwd
 	}
 
 	return existingUser, nil
@@ -186,7 +186,7 @@ func (r userRepository) ForgotPassword(request ForgotPasswordPayload, passwordRe
 	ctx := context.Background()
 	user, err := r.GetByEmail(ctx, request.Email)
 	if err != nil {
-		return nil, errorHandler.Format(errorHandler.DatabaseError, err)
+		return nil, err
 	}
 
 	err = r.GetUserPasswordToken(user, request.Email, passwordResetToken)
@@ -206,7 +206,7 @@ func (r userRepository) GetUserPasswordToken(user *User, email, passwordResetTok
 	tmpSmt, err := r.db.Prepare(getQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getQuery))
-		return errorHandler.Format(errorHandler.DatabaseError, err)
+		return err
 	}
 
 	var userPasswordTokenID int
@@ -217,13 +217,13 @@ func (r userRepository) GetUserPasswordToken(user *User, email, passwordResetTok
 		tmpSmt, err := r.db.Prepare(sqlQuery)
 		if err != nil {
 			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return errorHandler.Format(errorHandler.DatabaseError, err)
+			return err
 		}
 
 		err = tmpSmt.QueryRow(userPasswordToken.Email, userPasswordToken.PasswordResetToken, userPasswordToken.PasswordResetAt).Scan(&userPasswordTokenID)
 		if err != nil {
 			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return errorHandler.Format(errorHandler.DatabaseError, err)
+			return err
 		}
 	case row != sql.ErrNoRows:
 		sqlQuery := `UPDATE user_password_token SET password_reset_token=$2, password_reset_at=$3 WHERE email = $1 RETURNING id`
@@ -231,13 +231,13 @@ func (r userRepository) GetUserPasswordToken(user *User, email, passwordResetTok
 		tmpSmt, err := r.db.Prepare(sqlQuery)
 		if err != nil {
 			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return errorHandler.Format(errorHandler.DatabaseError, err)
+			return err
 		}
 
 		err = tmpSmt.QueryRow(userPasswordToken.Email, userPasswordToken.PasswordResetToken, userPasswordToken.PasswordResetAt).Scan(&userPasswordTokenID)
 		if err != nil {
 			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return errorHandler.Format(errorHandler.DatabaseError, err)
+			return err
 		}
 	}
 	return nil
@@ -249,12 +249,12 @@ func (r *userRepository) VerifyPasswordToken(request ResetPasswordPayload, passw
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return "", errorHandler.Format(errorHandler.DatabaseError, err)
+		return "", err
 	}
 	var userPasswordToken UserPasswordToken
 	row := stmt.QueryRow(request.Email, passwordTokenParam, currentTime)
 	if err := row.Scan(&userPasswordToken.PasswordResetToken); err != nil {
-		return "", errorHandler.Format(errorHandler.DatabaseError, err)
+		return "", err
 	}
 
 	return userPasswordToken.PasswordResetToken, nil
@@ -265,13 +265,13 @@ func (r *userRepository) ResetPassword(request ResetPasswordPayload) (int, error
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return 0, errorHandler.Format(errorHandler.DatabaseError, err)
+		return 0, err
 	}
 	var userID int
 	row := stmt.QueryRow(request.Email, request.Password)
 	if err := row.Scan(&userID); err != nil {
 		r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return 0, errorHandler.Format(errorHandler.DatabaseError, err)
+		return 0, err
 	}
 	return userID, nil
 }
