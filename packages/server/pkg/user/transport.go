@@ -22,8 +22,8 @@ type UserSession struct {
 type AddressJSON string
 
 type UserJSON struct {
-	ID          int            `json:"id"`
-	Username    string         `json:"usernmae"`
+	ID          string         `json:"id"`
+	Username    string         `json:"username"`
 	Password    string         `json:"password,omitempty"`
 	Email       string         `json:"email"`
 	FirstName   string         `json:"first_name"`

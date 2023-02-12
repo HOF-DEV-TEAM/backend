@@ -61,7 +61,7 @@ func (config *SecurityConfig) Authenticator(next http.Handler) http.Handler {
 	})
 }
 
-func (v *JWTClaim) PutUserIDAndSign(config *SecurityConfig, userId int) (string, error){
+func (v *JWTClaim) PutUserIDAndSign(config *SecurityConfig, userId string) (string, error){
 	v.JWTClaimsMain.LoggedInUserId = userId
 	return v.Sign(config)
 }
