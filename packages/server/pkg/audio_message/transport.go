@@ -1,27 +1,29 @@
 package audio_message
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
+	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
 	"github.com/go-chi/chi"
 )
 
 type AudioMessageJSON struct {
-	ID          int    `json:"id,omitempty"`
+	ID          string `json:"id,omitempty"`
 	Title       string `json:"title"`
 	Author      string `json:"author"`
 	ImageUrl    string `json:"image_url"`
 	AudioUrl    string `json:"audio_url,omitempty"`
-	SeriesID    int    `json:"series_id"`
+	SeriesID    string `json:"series_id"`
 	Description string `json:"description"`
 	DateAdded   string `json:"date_added,omitempty"`
 	LastUpdated string `json:"last_updated,omitempty"`
 } // @name AudioMessageJSON
 
 type AudioSeriesJSON struct {
-	ID          int    `json:"id,omitempty"`
+	ID          string `json:"id,omitempty"`
 	Title       string `json:"title"`
 	Author      string `json:"author"`
 	ImageUrl    string `json:"image_url"`
@@ -44,15 +46,19 @@ type GetAudiosMessagesResponse struct {
 	Pagination    PageResponse        `json:"pagination"`
 } // @name GetAudiosMessagesResponse
 
-func (audioMessage *AudioMessageJSON) ToAudioMessage() *AudioMessage {
+func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 	result := &AudioMessage{
-		Title:       audioMessage.Title,
-		Author:      audioMessage.Author,
-		ImageUrl:    audioMessage.ImageUrl,
-		AudioUrl:    audioMessage.AudioUrl,
-		SeriesID:    audioMessage.SeriesID,
-		Description: audioMessage.Description,
+		Title:       am.Title,
+		Author:      am.Author,
+		ImageUrl:    am.ImageUrl,
+		AudioUrl:    am.AudioUrl,		
+		Description: am.Description,
 	}
+
+	if am.SeriesID != "" {
+		result.SeriesID = sql.NullString{Valid: true, String: am.SeriesID}
+	}
+
 	return result
 }
 
@@ -73,7 +79,7 @@ func NewJSONAudioMessage(audioMessage *AudioMessage) *AudioMessageJSON {
 		Author:      audioMessage.Author,
 		ImageUrl:    audioMessage.ImageUrl,
 		AudioUrl:    audioMessage.AudioUrl,
-		SeriesID:    audioMessage.SeriesID,
+		SeriesID:    audioMessage.SeriesID.String,
 		Description: audioMessage.Description,
 	}
 }
@@ -155,12 +161,11 @@ func CreateAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interf
 // @Produce  json
 // @Success 200 {object} GetAudiosMessagesResponse
 // @Router /audio_messages/ [get]
-func GetAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func GetAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {	
+	var search Filter
+	urlqueryhelper.Bind(&search, r)
 
-	//TODO: Make this a robust search type
-	seriesId := r.URL.Query().Get("series_id")
-
-	result, err := svc.(Service).GetAudioMessages(r.Context(), seriesId)
+	result, err := svc.(Service).GetAudioMessages(r.Context(), &search)
 
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)

@@ -1,6 +1,6 @@
 
 create table if not exists users(
-  "id" serial primary key,  
+  "id" uuid not null default gen_random_uuid() primary key,  
   "first_name" varchar(200) not null,
   "last_name" varchar(200) not null,
   "password" varchar(200) not null,

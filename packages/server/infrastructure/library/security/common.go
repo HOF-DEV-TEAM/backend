@@ -29,7 +29,7 @@ type JWTClaim struct {
 }
 
 type jwtClaims struct {
-	LoggedInUserId 	int 	`json:"userId"`
+	LoggedInUserId 	string 	`json:"userId"`
 	Claims 			string 	`json:"claims"`
 }
 

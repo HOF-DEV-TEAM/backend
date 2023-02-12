@@ -531,7 +531,7 @@ const docTemplate = `{
                 "password": {
                     "type": "string"
                 },
-                "usernmae": {
+                "username": {
                     "type": "string"
                 }
             }

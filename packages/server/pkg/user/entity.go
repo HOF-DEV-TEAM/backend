@@ -52,7 +52,7 @@ func (e *IsVerifiedEnum) UnMarshalText(from []byte) error {
 }
 
 type User struct {
-	ID           int            `sql:"id"`
+	ID           string         `sql:"id"`
 	UserName     string         `sql:"username"`
 	Password     string         `sql:"password" validate:"min=6"`
 	FirstName    string         `sql:"first_name" validate:"required"`
@@ -78,7 +78,7 @@ type SignUpUser struct {
 }
 
 type UserPasswordToken struct {
-	ID                 int    `sql:"id"`
+	ID                 string `sql:"id"`
 	Email              string `sql:"email" validate:"required,email"`
 	PasswordResetToken string `sql:"password_reset_token"`
 	PasswordResetAt    int64  `sql:"password_reset_at"`

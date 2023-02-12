@@ -77,7 +77,7 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 		return nil, err
 	}
 
-	var createdUserId int
+	var createdUserId string
 
 	err = tmpSmt.QueryRowContext(ctx,
 		user.UserName,

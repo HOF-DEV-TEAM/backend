@@ -3,7 +3,6 @@ package audio_message
 import (
 	"context"
 	"database/sql"
-	"strconv"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"go.uber.org/zap"
@@ -12,7 +11,7 @@ import (
 type Repository interface {
 	CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error)
 	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
-	GetAudioMessages(ctx context.Context, seriesId string) ([]*AudioMessage, int, error)
+	GetAudioMessages(ctx context.Context, search *Filter) ([]*AudioMessage, int, error)
 	GetAudioSeries(ctx context.Context) ([]*AudioSeries, int, error)
 	GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessage, error)
 	GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeries, error)
@@ -75,7 +74,7 @@ func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMes
 		return nil, err
 	}
 
-	var createdAudioMessageId int
+	var createdAudioMessageId string
 
 	err = tmpSmt.QueryRowContext(ctx,
 		audioMessage.Title,
@@ -131,7 +130,7 @@ func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeri
 		return nil, err
 	}
 
-	var createdAudioSeriesId int
+	var createdAudioSeriesId string
 
 	err = tmpSmt.QueryRowContext(ctx,
 		audioSeries.Title,
@@ -264,25 +263,34 @@ func (r audioMessageRepository) getAudioMessages(ctx context.Context, query stri
 	return audioMessages, 0, nil
 }
 
+func buildQuery(query string, filter *Filter) (string, []interface{}, error) {
+	queryParams := []interface{}{}
+
+	sqlSmt := query	
+	switch filter.SeriesID {
+	case "", "*":
+		break;
+	case "?":
+		sqlSmt += " WHERE series_id IS NULL"		
+	default:		
+		sqlSmt += " WHERE series_id=$1"
+		queryParams = append(queryParams, filter.SeriesID)
+	}
+	return sqlSmt, queryParams, nil
+}
+
 // TODO: implement pagination
-func (r audioMessageRepository) GetAudioMessages(ctx context.Context, seriesId string) ([]*AudioMessage, int, error) {
+func (r audioMessageRepository) GetAudioMessages(ctx context.Context, search *Filter) ([]*AudioMessage, int, error) {
 	var sqlStmt string
 	sqlStmt = "SELECT * FROM audio_messages"
 
-	var queryParams []interface{}
+	query, queryParams, err := buildQuery(sqlStmt, search)
 
-	if seriesId != "" {
-		sqlStmt = sqlStmt + " WHERE series_id = $1"
-		id, err := strconv.Atoi(seriesId)
-
-		if err != nil {
-			return nil, 0, ErrWrongInput
-		}
-
-		queryParams = append(queryParams, id)
-
+	if err != nil {
+		return []*AudioMessage{}, 0, err
 	}
-	return r.getAudioMessages(ctx, sqlStmt, queryParams)
+	
+	return r.getAudioMessages(ctx, query, queryParams)
 }
 
 func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessage, error) {

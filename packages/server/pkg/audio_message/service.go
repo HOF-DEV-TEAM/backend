@@ -12,12 +12,11 @@ import (
 )
 
 var (	
-	ErrFieldRequired      = errors.New("field is required")	
-	ErrWrongInput         = errors.New("wrong input")	
+	ErrFieldRequired      = errors.New("field is required")		
 )
 
 type Service interface {
-	GetAudioMessages(ctx context.Context, seriesId string) (GetAudiosMessagesResponse, error)
+	GetAudioMessages(ctx context.Context, search *Filter) (GetAudiosMessagesResponse, error)
 	CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error)
 	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
 	GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error)
@@ -25,6 +24,20 @@ type Service interface {
 	GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeriesJSON, error)
 }
 
+type FilterType string
+
+const (
+	SeriesID = FilterType("series_id")
+	AudioMessageID = FilterType("id")
+)
+
+var FilterList = []FilterType{
+	SeriesID,
+	AudioMessageID,
+}
+type Filter struct {
+	SeriesID string `filter:"series_id"`
+}
 type audioMessageService struct {
 	repo   Repository
 	log    *zap.Logger
@@ -152,10 +165,10 @@ func (svc *audioMessageService) GetAudioSeries(ctx context.Context) (GetAudiosSe
 	return result, nil
 }
 
-func (svc *audioMessageService) GetAudioMessages(ctx context.Context, seriesId string) (GetAudiosMessagesResponse, error) {
+func (svc *audioMessageService) GetAudioMessages(ctx context.Context, search *Filter) (GetAudiosMessagesResponse, error) {
 	result := GetAudiosMessagesResponse{}
 
-	audioMessages, count, err := svc.repo.GetAudioMessages(ctx, seriesId)
+	audioMessages, count, err := svc.repo.GetAudioMessages(ctx, search)
 
 	if err == sql.ErrNoRows {
 		return result, err
