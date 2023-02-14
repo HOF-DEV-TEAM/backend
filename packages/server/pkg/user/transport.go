@@ -17,7 +17,7 @@ type UserAndToken struct {
 type UserSession struct {
 	User  *UserJSON `json:"user"`
 	Token string    `json:"token"`
-} // @name UserSession
+} //	@name	UserSession
 
 type AddressJSON string
 
@@ -33,19 +33,19 @@ type UserJSON struct {
 	Gender      string         `json:"gender,omitempty"`
 	IsVerified  IsVerifiedEnum `json:"is_verified,omitempty"`
 	NewJWTToken string         `json:"newToken,omitempty"`
-} // @name UserJSON
+} //	@name	UserJSON
 
 type LoginRequestJSON struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-} // @name LoginRequestJSON
+} //	@name	LoginRequestJSON
 
 type SignUpUserRequestJSON struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
-} // @name SignUpUserRequestJSON
+} //	@name	SignUpUserRequestJSON
 
 func (u *UserJSON) ToUser() *User {
 	result := &User{
@@ -90,14 +90,14 @@ func NewJSONUser(u *User) *UserJSON {
 }
 
 // CreateGetUserHandler godoc
-// @Summary Create a new user
-// @Description Create a new user with the input payload
-// @Tags SignUp
-// @Accept  json
-// @Produce  json
-// @Param SignUpUserRequestJSON body SignUpUserRequestJSON true "Create user"
-// @Success 200 {object} UserJSON
-// @Router /session/sign_up [post]
+//	@Summary		Sign up a new user
+//	@Description	Creates a new user with the input payload
+//	@Tags			Sessions
+//	@Accept			json
+//	@Produce		json
+//	@Param			SignUpUserRequestJSON	body		SignUpUserRequestJSON	true	"Create user"
+//	@Success		200						{object}	UserJSON
+//	@Router			/session/sign_up [post]
 func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var u SignUpUserRequestJSON
 	err := json.NewDecoder(r.Body).Decode(&u)
@@ -119,14 +119,14 @@ func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{
 }
 
 // CreateSignInHandler godoc
-// @Summary Create a new sign in session for a user
-// @Description Create a new sign in session with the input payload
-// @Tags Login
-// @Accept  json
-// @Produce  json
-// @Param LoginRequestJSON body LoginRequestJSON true "Sign in user"
-// @Success 200 {object} UserSession
-// @Router /session/sign_in [post]
+//	@Summary		Create a new session
+//	@Description	Authenticates a user and returns a session
+//	@Tags			Sessions
+//	@Accept			json
+//	@Produce		json
+//	@Param			LoginRequestJSON	body		LoginRequestJSON	true	"Sign in user"
+//	@Success		200					{object}	UserSession
+//	@Router			/session/sign_in [post]
 func CreateSignInHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req LoginRequestJSON
@@ -154,14 +154,14 @@ func CreateSignInHandler(svc Service) http.HandlerFunc {
 }
 
 // ForgotPasswordHandler godoc
-// @Summary User forgets their password
-// @Description User can request for a password change with the input payload
-// @Tags ForgotPassword
-// @Accept  json
-// @Produce  json
-// @Param ForgotPasswordPayload body ForgotPasswordPayload true "Forgot password"
-// @Success 200 {object} ForgotPasswordResponse
-// @Router /session/forgot_password [post]
+//	@Summary		User forgets their password
+//	@Description	User can request for a password change with the input payload
+//	@Tags			Sessions
+//	@Accept			json
+//	@Produce		json
+//	@Param			ForgotPasswordPayload	body		ForgotPasswordPayload	true	"Forgot password"
+//	@Success		200						{object}	ForgotPasswordResponse
+//	@Router			/session/forgot_password [post]
 func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ForgotPasswordPayload
@@ -181,14 +181,14 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 }
 
 // ResetPasswordHandler godoc
-// @Summary User can reset their password
-// @Description User can insert new passwords for a password change with the input payload
-// @Tags ResetPassword
-// @Accept  json
-// @Produce  json
-// @Param ResetPasswordPayload body ResetPasswordPayload true "Reset password"
-// @Success 200 {object} DefaultResponse
-// @Router /session/reset_password/{password_token} [post]
+//	@Summary		Rest user password
+//	@Description	Creat new password with the input payload
+//	@Tags			Sessions
+//	@Accept			json
+//	@Produce		json
+//	@Param			ResetPasswordPayload	body		ResetPasswordPayload	true	"Reset password"
+//	@Success		200						{object}	http_helper.DefaultResponse
+//	@Router			/session/reset_password/{password_token} [post]
 func ResetPasswordHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequest ResetPasswordPayload
