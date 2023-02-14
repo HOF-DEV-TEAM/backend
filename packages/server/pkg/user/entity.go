@@ -87,16 +87,16 @@ type UserPasswordToken struct {
 type ForgotPasswordPayload struct {
 	// The ULID of ForgotPasswordPayload
 	Email string `json:"email" validate:"required,email"`
-} // @name ForgotPasswordPayload
+} //	@name	ForgotPasswordPayload
 
 // ForgotPasswordResponse temporary response pending an email client
 type ForgotPasswordResponse struct {
 	URL string `json:"url"`
-} // @name ForgotPasswordResponse
+} //	@name	ForgotPasswordResponse
 
 type ResetPasswordPayload struct {
 	// The ULID of ResetPasswordPayload
 	Email           string `json:"email" validate:"required,email"`
 	Password        string `json:"password" validate:"min=6" binding:"required"`
 	PasswordConfirm string `json:"password_confirm" validate:"min=6" binding:"required"`
-} // @name ResetPasswordPayload
+} //	@name	ResetPasswordPayload

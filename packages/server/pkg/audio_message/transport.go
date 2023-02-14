@@ -20,7 +20,7 @@ type AudioMessageJSON struct {
 	Description string `json:"description"`
 	DateAdded   string `json:"date_added,omitempty"`
 	LastUpdated string `json:"last_updated,omitempty"`
-} // @name AudioMessageJSON
+} //	@name	AudioMessageJSON
 
 type AudioSeriesJSON struct {
 	ID          string `json:"id,omitempty"`
@@ -30,21 +30,21 @@ type AudioSeriesJSON struct {
 	Description string `json:"description"`
 	DateAdded   string `json:"date_added,omitempty"`
 	LastUpdated string `json:"last_updated,omitempty"`
-} // @name AudioSeriesJSON
+} //	@name	AudioSeriesJSON
 
 type PageResponse struct {
 	TotalResults int32 `json:"totalResults"`
-} // @name PageResponse
+} //	@name	PageResponse
 
 type GetAudiosSeriesResponse struct {
 	AudioSeries []*AudioSeriesJSON `json:"audio_series"`
 	Pagination  PageResponse       `json:"pagination"`
-} // @name GetAudiosSeriesResponse
+} //	@name	GetAudiosSeriesResponse
 
 type GetAudiosMessagesResponse struct {
 	AudioMessages []*AudioMessageJSON `json:"audio_messages"`
 	Pagination    PageResponse        `json:"pagination"`
-} // @name GetAudiosMessagesResponse
+} //	@name	GetAudiosMessagesResponse
 
 func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 	result := &AudioMessage{
@@ -96,14 +96,13 @@ func NewJSONAudioSeries(audioSeries *AudioSeries) *AudioSeriesJSON {
 
 
 // CreateAudioMessageHandler godoc
-// @Summary Admin can create new audio messages
-// @Description Admin will be able to create/insert new audio messages with the input payload
-// @Tags CreateAudioMessages
-// @Accept  json
-// @Produce  json
-// @Param AudioMessageJSON body AudioMessageJSON true "Create audio messages"
-// @Success 200 {object} AudioMessageJSON
-// @Router /audio_message/ [post]
+//	@Summary		Create Audio Message
+//	@Description	The endpoint takes an AudioMessageJSON requests and creates a new audio message
+//	@Tags			Audio Message
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	AudioMessageJSON
+//	@Router			/audio_message [post]
 func CreateAudioMessageHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var audioMessage AudioMessageJSON
 	err := json.NewDecoder(r.Body).Decode(&audioMessage)
@@ -125,14 +124,14 @@ func CreateAudioMessageHandler(w http.ResponseWriter, r *http.Request, svc inter
 }
 
 // CreateAudioSeriesHandler godoc
-// @Summary Admin can create new audio series
-// @Description Admin will be able to create/insert new audio series with the input payload
-// @Tags CreateAudioSeries
-// @Accept  json
-// @Produce  json
-// @Param AudioSeriesJSON body AudioSeriesJSON true "Create audio series"
-// @Success 200 {object} AudioSeriesJSON
-// @Router /audio_series/ [post]
+//	@Summary		Admin can create new audio series
+//	@Description	Admin will be able to create/insert new audio series with the input payload
+//	@Tags			Audio Series
+//	@Accept			json
+//	@Produce		json
+//	@Param			AudioSeriesJSON	body		AudioSeriesJSON	true	"Create audio series"
+//	@Success		200				{object}	AudioSeriesJSON
+//	@Router			/audio_series [post]
 func CreateAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var audioSeries AudioSeriesJSON
 	err := json.NewDecoder(r.Body).Decode(&audioSeries)
@@ -154,13 +153,14 @@ func CreateAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interf
 }
 
 // GetAudioMessagesHandler godoc
-// @Summary Get an audio message
-// @Description Users can now retrieve and see an audio message
-// @Tags GetAudioMessages
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} GetAudiosMessagesResponse
-// @Router /audio_messages/ [get]
+//	@Summary		Get Audio Message
+//	@Description	Retrieves an audio message
+//	@Tags			Audio Message
+//	@Accept			json
+//	@Produce		json
+//	@Success		200			{object}	GetAudiosMessagesResponse
+//	@Param			series_id	path		string	false	"search message by series id => returns all messages if value is * i.e series_id=* or omitted, returns non-series messages if value is ? i.e series_id=?"
+//	@Router			/audio_message [get]
 func GetAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {	
 	var search Filter
 	urlqueryhelper.Bind(&search, r)
@@ -176,13 +176,13 @@ func GetAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interfa
 }
 
 // GetAudioSeriesHandler godoc
-// @Summary Get an audio series
-// @Description Users can now retrieve and see an audio series
-// @Tags GetAudioSeries
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} GetAudiosSeriesResponse
-// @Router /audio_series/ [get]
+//	@Summary		Get an audio series
+//	@Description	Retrieve an audio series
+//	@Tags			Audio Series
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	GetAudiosSeriesResponse
+//	@Router			/audio_series [get]
 func GetAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 
 	result, err := svc.(Service).GetAudioSeries(r.Context())
@@ -195,13 +195,13 @@ func GetAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface
 }
 
 // GetAudioMessageByIDHandler godoc
-// @Summary Get an audio message
-// @Description Users can now retrieve and see an audio message
-// @Tags GetAnAudioMessage
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} AudioMessageJSON
-// @Router /id/{id} [get]
+//	@Summary		Get Audio Message
+//	@Description	Get Audio Message By ID
+//	@Tags			Audio Message
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	AudioMessageJSON
+//	@Router			/audio_message/id/{id} [get]
 func GetAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	messageIdParam := chi.URLParam(r, "id")
 	result, err := svc.(Service).GetAudioMessageByID(r.Context(), messageIdParam)
@@ -212,13 +212,13 @@ func GetAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc inte
 }
 
 // GetAudioSeriesByIDHandler godoc
-// @Summary Get an audio series
-// @Description Users can now retrieve and see an audio series
-// @Tags GetAnAudioSeries
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} AudioSeriesJSON
-// @Router /series_id/{id} [get]
+//	@Summary		Get an audio series
+//	@Description	Get Audio Series By ID
+//	@Tags			Audio Series
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	AudioSeriesJSON
+//	@Router			/audio_series/id/{id} [get]
 func GetAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	seriesIdParam := chi.URLParam(r, "id")
 	result, err := svc.(Service).GetAudioSeriesByID(r.Context(), seriesIdParam)

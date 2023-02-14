@@ -8,16 +8,16 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/logger"
 )
 
-// @title HOF BACKEND API
-// @version 1.0
-// @description This is the entire doc
-// @termsOfService http://swagger.io/terms/
-// @contact.name HOF Engineering
-// @contact.email hof.org
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost:3000
-// @BasePath /hof
+//	@title			HOF BACKEND API
+//	@version		1.0
+//	@description	This is the entire doc
+//	@termsOfService	http://swagger.io/terms/
+//	@contact.name	HOF Engineering
+//	@contact.email	hof.org
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+//	@host			localhost:3000
+//	@BasePath		/hof
 
 func main() {
 	logger := logger.New()

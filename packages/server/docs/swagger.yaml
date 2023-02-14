@@ -1,6 +1,6 @@
 basePath: /hof
 definitions:
-  AudioMessageJSON:
+  audio_message.AudioMessageJSON:
     properties:
       audio_url:
         type: string
@@ -11,17 +11,17 @@ definitions:
       description:
         type: string
       id:
-        type: integer
+        type: string
       image_url:
         type: string
       last_updated:
         type: string
       series_id:
-        type: integer
+        type: string
       title:
         type: string
     type: object
-  AudioSeriesJSON:
+  audio_message.AudioSeriesJSON:
     properties:
       author:
         type: string
@@ -30,7 +30,7 @@ definitions:
       description:
         type: string
       id:
-        type: integer
+        type: string
       image_url:
         type: string
       last_updated:
@@ -38,7 +38,30 @@ definitions:
       title:
         type: string
     type: object
-  DefaultResponse:
+  audio_message.GetAudiosMessagesResponse:
+    properties:
+      audio_messages:
+        items:
+          $ref: '#/definitions/audio_message.AudioMessageJSON'
+        type: array
+      pagination:
+        $ref: '#/definitions/audio_message.PageResponse'
+    type: object
+  audio_message.GetAudiosSeriesResponse:
+    properties:
+      audio_series:
+        items:
+          $ref: '#/definitions/audio_message.AudioSeriesJSON'
+        type: array
+      pagination:
+        $ref: '#/definitions/audio_message.PageResponse'
+    type: object
+  audio_message.PageResponse:
+    properties:
+      totalResults:
+        type: integer
+    type: object
+  http_helper.DefaultResponse:
     properties:
       code:
         type: integer
@@ -47,7 +70,7 @@ definitions:
       success:
         type: boolean
     type: object
-  ForgotPasswordPayload:
+  user.ForgotPasswordPayload:
     properties:
       email:
         description: The ULID of ForgotPasswordPayload
@@ -55,42 +78,19 @@ definitions:
     required:
     - email
     type: object
-  ForgotPasswordResponse:
+  user.ForgotPasswordResponse:
     properties:
       url:
         type: string
     type: object
-  GetAudiosMessagesResponse:
-    properties:
-      audio_messages:
-        items:
-          $ref: '#/definitions/AudioMessageJSON'
-        type: array
-      pagination:
-        $ref: '#/definitions/PageResponse'
-    type: object
-  GetAudiosSeriesResponse:
-    properties:
-      audio_series:
-        items:
-          $ref: '#/definitions/AudioSeriesJSON'
-        type: array
-      pagination:
-        $ref: '#/definitions/PageResponse'
-    type: object
-  LoginRequestJSON:
+  user.LoginRequestJSON:
     properties:
       email:
         type: string
       password:
         type: string
     type: object
-  PageResponse:
-    properties:
-      totalResults:
-        type: integer
-    type: object
-  ResetPasswordPayload:
+  user.ResetPasswordPayload:
     properties:
       email:
         description: The ULID of ResetPasswordPayload
@@ -106,7 +106,7 @@ definitions:
     - password
     - password_confirm
     type: object
-  SignUpUserRequestJSON:
+  user.SignUpUserRequestJSON:
     properties:
       email:
         type: string
@@ -117,7 +117,7 @@ definitions:
       password:
         type: string
     type: object
-  UserJSON:
+  user.UserJSON:
     properties:
       address:
         type: string
@@ -128,7 +128,7 @@ definitions:
       gender:
         type: string
       id:
-        type: integer
+        type: string
       is_verified:
         type: integer
       last_name:
@@ -139,15 +139,15 @@ definitions:
         type: string
       password:
         type: string
-      usernmae:
+      username:
         type: string
     type: object
-  UserSession:
+  user.UserSession:
     properties:
       token:
         type: string
       user:
-        $ref: '#/definitions/UserJSON'
+        $ref: '#/definitions/user.UserJSON'
     type: object
 host: localhost:3000
 info:
@@ -162,59 +162,73 @@ info:
   title: HOF BACKEND API
   version: "1.0"
 paths:
-  /audio_message/:
+  /audio_message:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves an audio message
+      parameters:
+      - description: search message by series id => returns all messages if value
+          is * i.e series_id=* or omitted, returns non-series messages if value is
+          ? i.e series_id=?
+        in: path
+        name: series_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/audio_message.GetAudiosMessagesResponse'
+      summary: Get Audio Message
+      tags:
+      - Audio Message
     post:
       consumes:
       - application/json
-      description: Admin will be able to create/insert new audio messages with the
-        input payload
-      parameters:
-      - description: Create audio messages
-        in: body
-        name: AudioMessageJSON
-        required: true
-        schema:
-          $ref: '#/definitions/AudioMessageJSON'
+      description: The endpoint takes an AudioMessageJSON requests and creates a new
+        audio message
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/AudioMessageJSON'
-      summary: Admin can create new audio messages
+            $ref: '#/definitions/audio_message.AudioMessageJSON'
+      summary: Create Audio Message
       tags:
-      - CreateAudioMessages
-  /audio_messages/:
+      - Audio Message
+  /audio_message/id/{id}:
     get:
       consumes:
       - application/json
-      description: Users can now retrieve and see an audio message
+      description: Get Audio Message By ID
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/GetAudiosMessagesResponse'
-      summary: Get an audio message
+            $ref: '#/definitions/audio_message.AudioMessageJSON'
+      summary: Get Audio Message
       tags:
-      - GetAudioMessages
-  /audio_series/:
+      - Audio Message
+  /audio_series:
     get:
       consumes:
       - application/json
-      description: Users can now retrieve and see an audio series
+      description: Retrieve an audio series
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/GetAudiosSeriesResponse'
+            $ref: '#/definitions/audio_message.GetAudiosSeriesResponse'
       summary: Get an audio series
       tags:
-      - GetAudioSeries
+      - Audio Series
     post:
       consumes:
       - application/json
@@ -226,47 +240,32 @@ paths:
         name: AudioSeriesJSON
         required: true
         schema:
-          $ref: '#/definitions/AudioSeriesJSON'
+          $ref: '#/definitions/audio_message.AudioSeriesJSON'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/AudioSeriesJSON'
+            $ref: '#/definitions/audio_message.AudioSeriesJSON'
       summary: Admin can create new audio series
       tags:
-      - CreateAudioSeries
-  /id/{id}:
+      - Audio Series
+  /audio_series/id/{id}:
     get:
       consumes:
       - application/json
-      description: Users can now retrieve and see an audio message
+      description: Get Audio Series By ID
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/AudioMessageJSON'
-      summary: Get an audio message
-      tags:
-      - GetAnAudioMessage
-  /series_id/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Users can now retrieve and see an audio series
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/AudioSeriesJSON'
+            $ref: '#/definitions/audio_message.AudioSeriesJSON'
       summary: Get an audio series
       tags:
-      - GetAnAudioSeries
+      - Audio Series
   /session/forgot_password:
     post:
       consumes:
@@ -278,82 +277,81 @@ paths:
         name: ForgotPasswordPayload
         required: true
         schema:
-          $ref: '#/definitions/ForgotPasswordPayload'
+          $ref: '#/definitions/user.ForgotPasswordPayload'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ForgotPasswordResponse'
+            $ref: '#/definitions/user.ForgotPasswordResponse'
       summary: User forgets their password
       tags:
-      - ForgotPassword
+      - Sessions
   /session/reset_password/{password_token}:
     post:
       consumes:
       - application/json
-      description: User can insert new passwords for a password change with the input
-        payload
+      description: Creat new password with the input payload
       parameters:
       - description: Reset password
         in: body
         name: ResetPasswordPayload
         required: true
         schema:
-          $ref: '#/definitions/ResetPasswordPayload'
+          $ref: '#/definitions/user.ResetPasswordPayload'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/DefaultResponse'
-      summary: User can reset their password
+            $ref: '#/definitions/http_helper.DefaultResponse'
+      summary: Rest user password
       tags:
-      - ResetPassword
+      - Sessions
   /session/sign_in:
     post:
       consumes:
       - application/json
-      description: Create a new sign in session with the input payload
+      description: Authenticates a user and returns a session
       parameters:
       - description: Sign in user
         in: body
         name: LoginRequestJSON
         required: true
         schema:
-          $ref: '#/definitions/LoginRequestJSON'
+          $ref: '#/definitions/user.LoginRequestJSON'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/UserSession'
-      summary: Create a new sign in session for a user
+            $ref: '#/definitions/user.UserSession'
+      summary: Create a new session
       tags:
-      - Login
+      - Sessions
   /session/sign_up:
     post:
       consumes:
       - application/json
-      description: Create a new user with the input payload
+      description: Creates a new user with the input payload
       parameters:
       - description: Create user
         in: body
         name: SignUpUserRequestJSON
         required: true
         schema:
-          $ref: '#/definitions/SignUpUserRequestJSON'
+          $ref: '#/definitions/user.SignUpUserRequestJSON'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/UserJSON'
-      summary: Create a new user
+            $ref: '#/definitions/user.UserJSON'
+      summary: Sign up a new user
       tags:
-      - SignUp
+      - Sessions
 swagger: "2.0"
