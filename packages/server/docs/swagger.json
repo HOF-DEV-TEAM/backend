@@ -42,7 +42,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/audio_message.GetAudiosMessagesResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/audio_message.GetAudiosMessagesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
                         }
                     }
                 }
@@ -59,17 +77,46 @@
                     "Audio Message"
                 ],
                 "summary": "Create Audio Message",
+                "parameters": [
+                    {
+                        "description": "create audio message request body",
+                        "name": "AudioMessageJSON",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
                         }
                     }
                 }
             }
         },
-        "/audio_message/id/{id}": {
+        "/audio_message/id/message/{message_id}": {
             "get": {
                 "description": "Get Audio Message By ID",
                 "consumes": [
@@ -82,11 +129,38 @@
                     "Audio Message"
                 ],
                 "summary": "Get Audio Message",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audio message id",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
                         }
                     }
                 }
@@ -109,7 +183,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/audio_message.GetAudiosSeriesResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/audio_message.GetAudiosSeriesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
                         }
                     }
                 }
@@ -128,7 +220,7 @@
                 "summary": "Admin can create new audio series",
                 "parameters": [
                     {
-                        "description": "Create audio series",
+                        "description": "Create audio series request body",
                         "name": "AudioSeriesJSON",
                         "in": "body",
                         "required": true,
@@ -141,13 +233,31 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/audio_message.AudioSeriesJSON"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/audio_message.AudioSeriesJSON"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
                         }
                     }
                 }
             }
         },
-        "/audio_series/id/{id}": {
+        "/audio_series/id/series/{series_id}": {
             "get": {
                 "description": "Get Audio Series By ID",
                 "consumes": [
@@ -160,11 +270,138 @@
                     "Audio Series"
                 ],
                 "summary": "Get an audio series",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audio series id",
+                        "name": "series_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/audio_message.AudioSeriesJSON"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "$ref": "#/definitions/audio_message.AudioSeriesJSON"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/delete/{message_id}": {
+            "delete": {
+                "description": "The endpoint takes nothing as the request body and update the audio message by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Audio Message"
+                ],
+                "summary": "Delete Audio Message by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audio message id",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/delete/{series_id}": {
+            "delete": {
+                "description": "The endpoint takes nothing as the request body and update the audio series by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Audio Series"
+                ],
+                "summary": "Delete Audio Series by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audio series id",
+                        "name": "series_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
                         }
                     }
                 }
@@ -305,6 +542,106 @@
                     }
                 }
             }
+        },
+        "/update/{message_id}": {
+            "put": {
+                "description": "The endpoint takes an AudioMessageJSON requests and update the audio message",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Audio Message"
+                ],
+                "summary": "Update Audio Message by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audio message id",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/update/{series_id}": {
+            "put": {
+                "description": "The endpoint takes an AudioSeriesJSON requests and update the audio series",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Audio Series"
+                ],
+                "summary": "Update Audio Series by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "audio series id",
+                        "name": "series_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/http_helper.DefaultResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "body": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.errorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -353,6 +690,7 @@
                     "type": "string"
                 },
                 "id": {
+                    "description": "@Param series_id",
                     "type": "string"
                 },
                 "image_url": {
@@ -405,14 +743,20 @@
         "http_helper.DefaultResponse": {
             "type": "object",
             "properties": {
+                "body": {},
                 "code": {
                     "type": "integer"
                 },
-                "message": {
-                    "type": "string"
-                },
                 "success": {
                     "type": "boolean"
+                }
+            }
+        },
+        "http_helper.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
                 }
             }
         },

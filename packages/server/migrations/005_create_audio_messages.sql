@@ -7,7 +7,8 @@ create table if not exists audio_messages(
     "description" varchar(200),
     "date_added" timestamp default null,
     "last_updated" timestamp default null,
-    "series_id" uuid default null
+    "series_id" uuid default null,
+    "deleted_at" timestamp default null
 );
 
 ---- create above / drop below ----

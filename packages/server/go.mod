@@ -6,6 +6,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/cors v1.2.1
 	github.com/go-playground/validator/v10 v10.11.1
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jackc/tern v1.13.0

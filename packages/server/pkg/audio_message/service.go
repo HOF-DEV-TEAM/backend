@@ -5,14 +5,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/gofrs/uuid"
+	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
 	"github.com/go-playground/validator"
 	"go.uber.org/zap"
 )
 
-var (	
-	ErrFieldRequired      = errors.New("field is required")		
+var (
+	ErrFieldRequired = errors.New("field is required")
 )
 
 type Service interface {
@@ -22,12 +24,16 @@ type Service interface {
 	GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error)
 	GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessageJSON, error)
 	GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeriesJSON, error)
+	UpdateAudioMessagesByID(ctx context.Context, message AudioMessage, messageId string) (uuid.UUID, error)
+	UpdateAudioSeriesByID(ctx context.Context, series AudioSeries, seriesId string) (uuid.UUID, error)
+	DeleteAudioMessagesByID(ctx context.Context, messageId string) (uuid.UUID, error)
+	DeleteAudioSeriesByID(ctx context.Context, seriesId string) (uuid.UUID, error)
 }
 
 type FilterType string
 
 const (
-	SeriesID = FilterType("series_id")
+	SeriesID       = FilterType("series_id")
 	AudioMessageID = FilterType("id")
 )
 
@@ -35,6 +41,7 @@ var FilterList = []FilterType{
 	SeriesID,
 	AudioMessageID,
 }
+
 type Filter struct {
 	SeriesID string `filter:"series_id"`
 }
@@ -188,21 +195,97 @@ func (svc *audioMessageService) GetAudioMessages(ctx context.Context, search *Fi
 }
 
 func (svc *audioMessageService) GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessageJSON, error) {
-	audioMessage, err := svc.repo.GetAudioMessageByID(ctx, messageId)
+	id, err := uuid.FromString(messageId)
 	if err != nil {
 		return nil, err
 	}
-
+	audioMessage, err := svc.repo.GetAudioMessageByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 	audioMessageJSON := NewJSONAudioMessage(audioMessage)
 	return audioMessageJSON, nil
 }
 
 func (svc *audioMessageService) GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeriesJSON, error) {
-	audioSeries, err := svc.repo.GetAudioSeriesByID(ctx, seriesId)
+	id, err := uuid.FromString(seriesId)
+	if err != nil {
+		return nil, err
+	}
+
+	audioSeries, err := svc.repo.GetAudioSeriesByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	audioSeriesJSON := NewJSONAudioSeries(audioSeries)
 	return audioSeriesJSON, nil
+}
+
+func (svc *audioMessageService) UpdateAudioMessagesByID(ctx context.Context, message AudioMessage, messageId string) (uuid.UUID, error) {
+	id, err := uuid.FromString(messageId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	message.LastUpdated = sql.NullString{
+		String: time.Now().Format(time.RFC3339),
+	}
+	result, err := svc.repo.UpdateAudioMessagesByID(ctx, message, id)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return result, nil
+}
+func (svc *audioMessageService) UpdateAudioSeriesByID(ctx context.Context, series AudioSeries, seriesId string) (uuid.UUID, error) {
+	id, err := uuid.FromString(seriesId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	series.LastUpdated = sql.NullString{
+		String: time.Now().Format(time.RFC3339),
+	}
+	result, err := svc.repo.UpdateAudioSeriesByID(ctx, series, id)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return result, nil
+}
+
+func (svc *audioMessageService) DeleteAudioMessagesByID(ctx context.Context, messageId string) (uuid.UUID, error) {
+	id, err := uuid.FromString(messageId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	deletedAt := sql.NullString{
+		String: time.Now().Format(time.RFC3339),
+		Valid:  true,
+	}
+	result, err := svc.repo.DeleteAudioMessagesByID(ctx, id, deletedAt)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return result, err
+}
+
+func (svc *audioMessageService) DeleteAudioSeriesByID(ctx context.Context, seriesId string) (uuid.UUID, error) {
+	id, err := uuid.FromString(seriesId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	deletedAt := sql.NullString{
+		String: time.Now().Format(time.RFC3339),
+		Valid:  true,
+	}
+
+	result, err := svc.repo.DeleteAudioSeriesByID(ctx, id, deletedAt)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return result, nil
 }
