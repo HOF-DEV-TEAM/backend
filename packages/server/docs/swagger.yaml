@@ -30,6 +30,7 @@ definitions:
       description:
         type: string
       id:
+        description: '@Param series_id'
         type: string
       image_url:
         type: string
@@ -63,12 +64,16 @@ definitions:
     type: object
   http_helper.DefaultResponse:
     properties:
+      body: {}
       code:
         type: integer
-      message:
-        type: string
       success:
         type: boolean
+    type: object
+  http_helper.errorResponse:
+    properties:
+      error:
+        type: string
     type: object
   user.ForgotPasswordPayload:
     properties:
@@ -180,7 +185,16 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/audio_message.GetAudiosMessagesResponse'
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/audio_message.GetAudiosMessagesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
       summary: Get Audio Message
       tags:
       - Audio Message
@@ -189,28 +203,59 @@ paths:
       - application/json
       description: The endpoint takes an AudioMessageJSON requests and creates a new
         audio message
+      parameters:
+      - description: create audio message request body
+        in: body
+        name: AudioMessageJSON
+        required: true
+        schema:
+          $ref: '#/definitions/audio_message.AudioMessageJSON'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/audio_message.AudioMessageJSON'
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/audio_message.AudioMessageJSON'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
       summary: Create Audio Message
       tags:
       - Audio Message
-  /audio_message/id/{id}:
+  /audio_message/id/message/{message_id}:
     get:
       consumes:
       - application/json
       description: Get Audio Message By ID
+      parameters:
+      - description: audio message id
+        in: path
+        name: message_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/audio_message.AudioMessageJSON'
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/audio_message.AudioMessageJSON'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
       summary: Get Audio Message
       tags:
       - Audio Message
@@ -225,7 +270,16 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/audio_message.GetAudiosSeriesResponse'
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/audio_message.GetAudiosSeriesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
       summary: Get an audio series
       tags:
       - Audio Series
@@ -235,7 +289,7 @@ paths:
       description: Admin will be able to create/insert new audio series with the input
         payload
       parameters:
-      - description: Create audio series
+      - description: Create audio series request body
         in: body
         name: AudioSeriesJSON
         required: true
@@ -247,23 +301,109 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/audio_message.AudioSeriesJSON'
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/audio_message.AudioSeriesJSON'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
       summary: Admin can create new audio series
       tags:
       - Audio Series
-  /audio_series/id/{id}:
+  /audio_series/id/series/{series_id}:
     get:
       consumes:
       - application/json
       description: Get Audio Series By ID
+      parameters:
+      - description: audio series id
+        in: path
+        name: series_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/audio_message.AudioSeriesJSON'
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  $ref: '#/definitions/audio_message.AudioSeriesJSON'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
       summary: Get an audio series
+      tags:
+      - Audio Series
+  /delete/{message_id}:
+    delete:
+      consumes:
+      - application/json
+      description: The endpoint takes nothing as the request body and update the audio
+        message by ID
+      parameters:
+      - description: audio message id
+        in: path
+        name: message_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
+      summary: Delete Audio Message by ID
+      tags:
+      - Audio Message
+  /delete/{series_id}:
+    delete:
+      consumes:
+      - application/json
+      description: The endpoint takes nothing as the request body and update the audio
+        series by ID
+      parameters:
+      - description: audio series id
+        in: path
+        name: series_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
+      summary: Delete Audio Series by ID
       tags:
       - Audio Series
   /session/forgot_password:
@@ -354,4 +494,66 @@ paths:
       summary: Sign up a new user
       tags:
       - Sessions
+  /update/{message_id}:
+    put:
+      consumes:
+      - application/json
+      description: The endpoint takes an AudioMessageJSON requests and update the
+        audio message
+      parameters:
+      - description: audio message id
+        in: path
+        name: message_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
+      summary: Update Audio Message by ID
+      tags:
+      - Audio Message
+  /update/{series_id}:
+    put:
+      consumes:
+      - application/json
+      description: The endpoint takes an AudioSeriesJSON requests and update the audio
+        series
+      parameters:
+      - description: audio series id
+        in: path
+        name: series_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/http_helper.DefaultResponse'
+            - properties:
+                body:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
+      summary: Update Audio Series by ID
+      tags:
+      - Audio Series
 swagger: "2.0"

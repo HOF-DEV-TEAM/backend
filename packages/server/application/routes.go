@@ -1,6 +1,6 @@
 package application
 
-import (	
+import (
 	"errors"
 	"net/http"
 	"os"
@@ -8,15 +8,15 @@ import (
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
-	_ "bitbucket.org/hofng/hofApp/docs"	
+	_ "bitbucket.org/hofng/hofApp/docs"
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
 	"bitbucket.org/hofng/hofApp/pkg/user"
-	
+
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
-	"github.com/go-chi/chi/v5"	
+	"github.com/go-chi/chi/v5"
 )
 
-func (app *application) buildRoutes () {
+func (app *application) buildRoutes() {
 	app.router.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	userRepo := user.NewRepository(app.db, app.logger)
@@ -89,10 +89,14 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	createAudioMessageHandler := NewHTTPHandler(audio_message.CreateAudioMessageHandler, svc)
 	getAudioMessagesHandler := NewHTTPHandler(audio_message.GetAudioMessagesHandler, svc)
 	getAudioMessageByIDHandler := NewHTTPHandler(audio_message.GetAudioMessageByIDHandler, svc)
+	updateAudioMesageByIDHandler := NewHTTPHandler(audio_message.UpdateAudioMessagesByIDHandler, svc)
+	deleteAudioMesageByIDHandler := NewHTTPHandler(audio_message.DeleteAudioMessagesByIDHandler, svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
-	audioMessageRouter.Get("/id/{id}", getAudioMessageByIDHandler)
+	audioMessageRouter.Get("/id/message/{message_id}", getAudioMessageByIDHandler)
+	audioMessageRouter.Put("/update/{message_id}", updateAudioMesageByIDHandler)
+	audioMessageRouter.Delete("/delete/{message_id}", deleteAudioMesageByIDHandler)
 
 	router.Mount("/audio_message", audioMessageRouter)
 }
@@ -103,10 +107,14 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	createAudioSeriesHandler := NewHTTPHandler(audio_message.CreateAudioSeriesHandler, svc)
 	getAudioSeriesHandler := NewHTTPHandler(audio_message.GetAudioSeriesHandler, svc)
 	getAudioSeriesByIDHandler := NewHTTPHandler(audio_message.GetAudioSeriesByIDHandler, svc)
+	updateAudioSeriesByIDHandler := NewHTTPHandler(audio_message.UpdateAudioSeriesByIDHandler, svc)
+	deleteAudioSeriesByIDHandler := NewHTTPHandler(audio_message.DeleteAudioSeriesByIDHandler, svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
-	audioSeriesRouter.Get("/series_id/{id}", getAudioSeriesByIDHandler)
+	audioSeriesRouter.Get("/id/series/{series_id}", getAudioSeriesByIDHandler)
+	audioSeriesRouter.Put("/update/{series_id}", updateAudioSeriesByIDHandler)
+	audioSeriesRouter.Delete("/delete/{series_id}", deleteAudioSeriesByIDHandler)
 
 	router.Mount("/audio_series", audioSeriesRouter)
 }

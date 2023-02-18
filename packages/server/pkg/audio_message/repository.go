@@ -1,10 +1,10 @@
 package audio_message
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"context"
 	"database/sql"
-
-	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
+	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
 )
 
@@ -13,8 +13,12 @@ type Repository interface {
 	CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error)
 	GetAudioMessages(ctx context.Context, search *Filter) ([]*AudioMessage, int, error)
 	GetAudioSeries(ctx context.Context) ([]*AudioSeries, int, error)
-	GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessage, error)
-	GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeries, error)
+	GetAudioMessageByID(ctx context.Context, messageId uuid.UUID) (*AudioMessage, error)
+	GetAudioSeriesByID(ctx context.Context, seriesId uuid.UUID) (*AudioSeries, error)
+	UpdateAudioMessagesByID(ctx context.Context, message AudioMessage, messageId uuid.UUID) (uuid.UUID, error)
+	UpdateAudioSeriesByID(ctx context.Context, series AudioSeries, seriesId uuid.UUID) (uuid.UUID, error)
+	DeleteAudioMessagesByID(ctx context.Context, messageId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error)
+	DeleteAudioSeriesByID(ctx context.Context, seriesId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error)
 	Close() error
 }
 
@@ -157,7 +161,7 @@ func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeri
 }
 
 func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSeries, int, error) {
-	const SQL = "SELECT * FROM audio_series"
+	const SQL = "SELECT * FROM audio_series WHERE deleted_at IS NULL"
 
 	var audioSeries []*AudioSeries
 	getAudioSeriesStmt, err := r.db.PrepareContext(ctx, SQL)
@@ -266,13 +270,13 @@ func (r audioMessageRepository) getAudioMessages(ctx context.Context, query stri
 func buildQuery(query string, filter *Filter) (string, []interface{}, error) {
 	queryParams := []interface{}{}
 
-	sqlSmt := query	
+	sqlSmt := query
 	switch filter.SeriesID {
 	case "", "*":
-		break;
+		break
 	case "?":
-		sqlSmt += " WHERE series_id IS NULL"		
-	default:		
+		sqlSmt += " WHERE series_id IS NULL"
+	default:
 		sqlSmt += " WHERE series_id=$1"
 		queryParams = append(queryParams, filter.SeriesID)
 	}
@@ -282,20 +286,19 @@ func buildQuery(query string, filter *Filter) (string, []interface{}, error) {
 // TODO: implement pagination
 func (r audioMessageRepository) GetAudioMessages(ctx context.Context, search *Filter) ([]*AudioMessage, int, error) {
 	var sqlStmt string
-	sqlStmt = "SELECT * FROM audio_messages"
+	sqlStmt = "SELECT * FROM audio_messages WHERE deleted_at IS NULL"
 
 	query, queryParams, err := buildQuery(sqlStmt, search)
 
 	if err != nil {
 		return []*AudioMessage{}, 0, err
 	}
-	
+
 	return r.getAudioMessages(ctx, query, queryParams)
 }
 
-func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessage, error) {
-	sqlQuery := `SELECT * FROM audio_messages WHERE id=$1`
-
+func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, messageId uuid.UUID) (*AudioMessage, error) {
+	sqlQuery := `SELECT * FROM audio_messages WHERE id=$1 AND deleted_at IS NULL`
 	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
@@ -312,6 +315,7 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 		&audioMessage.DateAdded,
 		&audioMessage.LastUpdated,
 		&audioMessage.SeriesID,
+		&audioMessage.DeletedAt,
 	)
 	if err != nil {
 		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
@@ -321,8 +325,8 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 	return &audioMessage, nil
 }
 
-func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeries, error) {
-	sqlQuery := `SELECT * FROM audio_series WHERE id=$1`
+func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId uuid.UUID) (*AudioSeries, error) {
+	sqlQuery := `SELECT * FROM audio_series WHERE id=$1 AND deleted_at IS NULL`
 
 	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
@@ -338,6 +342,7 @@ func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId
 		&audioSeries.ImageUrl,
 		&audioSeries.DateAdded,
 		&audioSeries.LastUpdated,
+		&audioSeries.DeletedAt,
 	)
 	if err != nil {
 		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
@@ -345,4 +350,68 @@ func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId
 
 	}
 	return &audioSeries, nil
+}
+
+func (r audioMessageRepository) UpdateAudioMessagesByID(ctx context.Context, message AudioMessage, messageId uuid.UUID) (uuid.UUID, error) {
+	sqlQuery := `UPDATE audio_messages SET title=$2, author=$3, last_updated=$4, image_url=$5, audio_url=$6, series_id=$7, description=$8 WHERE id=$1 RETURNING id`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("UpdateAudioMessagesByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+
+		return uuid.Nil, err
+	}
+	row := stmt.QueryRowContext(ctx, messageId, message.Author, message.Title, message.LastUpdated, message.ImageUrl, message.AudioUrl, message.SeriesID, message.Description)
+	if err := row.Scan(&messageId); err != nil {
+		r.log.Error("UpdateAudioMessagesByID", zap.String("error scanning row", err.Error()))
+		return uuid.Nil, err
+	}
+	return messageId, nil
+}
+
+func (r audioMessageRepository) UpdateAudioSeriesByID(ctx context.Context, series AudioSeries, seriesId uuid.UUID) (uuid.UUID, error) {
+	sqlQuery := `UPDATE audio_series SET title=$2, author=$3, image_url=$4, last_updated=$5, description=$6 WHERE id=$1 RETURNING id`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("UpdateAudioSeriesByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+
+		return uuid.Nil, err
+	}
+	row := stmt.QueryRowContext(ctx, seriesId, series.Author, series.Title, series.ImageUrl, series.LastUpdated, series.Description)
+	if err := row.Scan(&seriesId); err != nil {
+		r.log.Error("UpdateAudioSeriesByID", zap.String("error scanning row", err.Error()))
+		return uuid.Nil, err
+	}
+	return seriesId, nil
+}
+
+func (r audioMessageRepository) DeleteAudioMessagesByID(ctx context.Context, messageId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error) {
+	sqlQuery := `UPDATE audio_messages SET deleted_at=$2 WHERE id=$1 RETURNING id`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("DeleteAudioMessagesByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+
+		return uuid.Nil, err
+	}
+	row := stmt.QueryRowContext(ctx, messageId, deletedAt)
+	if err := row.Scan(&messageId); err != nil {
+		r.log.Error("DeleteAudioMessagesByID", zap.String("error scanning row", err.Error()))
+		return uuid.Nil, err
+	}
+	return messageId, nil
+}
+
+func (r audioMessageRepository) DeleteAudioSeriesByID(ctx context.Context, seriesId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error) {
+	sqlQuery := `UPDATE audio_series SET deleted_at=$2 WHERE id=$1 RETURNING id`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("DeleteAudioSeriesByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+
+		return uuid.Nil, err
+	}
+	row := stmt.QueryRowContext(ctx, seriesId, deletedAt)
+	if err := row.Scan(&seriesId); err != nil {
+		r.log.Error("DeleteAudioSeriesByID", zap.String("error scanning row", err.Error()))
+		return uuid.Nil, err
+	}
+	return seriesId, nil
 }

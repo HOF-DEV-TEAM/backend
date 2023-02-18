@@ -12,6 +12,7 @@ type AudioMessage struct {
 	AudioUrl    string         `sql:"audio_url" validate:"required"`
 	SeriesID    sql.NullString `sql:"series_id"`
 	Description string         `sql:"description"`
+	DeletedAt   sql.NullString `sql:"deleted_at"`
 }
 
 type AudioSeries struct {
@@ -22,4 +23,5 @@ type AudioSeries struct {
 	DateAdded   sql.NullString `sql:"date_added"`
 	LastUpdated sql.NullString `sql:"last_updated"`
 	Description string         `sql:"description"`
+	DeletedAt   sql.NullString `sql:"deleted_at"`
 }

@@ -264,13 +264,13 @@ func (r *userRepository) ResetPassword(request ResetPasswordPayload) (int, error
 	sqlQuery := `UPDATE users SET password_hash=$2 WHERE email = $1 RETURNING id`
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return 0, err
 	}
 	var userID int
 	row := stmt.QueryRow(request.Email, request.Password)
 	if err := row.Scan(&userID); err != nil {
-		r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return 0, err
 	}
 	return userID, nil

@@ -90,6 +90,7 @@ func NewJSONUser(u *User) *UserJSON {
 }
 
 // CreateGetUserHandler godoc
+//
 //	@Summary		Sign up a new user
 //	@Description	Creates a new user with the input payload
 //	@Tags			Sessions
@@ -114,11 +115,12 @@ func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{
 		return
 	}
 	payload := NewJSONUser(result)
-	
+
 	http_helper.EncodeResult(w, payload, http.StatusOK)
 }
 
 // CreateSignInHandler godoc
+//
 //	@Summary		Create a new session
 //	@Description	Authenticates a user and returns a session
 //	@Tags			Sessions
@@ -147,13 +149,14 @@ func CreateSignInHandler(svc Service) http.HandlerFunc {
 		payload := UserSession{
 			User:  NewJSONUser(result.User),
 			Token: result.Token,
-		}			
+		}
 
-		http_helper.EncodeResult(w, payload, http.StatusOK)		
+		http_helper.EncodeResult(w, payload, http.StatusOK)
 	}
 }
 
 // ForgotPasswordHandler godoc
+//
 //	@Summary		User forgets their password
 //	@Description	User can request for a password change with the input payload
 //	@Tags			Sessions
@@ -181,6 +184,7 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 }
 
 // ResetPasswordHandler godoc
+//
 //	@Summary		Rest user password
 //	@Description	Creat new password with the input payload
 //	@Tags			Sessions
@@ -212,8 +216,6 @@ func ResetPasswordHandler(svc Service) http.HandlerFunc {
 
 		}
 
-		payload := http_helper.DefaultResponse{Message: "success", Code: http.StatusOK, Success: true}
-		
-		http_helper.EncodeResult(w, payload, http.StatusOK)
+		http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true}, http.StatusOK)
 	}
 }
