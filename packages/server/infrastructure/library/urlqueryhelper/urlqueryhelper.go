@@ -1,18 +1,18 @@
 package urlqueryhelper
 
 import (
-	"errors"	
+	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 )
 
-
-func Bind(structValue interface{}, r *http.Request) error {		
+func Bind(structValue interface{}, r *http.Request) error {
 	fields := reflect.TypeOf(structValue)
 	values := reflect.ValueOf(structValue)
-
+	fmt.Println(fields)
 	num := fields.Elem().NumField()
-	
+
 	for i := 0; i < num; i++ {
 		field := fields.Elem().Field(i)
 
@@ -21,7 +21,7 @@ func Bind(structValue interface{}, r *http.Request) error {
 
 		val := r.URL.Query().Get(key)
 
-		value := values.Elem().Field(i)		
+		value := values.Elem().Field(i)
 		switch kind {
 		case reflect.String:
 			value.SetString(val)
@@ -30,4 +30,8 @@ func Bind(structValue interface{}, r *http.Request) error {
 		}
 	}
 	return nil
+}
+
+func SQLQueryHelper(sqlQuery string, structValue interface{}) {
+
 }
