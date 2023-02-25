@@ -225,7 +225,7 @@ func GetAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface
 //
 //	@Router			/audio_message/id/message/{message_id} [get]
 func GetAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	messageIdParam := chi.URLParam(r, "id")
+	messageIdParam := chi.URLParam(r, "message_id")
 	result, err := svc.(Service).GetAudioMessageByID(r.Context(), messageIdParam)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
@@ -248,7 +248,7 @@ func GetAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc inte
 //
 //	@Router			/audio_series/id/series/{series_id} [get]
 func GetAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	seriesIdParam := chi.URLParam(r, "id")
+	seriesIdParam := chi.URLParam(r, "series_id")
 	result, err := svc.(Service).GetAudioSeriesByID(r.Context(), seriesIdParam)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
