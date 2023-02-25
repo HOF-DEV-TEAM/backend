@@ -8,7 +8,8 @@ create table if not exists audio_messages(
     "date_added" timestamp default null,
     "last_updated" timestamp default null,
     "series_id" uuid default null,
-    "deleted_at" timestamp default null
+    "deleted_at" timestamp default null,
+    constraint "Fk_audio_series" foreign key ("series_id") references "audio_series" ("id")
 );
 
 ---- create above / drop below ----
