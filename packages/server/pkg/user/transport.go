@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 type UserAndToken struct {
@@ -202,7 +202,6 @@ func ResetPasswordHandler(svc Service) http.HandlerFunc {
 			return
 		}
 		passwordTokenParam := chi.URLParam(r, "token")
-
 		_, err = svc.VerifyPasswordToken(resetPasswordRequest, passwordTokenParam)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)

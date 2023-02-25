@@ -3,12 +3,13 @@ package user
 import (
 	"context"
 	"crypto/md5"
-	"database/sql"	
+	"database/sql"
 	"fmt"
+	"github.com/gofrs/uuid"
 	"math/rand"
 	"strings"
 	"time"
-	
+
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
@@ -22,7 +23,7 @@ type Service interface {
 	Login(ctx context.Context, email, password string) (*UserAndToken, error)
 	ForgotPassword(request ForgotPasswordPayload) (interface{}, error)
 	VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error)
-	ResetPassword(request ResetPasswordPayload) (int, error)
+	ResetPassword(request ResetPasswordPayload) (uuid.UUID, error)
 }
 
 type userService struct {
@@ -183,13 +184,13 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 
 	if !ok {
 		svc.log.Info("msg",
-		zap.String("JWTError", "broken"),
-		zap.String(svc.config.JWTContextKey, ""),
+			zap.String("JWTError", "broken"),
+			zap.String(svc.config.JWTContextKey, ""),
 		)
 	}
 
 	updatedJWTToken, err := claims.PutUserIDAndSign(svc.config, result.ID)
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -216,13 +217,12 @@ func (svc *userService) ForgotPassword(request ForgotPasswordPayload) (interface
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	passwordResetToken := EncodeString(randStr(10, charset, seededRand))
 
-	user, err := svc.repo.ForgotPassword(request, passwordResetToken)
+	_, err = svc.repo.ForgotPassword(request, passwordResetToken)
 	if err != nil {
 		return nil, err
 	}
 	// TODO insert mailer function
 	// Temporary return statement pending the mail
-	fmt.Println(user)
 	return struct {
 		URL string `json:"url"`
 	}{fmt.Sprint("https://hof-backend.herokuapp.com/user/resetPassword/", passwordResetToken)}, nil
@@ -241,15 +241,15 @@ func (svc *userService) VerifyPasswordToken(request ResetPasswordPayload, passwo
 	return userPasswordToken, nil
 }
 
-func (svc *userService) ResetPassword(request ResetPasswordPayload) (int, error) {
+func (svc *userService) ResetPassword(request ResetPasswordPayload) (uuid.UUID, error) {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
-		return 0, err
+		return uuid.Nil, err
 	}
 
 	if request.Password != request.PasswordConfirm {
-		return 0, http_helper.ErrInvalidAccount
+		return uuid.Nil, http_helper.ErrInvalidAccount
 	}
 
 	request.Password = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.Password))))
@@ -260,7 +260,7 @@ func (svc *userService) ResetPassword(request ResetPasswordPayload) (int, error)
 		PasswordConfirm: request.PasswordConfirm,
 	})
 	if err != nil {
-		return 0, err
+		return uuid.Nil, err
 	}
 	return userId, nil
 }
