@@ -194,6 +194,7 @@ func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSer
 			&as.ImageUrl,
 			&as.DateAdded,
 			&as.LastUpdated,
+			&as.DeletedAt,
 		); err != nil {
 			r.log.Info("msg",
 				zap.String("error querying", ""),
@@ -252,6 +253,7 @@ func (r audioMessageRepository) getAudioMessages(ctx context.Context, query stri
 			&as.DateAdded,
 			&as.LastUpdated,
 			&as.SeriesID,
+			&as.DeletedAt,
 		); err != nil {
 			r.log.Info("msg",
 				zap.String("error querying", ""),
