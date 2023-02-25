@@ -107,7 +107,11 @@ func NewJSONAudioSeries(audioSeries *AudioSeries) *AudioSeriesJSON {
 // @Failure 400 {object} http_helper.errorResponse
 //
 //	@Router			/audio_message [post]
-func CreateAudioMessageHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func CreateAudioMessageHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(createAudioMessageHandler, svc)
+}
+
+func createAudioMessageHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var audioMessage AudioMessageJSON
 	err := json.NewDecoder(r.Body).Decode(&audioMessage)
 
@@ -140,7 +144,12 @@ func CreateAudioMessageHandler(w http.ResponseWriter, r *http.Request, svc inter
 // @Failure 400 {object} http_helper.errorResponse
 //
 //	@Router			/audio_series [post]
-func CreateAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+
+func CreateAudioSeriesHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(createAudioSeriesHandler, svc)
+}
+
+func createAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var audioSeries AudioSeriesJSON
 	err := json.NewDecoder(r.Body).Decode(&audioSeries)
 
@@ -173,7 +182,12 @@ func CreateAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interf
 //
 //	@Param			series_id	path		string	false	"search message by series id => returns all messages if value is * i.e series_id=* or omitted, returns non-series messages if value is ? i.e series_id=?"
 //	@Router			/audio_message [get]
-func GetAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+
+func GetAudioMessagesHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getAudioMessagesHandler, svc)
+}
+
+func getAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var search Filter
 	urlqueryhelper.Bind(&search, r)
 
@@ -199,7 +213,12 @@ func GetAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interfa
 // @Failure 400 {object} http_helper.errorResponse
 //
 //	@Router			/audio_series [get]
-func GetAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+
+func GetAudioSeriesHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getAudioSeriesHandler, svc)
+}
+
+func getAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 
 	result, err := svc.(Service).GetAudioSeries(r.Context())
 
@@ -224,7 +243,12 @@ func GetAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface
 // @Param        message_id   path string  true  "audio message id"
 //
 //	@Router			/audio_message/id/message/{message_id} [get]
-func GetAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+
+func GetAudioMessageByIDHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getAudioMessageByIDHandler, svc)
+}
+
+func getAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	messageIdParam := chi.URLParam(r, "id")
 	result, err := svc.(Service).GetAudioMessageByID(r.Context(), messageIdParam)
 	if err != nil {
@@ -247,7 +271,12 @@ func GetAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc inte
 // @Param        series_id   path string  true  "audio series id"
 //
 //	@Router			/audio_series/id/series/{series_id} [get]
-func GetAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+
+func GetAudioSeriesByIDHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getAudioSeriesByIDHandler, svc)
+}
+
+func getAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	seriesIdParam := chi.URLParam(r, "id")
 	result, err := svc.(Service).GetAudioSeriesByID(r.Context(), seriesIdParam)
 	if err != nil {
@@ -270,7 +299,11 @@ func GetAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc inter
 // @Param        message_id   path string  true  "audio message id"
 //
 //	@Router			/update/{message_id} [put]
-func UpdateAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func UpdateAudioMessagesByIDHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(updateAudioMessagesByIDHandler, svc)
+}
+
+func updateAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	messageIdParam := chi.URLParam(r, "message_id")
 	var messageJSON AudioMessageJSON
 	err := json.NewDecoder(r.Body).Decode(&messageJSON)
@@ -301,7 +334,11 @@ func UpdateAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc 
 // @Param        series_id   path string  true  "audio series id"
 //
 //	@Router			/update/{series_id} [put]
-func UpdateAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func UpdateAudioSeriesByIDHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(updateAudioSeriesByIDHandler, svc)
+}
+
+func updateAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	seriesIdParam := chi.URLParam(r, "series_id")
 	var seriesJSON AudioSeriesJSON
 	err := json.NewDecoder(r.Body).Decode(&seriesJSON)
@@ -332,7 +369,11 @@ func UpdateAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc in
 // @Param        message_id   path string  true  "audio message id"
 //
 //	@Router			/delete/{message_id} [delete]
-func DeleteAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func DeleteAudioMessagesByIDHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(deleteAudioMessagesByIDHandler, svc)
+}
+
+func deleteAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	messageIdParam := chi.URLParam(r, "message_id")
 
 	result, err := svc.(Service).DeleteAudioMessagesByID(r.Context(), messageIdParam)
@@ -356,7 +397,11 @@ func DeleteAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc 
 // @Failure 400 {object} http_helper.errorResponse
 //
 //	@Router			/delete/{series_id} [delete]
-func DeleteAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func DeleteAudioSeriesByIDHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(deleteAudioSeriesByIDHandler, svc)
+}
+
+func deleteAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	seriesIdParam := chi.URLParam(r, "series_id")
 
 	result, err := svc.(Service).DeleteAudioSeriesByID(r.Context(), seriesIdParam)

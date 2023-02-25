@@ -70,8 +70,8 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 func buildSessionEndpoints(router chi.Router, svc user.Service) {
 	sessionsRouter := chi.NewRouter()
 
-	signInHandler := user.CreateSignInHandler(svc)
-	signUpUserHandler := NewHTTPHandler(user.CreateGetUserHandler, svc)
+	signInHandler := user.SignInHandler(svc)
+	signUpUserHandler := user.GetUserHandler(svc)
 	forgotPasswordHandler := user.ForgotPasswordHandler(svc)
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
 
@@ -86,11 +86,11 @@ func buildSessionEndpoints(router chi.Router, svc user.Service) {
 func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	audioMessageRouter := chi.NewRouter()
 
-	createAudioMessageHandler := NewHTTPHandler(audio_message.CreateAudioMessageHandler, svc)
-	getAudioMessagesHandler := NewHTTPHandler(audio_message.GetAudioMessagesHandler, svc)
-	getAudioMessageByIDHandler := NewHTTPHandler(audio_message.GetAudioMessageByIDHandler, svc)
-	updateAudioMesageByIDHandler := NewHTTPHandler(audio_message.UpdateAudioMessagesByIDHandler, svc)
-	deleteAudioMesageByIDHandler := NewHTTPHandler(audio_message.DeleteAudioMessagesByIDHandler, svc)
+	createAudioMessageHandler := audio_message.CreateAudioMessageHandler(svc)
+	getAudioMessagesHandler := audio_message.GetAudioMessagesHandler(svc)
+	getAudioMessageByIDHandler := audio_message.GetAudioMessageByIDHandler(svc)
+	updateAudioMesageByIDHandler := audio_message.UpdateAudioMessagesByIDHandler(svc)
+	deleteAudioMesageByIDHandler := audio_message.DeleteAudioMessagesByIDHandler(svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
@@ -104,11 +104,11 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	audioSeriesRouter := chi.NewRouter()
 
-	createAudioSeriesHandler := NewHTTPHandler(audio_message.CreateAudioSeriesHandler, svc)
-	getAudioSeriesHandler := NewHTTPHandler(audio_message.GetAudioSeriesHandler, svc)
-	getAudioSeriesByIDHandler := NewHTTPHandler(audio_message.GetAudioSeriesByIDHandler, svc)
-	updateAudioSeriesByIDHandler := NewHTTPHandler(audio_message.UpdateAudioSeriesByIDHandler, svc)
-	deleteAudioSeriesByIDHandler := NewHTTPHandler(audio_message.DeleteAudioSeriesByIDHandler, svc)
+	createAudioSeriesHandler := audio_message.CreateAudioSeriesHandler(svc)
+	getAudioSeriesHandler :=audio_message.GetAudioSeriesHandler(svc)
+	getAudioSeriesByIDHandler :=audio_message.GetAudioSeriesByIDHandler(svc)
+	updateAudioSeriesByIDHandler :=audio_message.UpdateAudioSeriesByIDHandler(svc)
+	deleteAudioSeriesByIDHandler :=audio_message.DeleteAudioSeriesByIDHandler(svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
@@ -120,6 +120,6 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 }
 
 func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
-	uploadFileHandler := NewHTTPHandler(uploader.UploadFile, svc)
+	uploadFileHandler := uploader.UploadFile(svc)
 	router.Post("/upload", uploadFileHandler)
 }

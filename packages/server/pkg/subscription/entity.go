@@ -1,4 +1,4 @@
-package audio_message
+package subscription
 
 import "database/sql"
 
