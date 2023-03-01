@@ -2,6 +2,7 @@ package audio_message
 
 import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
+	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
 	"context"
 	"database/sql"
 	"github.com/gofrs/uuid"
@@ -355,15 +356,16 @@ func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId
 }
 
 func (r audioMessageRepository) UpdateAudioMessagesByID(ctx context.Context, message AudioMessage, messageId uuid.UUID) (uuid.UUID, error) {
-	sqlQuery := `UPDATE audio_messages SET title=$2, author=$3, last_updated=$4, image_url=$5, audio_url=$6, series_id=$7, description=$8 WHERE id=$1 RETURNING id`
-	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
-	if err != nil {
-		r.log.Error("UpdateAudioMessagesByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
-
-		return uuid.Nil, err
+	id := struct {
+		Id uuid.UUID `sql:"id"`
+	}{
+		Id: messageId,
 	}
-	row := stmt.QueryRowContext(ctx, messageId, message.Author, message.Title, message.LastUpdated, message.ImageUrl, message.AudioUrl, message.SeriesID, message.Description)
-	if err := row.Scan(&messageId); err != nil {
+	whereQuery, _ := urlqueryhelper.SqlQueryHelper(true, false, id)
+	_, setQuery := urlqueryhelper.SqlQueryHelper(false, true, message)
+	sqlQuery := `UPDATE audio_messages SET ` + setQuery + " WHERE " + whereQuery + " RETURNING id"
+	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&messageId)
+	if err != nil {
 		r.log.Error("UpdateAudioMessagesByID", zap.String("error scanning row", err.Error()))
 		return uuid.Nil, err
 	}
@@ -371,15 +373,16 @@ func (r audioMessageRepository) UpdateAudioMessagesByID(ctx context.Context, mes
 }
 
 func (r audioMessageRepository) UpdateAudioSeriesByID(ctx context.Context, series AudioSeries, seriesId uuid.UUID) (uuid.UUID, error) {
-	sqlQuery := `UPDATE audio_series SET title=$2, author=$3, image_url=$4, last_updated=$5, description=$6 WHERE id=$1 RETURNING id`
-	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
-	if err != nil {
-		r.log.Error("UpdateAudioSeriesByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
-
-		return uuid.Nil, err
+	id := struct {
+		Id uuid.UUID `sql:"id"`
+	}{
+		Id: seriesId,
 	}
-	row := stmt.QueryRowContext(ctx, seriesId, series.Author, series.Title, series.ImageUrl, series.LastUpdated, series.Description)
-	if err := row.Scan(&seriesId); err != nil {
+	whereQuery, _ := urlqueryhelper.SqlQueryHelper(true, false, id)
+	_, setQuery := urlqueryhelper.SqlQueryHelper(false, true, series)
+	sqlQuery := `UPDATE audio_series SET ` + setQuery + " WHERE " + whereQuery + " RETURNING id"
+	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&seriesId)
+	if err != nil {
 		r.log.Error("UpdateAudioSeriesByID", zap.String("error scanning row", err.Error()))
 		return uuid.Nil, err
 	}
