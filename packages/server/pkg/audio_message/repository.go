@@ -277,9 +277,9 @@ func buildQuery(query string, filter *Filter) (string, []interface{}, error) {
 	case "", "*":
 		break
 	case "?":
-		sqlSmt += " WHERE series_id IS NULL"
+		sqlSmt += " AND series_id IS NULL"
 	default:
-		sqlSmt += " WHERE series_id=$1"
+		sqlSmt += " AND series_id=$1"
 		queryParams = append(queryParams, filter.SeriesID)
 	}
 	return sqlSmt, queryParams, nil

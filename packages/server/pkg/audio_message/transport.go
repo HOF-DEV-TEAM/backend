@@ -23,7 +23,7 @@ type AudioMessageJSON struct {
 } //	@name	AudioMessageJSON
 
 type AudioSeriesJSON struct {
-	ID          string `json:"id,omitempty"` // @Param series_id
+	ID          string `json:"id,omitempty"` //	@Param	series_id
 	Title       string `json:"title"`
 	Author      string `json:"author"`
 	ImageUrl    string `json:"image_url"`
@@ -102,9 +102,9 @@ func NewJSONAudioSeries(audioSeries *AudioSeries) *AudioSeriesJSON {
 //	@Accept			json
 //	@Produce		json
 //	@Param			AudioMessageJSON	body		AudioMessageJSON	true	"create audio message request body"
-//	@Success		200	{object}	http_helper.DefaultResponse{body=AudioMessageJSON}
+//	@Success		200					{object}	AudioMessageJSON
 //
-// @Failure 400 {object} http_helper.errorResponse
+//	@Failure		400					{object}	http_helper.errorResponse
 //
 //	@Router			/audio_message [post]
 func CreateAudioMessageHandler(svc Service) http.HandlerFunc {
@@ -128,7 +128,7 @@ func createAudioMessageHandler(w http.ResponseWriter, r *http.Request, svc inter
 	}
 	payload := NewJSONAudioMessage(result)
 
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: payload}, http.StatusOK)
+	http_helper.EncodeResult(w, payload, http.StatusOK)
 }
 
 // CreateAudioSeriesHandler godoc
@@ -139,9 +139,9 @@ func createAudioMessageHandler(w http.ResponseWriter, r *http.Request, svc inter
 //	@Accept			json
 //	@Produce		json
 //	@Param			AudioSeriesJSON	body		AudioSeriesJSON	true	"Create audio series request body"
-//	@Success		200	{object}	http_helper.DefaultResponse{body=AudioSeriesJSON}
+//	@Success		200				{object}	AudioSeriesJSON
 //
-// @Failure 400 {object} http_helper.errorResponse
+//	@Failure		400				{object}	http_helper.errorResponse
 //
 //	@Router			/audio_series [post]
 
@@ -166,7 +166,7 @@ func createAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interf
 	}
 
 	payload := NewJSONAudioSeries(result)
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: payload}, http.StatusOK)
+	http_helper.EncodeResult(w, payload, http.StatusOK)
 }
 
 // GetAudioMessagesHandler godoc
@@ -176,9 +176,9 @@ func createAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interf
 //	@Tags			Audio Message
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	http_helper.DefaultResponse{body=GetAudiosMessagesResponse}
+//	@Success		200			{object}	GetAudiosMessagesResponse
 //
-// @Failure 400 {object} http_helper.errorResponse
+//	@Failure		400			{object}	http_helper.errorResponse
 //
 //	@Param			series_id	path		string	false	"search message by series id => returns all messages if value is * i.e series_id=* or omitted, returns non-series messages if value is ? i.e series_id=?"
 //	@Router			/audio_message [get]
@@ -198,7 +198,7 @@ func getAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interfa
 		return
 	}
 
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: result}, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
 // GetAudioSeriesHandler godoc
@@ -208,9 +208,9 @@ func getAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interfa
 //	@Tags			Audio Series
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	http_helper.DefaultResponse{body=GetAudiosSeriesResponse}
+//	@Success		200	{object}	GetAudiosSeriesResponse
 //
-// @Failure 400 {object} http_helper.errorResponse
+//	@Failure		400	{object}	http_helper.errorResponse
 //
 //	@Router			/audio_series [get]
 
@@ -226,7 +226,7 @@ func getAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: result}, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
 // GetAudioMessageByIDHandler godoc
@@ -236,11 +236,11 @@ func getAudioSeriesHandler(w http.ResponseWriter, r *http.Request, svc interface
 //	@Tags			Audio Message
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	AudioMessageJSON
-//	@Success		200	{object}	http_helper.DefaultResponse{body=AudioMessageJSON}
+//	@Success		200			{object}	AudioMessageJSON
+//	@Success		200			{object}	AudioMessageJSON
 //
-// @Failure 400 {object} http_helper.errorResponse
-// @Param        message_id   path string  true  "audio message id"
+//	@Failure		400			{object}	http_helper.errorResponse
+//	@Param			message_id	path		string	true	"audio message id"
 //
 //	@Router			/audio_message/id/message/{message_id} [get]
 
@@ -255,7 +255,7 @@ func getAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc inte
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: result}, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
 // GetAudioSeriesByIDHandler godoc
@@ -265,10 +265,10 @@ func getAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc inte
 //	@Tags			Audio Series
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	http_helper.DefaultResponse{body=AudioSeriesJSON}
+//	@Success		200			{object}	AudioSeriesJSON
 //
-// @Failure 400 {object} http_helper.errorResponse
-// @Param        series_id   path string  true  "audio series id"
+//	@Failure		400			{object}	http_helper.errorResponse
+//	@Param			series_id	path		string	true	"audio series id"
 //
 //	@Router			/audio_series/id/series/{series_id} [get]
 
@@ -283,7 +283,7 @@ func getAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc inter
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: result}, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
 // UpdateAudioMessagesByIDHandler godoc
@@ -293,10 +293,10 @@ func getAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc inter
 //	@Tags			Audio Message
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	http_helper.DefaultResponse{body=uuid.UUID}
+//	@Success		200			{object}	uuid.UUID
 //
-// @Failure 400 {object} http_helper.errorResponse
-// @Param        message_id   path string  true  "audio message id"
+//	@Failure		400			{object}	http_helper.errorResponse
+//	@Param			message_id	path		string	true	"audio message id"
 //
 //	@Router			/update/{message_id} [put]
 func UpdateAudioMessagesByIDHandler(svc Service) http.HandlerFunc {
@@ -318,7 +318,7 @@ func updateAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc 
 		return
 	}
 
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: result}, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
 // UpdateAudioSeriesByIDHandler godoc
@@ -328,10 +328,10 @@ func updateAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc 
 //	@Tags			Audio Series
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	http_helper.DefaultResponse{body=uuid.UUID}
+//	@Success		200			{object}	uuid.UUID
 //
-// @Failure 400 {object} http_helper.errorResponse
-// @Param        series_id   path string  true  "audio series id"
+//	@Failure		400			{object}	http_helper.errorResponse
+//	@Param			series_id	path		string	true	"audio series id"
 //
 //	@Router			/update/{series_id} [put]
 func UpdateAudioSeriesByIDHandler(svc Service) http.HandlerFunc {
@@ -353,7 +353,7 @@ func updateAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc in
 		return
 	}
 
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: result}, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
 // DeleteAudioMessagesByIDHandler godoc
@@ -363,10 +363,10 @@ func updateAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc in
 //	@Tags			Audio Message
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	http_helper.DefaultResponse{body=uuid.UUID}
+//	@Success		200			{object}	uuid.UUID
 //
-// @Failure 400 {object} http_helper.errorResponse
-// @Param        message_id   path string  true  "audio message id"
+//	@Failure		400			{object}	http_helper.errorResponse
+//	@Param			message_id	path		string	true	"audio message id"
 //
 //	@Router			/delete/{message_id} [delete]
 func DeleteAudioMessagesByIDHandler(svc Service) http.HandlerFunc {
@@ -381,7 +381,7 @@ func deleteAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc 
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: result}, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
 // DeleteAudioSeriesByIDHandler godoc
@@ -391,10 +391,10 @@ func deleteAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc 
 //	@Tags			Audio Series
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	http_helper.DefaultResponse{body=uuid.UUID}
+//	@Success		200			{object}	uuid.UUID
 //
-// @Param        series_id   path string  true  "audio series id"
-// @Failure 400 {object} http_helper.errorResponse
+//	@Param			series_id	path		string	true	"audio series id"
+//	@Failure		400			{object}	http_helper.errorResponse
 //
 //	@Router			/delete/{series_id} [delete]
 func DeleteAudioSeriesByIDHandler(svc Service) http.HandlerFunc {
@@ -409,5 +409,5 @@ func deleteAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc in
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: result}, http.StatusOK)
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }

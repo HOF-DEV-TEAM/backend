@@ -60,13 +60,14 @@ func EncodeResult(w http.ResponseWriter, response interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 
-	data := struct {
-		Data interface{} `json:"data"`
-	}{
-		Data: response,
-	}
+	//TODO: will add this later when mobile is ready to change the response structure.
+	// data := struct {
+	// 	Data interface{} `json:"data"`
+	// }{
+	// 	Data: response,
+	// }
 
-	err := json.NewEncoder(w).Encode(&data)
+	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		return
 	}
