@@ -249,7 +249,7 @@ func GetAudioMessageByIDHandler(svc Service) http.HandlerFunc {
 }
 
 func getAudioMessageByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	messageIdParam := chi.URLParam(r, "id")
+	messageIdParam := chi.URLParam(r, "message_id")
 	result, err := svc.(Service).GetAudioMessageByID(r.Context(), messageIdParam)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
@@ -277,7 +277,7 @@ func GetAudioSeriesByIDHandler(svc Service) http.HandlerFunc {
 }
 
 func getAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	seriesIdParam := chi.URLParam(r, "id")
+	seriesIdParam := chi.URLParam(r, "series_id")
 	result, err := svc.(Service).GetAudioSeriesByID(r.Context(), seriesIdParam)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)

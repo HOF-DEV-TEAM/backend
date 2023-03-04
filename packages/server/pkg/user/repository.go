@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+	"github.com/gofrs/uuid"
 	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
@@ -15,7 +16,7 @@ type Repository interface {
 	Login(ctx context.Context, email, password string) (*User, error)
 	ForgotPassword(request ForgotPasswordPayload, passwordResetToken string) (*User, error)
 	VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error)
-	ResetPassword(request ResetPasswordPayload) (int, error)
+	ResetPassword(request ResetPasswordPayload) (uuid.UUID, error)
 	Close() error
 }
 
@@ -209,7 +210,7 @@ func (r userRepository) GetUserPasswordToken(user *User, email, passwordResetTok
 		return err
 	}
 
-	var userPasswordTokenID int
+	var userPasswordTokenID uuid.UUID
 	row := tmpSmt.QueryRow(email).Scan(&userPasswordTokenID)
 	switch {
 	case row == sql.ErrNoRows:
@@ -260,18 +261,18 @@ func (r *userRepository) VerifyPasswordToken(request ResetPasswordPayload, passw
 	return userPasswordToken.PasswordResetToken, nil
 }
 
-func (r *userRepository) ResetPassword(request ResetPasswordPayload) (int, error) {
+func (r *userRepository) ResetPassword(request ResetPasswordPayload) (uuid.UUID, error) {
 	sqlQuery := `UPDATE users SET password_hash=$2 WHERE email = $1 RETURNING id`
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
 		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return 0, err
+		return uuid.Nil, err
 	}
-	var userID int
+	var userID uuid.UUID
 	row := stmt.QueryRow(request.Email, request.Password)
 	if err := row.Scan(&userID); err != nil {
 		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return 0, err
+		return uuid.Nil, err
 	}
 	return userID, nil
 }
