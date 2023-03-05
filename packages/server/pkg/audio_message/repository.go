@@ -48,8 +48,7 @@ func (r audioMessageRepository) Close() error {
 	return nil
 }
 
-func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {
-	// sql insert query, primary key provided by autoincrement
+func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {	
 	const SQL = "INSERT INTO audio_messages (" +
 		"title," +
 		"author," +

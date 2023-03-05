@@ -1,7 +1,7 @@
 package application
 
 import (
-	"errors"
+	"errors"	
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,7 +9,10 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	_ "bitbucket.org/hofng/hofApp/docs"
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
+	"bitbucket.org/hofng/hofApp/pkg/subscription"
+	"bitbucket.org/hofng/hofApp/pkg/subscription/paystack"
 	"bitbucket.org/hofng/hofApp/pkg/user"
 
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
@@ -48,11 +51,23 @@ func (app *application) buildRoutes() {
 		audioMessageRepo := audio_message.NewRepository(app.db, app.logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, app.logger, &app.config.Security)
 		uploaderService := uploader.NewService(app.awsClient)
+		
+		subProvider := paystack.NewPaystackService(
+			paystack.NewPayStackHttpClient(
+				&app.config.PaystackConfig,
+				http_helper.NewHTTPCaller(),
+				app.logger,
+			),
+		)
+		
+		subscritpionRepo := subscription.NewRepository(app.db, app.logger)
+		subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo)
 
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
 		buildAudioSeriesEndpoints(r, audioMessageService)
 		buildUploadEndpoints(r, uploaderService)
+		buildSubscriptionEndpoints(r, subscriptionSvc)
 	})
 
 	//unprotected routes
@@ -122,4 +137,14 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
 	uploadFileHandler := uploader.UploadFile(svc)
 	router.Post("/upload", uploadFileHandler)
+}
+
+func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
+	createSubscriptionHandler := subscription.CreateSubscriptionHandler(svc)
+	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
+	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
+	
+	router.Post("/subscription", createSubscriptionHandler)
+	router.Post("/subscription/plan", createSubscriptionPlanHandler)
+	router.Post("/subscription/offering", createSubscriptionOfferingHandler)
 }
