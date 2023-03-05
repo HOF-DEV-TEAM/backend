@@ -1,0 +1,272 @@
+package subscription
+
+import (
+	"context"
+	"database/sql"	
+	"time"
+
+	"go.uber.org/zap"
+)
+
+type Repository interface {
+	CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error)
+	CreateSubscriptionPlan(ctx context.Context, plan *SubscriptionPlan) (*SubscriptionPlan, error)
+	GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error)
+	GetSubscription(ctx context.Context, userId, planId string) (*Subscription, error)
+	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error) 
+	Close() error
+}
+
+type subscriptionRepo struct {
+	db  *sql.DB
+	getPlanStmt *sql.Stmt
+	log *zap.Logger
+}
+
+func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
+	return &subscriptionRepo{db: db, log: logger}
+}
+
+
+func (r subscriptionRepo) Close() error {
+	if r.getPlanStmt != nil {
+		if err := r.getPlanStmt.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+
+func (r *subscriptionRepo) CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error) {
+	const SQL = "INSERT INTO subscription_offerings (" +
+		"name," +
+		"date_added" +
+		") VALUES ($1, $2) " +
+		"RETURNING id"
+
+	tx, err := r.db.BeginTx(ctx, nil)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return "", err
+	}
+
+	defer tx.Rollback()
+
+	tmpSmt, err := tx.PrepareContext(ctx, SQL)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return "", err
+	}
+
+	var subsriptionOfferingId string
+
+	err = tmpSmt.QueryRowContext(ctx,
+		offering.Name,
+		sql.NullString{
+			String: time.Now().Format(time.RFC3339),
+			Valid:  true,
+		},
+	).Scan(&subsriptionOfferingId)
+
+	if err != nil {
+		r.log.Info("error", zap.String("error", err.Error()), zap.String("query", SQL))
+		return "", err
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return "", err
+	}
+	return subsriptionOfferingId, nil
+}
+
+func (r *subscriptionRepo) CreateSubscriptionPlan(ctx context.Context, plan *SubscriptionPlan) (*SubscriptionPlan, error) {
+	const SQL = "INSERT INTO subscription_plans (" +
+		"name," +
+		"status," +
+		"freq," +
+		"currency," +
+		"code," +
+		"plan_id," +
+		"date_added," +
+		"last_updated" +
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) " +
+		"RETURNING id"
+
+	tx, err := r.db.BeginTx(ctx, nil)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	tmpSmt, err := tx.PrepareContext(ctx, SQL)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	var subsriptionPlanId string
+
+	err = tmpSmt.QueryRowContext(ctx,
+		plan.Name,
+		plan.Status,
+		plan.Freq,
+		plan.Currency,
+		plan.Code,
+		plan.PlanId,
+		plan.DateAdded,
+		plan.LastUpdated,	
+	).Scan(&subsriptionPlanId)
+
+	if err != nil {
+		r.log.Info("error", zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return nil, err
+	}
+
+	plan.ID = subsriptionPlanId
+	return plan, nil
+}
+
+
+func (r *subscriptionRepo) CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error) {
+	const SQL = "INSERT INTO subscriptions (" +		
+		"status," +
+		"user_id," +		
+		"subscription_plan_id," +		
+		"date_added," +
+		"last_updated" +
+		") VALUES ($1, $2, $3, $4, $5) " +
+		"RETURNING id"
+
+	tx, err := r.db.BeginTx(ctx, nil)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	tmpSmt, err := tx.PrepareContext(ctx, SQL)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	var subsriptionId string
+
+	err = tmpSmt.QueryRowContext(ctx,		
+		sub.Status,
+		sub.UserID,
+		sub.SubscriptionPlanID,
+		sub.DateAdded,
+		sub.LastUpdated,		
+	).Scan(&subsriptionId)	
+
+	if err != nil {
+		r.log.Info("error", zap.String("error", err.Error()), zap.String("query", SQL))
+		return nil, err
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return nil, err
+	}
+
+	sub.ID = subsriptionId
+	return sub, nil
+}
+
+
+func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error) {	
+	query := "SELECT " +
+	"id," +
+	"status," +
+	"code " +
+	"FROM subscription_plans WHERE code = $1"
+
+	var err error
+	// first call, prepare statement for reuse
+	if r.getPlanStmt == nil {
+		r.getPlanStmt, err = r.db.PrepareContext(ctx, query)
+
+		if err != nil {
+			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", query))
+			return nil, err
+		}
+	}	
+
+	row := r.getPlanStmt.QueryRowContext(ctx, planCode)
+
+	var plan SubscriptionPlan	
+
+	err = row.Scan(
+		&plan.ID,
+		&plan.Status,
+		&plan.Code,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", query),
+		)
+		return nil, err
+	}
+	
+
+	return &plan, nil
+}
+
+func (r subscriptionRepo) GetSubscription(ctx context.Context, userId, planId string) (*Subscription, error) {
+	query := "SELECT " +
+	"id " +
+	"FROM subscriptions WHERE user_id = $1 AND subscription_plan_id = $2"
+	getSubStmt, err := r.db.PrepareContext(ctx, query)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", query))
+		return nil, err
+	}	
+
+	var sub Subscription
+	row := getSubStmt.QueryRowContext(ctx, userId, planId)
+
+	err = row.Scan(&sub.ID)
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", query),
+		)
+		return nil, err
+	}	
+
+	return &sub, nil	
+}

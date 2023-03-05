@@ -1,7 +1,7 @@
 package application
 
 import (
-	"errors"
+	"errors"	
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,7 +9,10 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	_ "bitbucket.org/hofng/hofApp/docs"
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
+	"bitbucket.org/hofng/hofApp/pkg/subscription"
+	"bitbucket.org/hofng/hofApp/pkg/subscription/paystack"
 	"bitbucket.org/hofng/hofApp/pkg/user"
 
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
@@ -48,11 +51,25 @@ func (app *application) buildRoutes() {
 		audioMessageRepo := audio_message.NewRepository(app.db, app.logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, app.logger, &app.config.Security)
 		uploaderService := uploader.NewService(app.awsClient)
+		
+		subProvider := paystack.NewPaystackService(
+			paystack.NewPayStackHttpClient(
+				&app.config.PaystackConfig,
+				http_helper.NewHTTPCaller(),
+				app.logger,
+			),
+			userRepo,
+			&app.config.Security,
+		)
+		
+		subscritpionRepo := subscription.NewRepository(app.db, app.logger)
+		subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security)
 
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
 		buildAudioSeriesEndpoints(r, audioMessageService)
 		buildUploadEndpoints(r, uploaderService)
+		buildSubscriptionEndpoints(r, subscriptionSvc)
 	})
 
 	//unprotected routes
@@ -70,8 +87,8 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 func buildSessionEndpoints(router chi.Router, svc user.Service) {
 	sessionsRouter := chi.NewRouter()
 
-	signInHandler := user.CreateSignInHandler(svc)
-	signUpUserHandler := NewHTTPHandler(user.CreateGetUserHandler, svc)
+	signInHandler := user.SignInHandler(svc)
+	signUpUserHandler := user.GetUserHandler(svc)
 	forgotPasswordHandler := user.ForgotPasswordHandler(svc)
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
 
@@ -86,11 +103,11 @@ func buildSessionEndpoints(router chi.Router, svc user.Service) {
 func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	audioMessageRouter := chi.NewRouter()
 
-	createAudioMessageHandler := NewHTTPHandler(audio_message.CreateAudioMessageHandler, svc)
-	getAudioMessagesHandler := NewHTTPHandler(audio_message.GetAudioMessagesHandler, svc)
-	getAudioMessageByIDHandler := NewHTTPHandler(audio_message.GetAudioMessageByIDHandler, svc)
-	updateAudioMesageByIDHandler := NewHTTPHandler(audio_message.UpdateAudioMessagesByIDHandler, svc)
-	deleteAudioMesageByIDHandler := NewHTTPHandler(audio_message.DeleteAudioMessagesByIDHandler, svc)
+	createAudioMessageHandler := audio_message.CreateAudioMessageHandler(svc)
+	getAudioMessagesHandler := audio_message.GetAudioMessagesHandler(svc)
+	getAudioMessageByIDHandler := audio_message.GetAudioMessageByIDHandler(svc)
+	updateAudioMesageByIDHandler := audio_message.UpdateAudioMessagesByIDHandler(svc)
+	deleteAudioMesageByIDHandler := audio_message.DeleteAudioMessagesByIDHandler(svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
@@ -104,11 +121,11 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	audioSeriesRouter := chi.NewRouter()
 
-	createAudioSeriesHandler := NewHTTPHandler(audio_message.CreateAudioSeriesHandler, svc)
-	getAudioSeriesHandler := NewHTTPHandler(audio_message.GetAudioSeriesHandler, svc)
-	getAudioSeriesByIDHandler := NewHTTPHandler(audio_message.GetAudioSeriesByIDHandler, svc)
-	updateAudioSeriesByIDHandler := NewHTTPHandler(audio_message.UpdateAudioSeriesByIDHandler, svc)
-	deleteAudioSeriesByIDHandler := NewHTTPHandler(audio_message.DeleteAudioSeriesByIDHandler, svc)
+	createAudioSeriesHandler := audio_message.CreateAudioSeriesHandler(svc)
+	getAudioSeriesHandler :=audio_message.GetAudioSeriesHandler(svc)
+	getAudioSeriesByIDHandler :=audio_message.GetAudioSeriesByIDHandler(svc)
+	updateAudioSeriesByIDHandler :=audio_message.UpdateAudioSeriesByIDHandler(svc)
+	deleteAudioSeriesByIDHandler :=audio_message.DeleteAudioSeriesByIDHandler(svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
@@ -120,6 +137,18 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 }
 
 func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
-	uploadFileHandler := NewHTTPHandler(uploader.UploadFile, svc)
+	uploadFileHandler := uploader.UploadFile(svc)
 	router.Post("/upload", uploadFileHandler)
+}
+
+func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
+	createSubscriptionHandler := subscription.CreateSubscriptionHandler(svc)
+	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
+	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
+
+	
+	router.Post("/subscription", createSubscriptionHandler)
+	// router.Get("/subscription", createSubscriptionHandler)
+	router.Post("/subscription/plan", createSubscriptionPlanHandler)
+	router.Post("/subscription/offering", createSubscriptionOfferingHandler)
 }

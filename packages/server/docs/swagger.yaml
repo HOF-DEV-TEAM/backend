@@ -21,47 +21,6 @@ definitions:
       title:
         type: string
     type: object
-  audio_message.AudioSeriesJSON:
-    properties:
-      author:
-        type: string
-      date_added:
-        type: string
-      description:
-        type: string
-      id:
-        description: '@Param series_id'
-        type: string
-      image_url:
-        type: string
-      last_updated:
-        type: string
-      title:
-        type: string
-    type: object
-  audio_message.GetAudiosMessagesResponse:
-    properties:
-      audio_messages:
-        items:
-          $ref: '#/definitions/audio_message.AudioMessageJSON'
-        type: array
-      pagination:
-        $ref: '#/definitions/audio_message.PageResponse'
-    type: object
-  audio_message.GetAudiosSeriesResponse:
-    properties:
-      audio_series:
-        items:
-          $ref: '#/definitions/audio_message.AudioSeriesJSON'
-        type: array
-      pagination:
-        $ref: '#/definitions/audio_message.PageResponse'
-    type: object
-  audio_message.PageResponse:
-    properties:
-      totalResults:
-        type: integer
-    type: object
   http_helper.DefaultResponse:
     properties:
       body: {}
@@ -168,36 +127,6 @@ info:
   version: "1.0"
 paths:
   /audio_message:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves an audio message
-      parameters:
-      - description: search message by series id => returns all messages if value
-          is * i.e series_id=* or omitted, returns non-series messages if value is
-          ? i.e series_id=?
-        in: path
-        name: series_id
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/audio_message.GetAudiosMessagesResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Get Audio Message
-      tags:
-      - Audio Message
     post:
       consumes:
       - application/json
@@ -216,12 +145,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/audio_message.AudioMessageJSON'
-              type: object
+            $ref: '#/definitions/audio_message.AudioMessageJSON'
         "400":
           description: Bad Request
           schema:
@@ -229,121 +153,6 @@ paths:
       summary: Create Audio Message
       tags:
       - Audio Message
-  /audio_message/id/message/{message_id}:
-    get:
-      consumes:
-      - application/json
-      description: Get Audio Message By ID
-      parameters:
-      - description: audio message id
-        in: path
-        name: message_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/audio_message.AudioMessageJSON'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Get Audio Message
-      tags:
-      - Audio Message
-  /audio_series:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve an audio series
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/audio_message.GetAudiosSeriesResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Get an audio series
-      tags:
-      - Audio Series
-    post:
-      consumes:
-      - application/json
-      description: Admin will be able to create/insert new audio series with the input
-        payload
-      parameters:
-      - description: Create audio series request body
-        in: body
-        name: AudioSeriesJSON
-        required: true
-        schema:
-          $ref: '#/definitions/audio_message.AudioSeriesJSON'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/audio_message.AudioSeriesJSON'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Admin can create new audio series
-      tags:
-      - Audio Series
-  /audio_series/id/series/{series_id}:
-    get:
-      consumes:
-      - application/json
-      description: Get Audio Series By ID
-      parameters:
-      - description: audio series id
-        in: path
-        name: series_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  $ref: '#/definitions/audio_message.AudioSeriesJSON'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Get an audio series
-      tags:
-      - Audio Series
   /delete/{message_id}:
     delete:
       consumes:
@@ -362,12 +171,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  type: string
-              type: object
+            type: string
         "400":
           description: Bad Request
           schema:
@@ -393,12 +197,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  type: string
-              type: object
+            type: string
         "400":
           description: Bad Request
           schema:
@@ -512,12 +311,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  type: string
-              type: object
+            type: string
         "400":
           description: Bad Request
           schema:
@@ -543,12 +337,7 @@ paths:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/http_helper.DefaultResponse'
-            - properties:
-                body:
-                  type: string
-              type: object
+            type: string
         "400":
           description: Bad Request
           schema:

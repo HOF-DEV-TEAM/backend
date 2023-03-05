@@ -10,7 +10,11 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 )
 
-func UploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func UploadFile(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(uploadFile, svc)
+}
+
+func uploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	//TODO: Enhanced Logging
 	fmt.Println("File Upload Endpoint Hit")
 
