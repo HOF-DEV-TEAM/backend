@@ -1,6 +1,6 @@
 -- Write your migrate up statements here
 CREATE TABLE if NOT EXISTS subscription_plans(
-    "id" uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY, 
+    "id" UUID NOT NULL DEFAULT GEN_RANDOM_UUID() PRIMARY KEY, 
     "name" VARCHAR(200) NOT NULL,
     "type" INT,
     "freq" INT,

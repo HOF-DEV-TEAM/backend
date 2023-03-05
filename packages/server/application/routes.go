@@ -58,10 +58,12 @@ func (app *application) buildRoutes() {
 				http_helper.NewHTTPCaller(),
 				app.logger,
 			),
+			userRepo,
+			&app.config.Security,
 		)
 		
 		subscritpionRepo := subscription.NewRepository(app.db, app.logger)
-		subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo)
+		subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security)
 
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
@@ -143,8 +145,10 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	createSubscriptionHandler := subscription.CreateSubscriptionHandler(svc)
 	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
 	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
+
 	
 	router.Post("/subscription", createSubscriptionHandler)
+	// router.Get("/subscription", createSubscriptionHandler)
 	router.Post("/subscription/plan", createSubscriptionPlanHandler)
 	router.Post("/subscription/offering", createSubscriptionOfferingHandler)
 }

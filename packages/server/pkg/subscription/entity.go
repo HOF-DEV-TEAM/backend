@@ -2,7 +2,7 @@ package subscription
 
 import (
 	"database/sql"
-	"errors"	
+	"errors"
 )
 
 type SubscriptionProvider struct {
@@ -80,19 +80,19 @@ func (e FreqEnum) String() string {
 		return "quarterly"
 	case Yearly:
 		return "yearly"
-		
+
 	default:
 		return "invalid"
 	}
 }
 
 // MarshalText interface implementation FreqEnum into text.
-func (e FreqEnum) MarshalText() ([]byte, error) {	
+func (e FreqEnum) MarshalText() ([]byte, error) {
 	return []byte(e.String()), nil
 }
 
 // UnMarshalText interface implementation FreqEnum into text.
-func (e *FreqEnum) UnMarshalText(from []byte) error {	
+func (e *FreqEnum) UnMarshalText(from []byte) error {
 	switch string(from) {
 	case "hourly":
 		*e = Hourly
@@ -100,7 +100,7 @@ func (e *FreqEnum) UnMarshalText(from []byte) error {
 		*e = Daily
 	case "weekly":
 		*e = Weekly
-	case "monthly":		
+	case "monthly":
 		*e = Monthly
 	case "quarterly":
 		*e = Quarterly
@@ -150,9 +150,10 @@ type SubscriptionPlanOffering struct {
 
 type Subscription struct {
 	ID                 string         `sql:"id"`
-	Status             string         `sql:"status"`
+	Status             int            `sql:"status"`
 	UserID             string         `sql:"user_id" validate:"required"`
 	SubscriptionPlanID string         `sql:"subscription_plan_id" validate:"required"`
+	NextPaymentDate    sql.NullString `sql:"next_payment_date"`
 	DateAdded          sql.NullString `sql:"date_added"`
 	LastUpdated        sql.NullString `sql:"last_updated"`
 	DeletedAt          sql.NullString `sql:"deleted_at"`

@@ -3,8 +3,10 @@ package user
 import (
 	"context"
 	"database/sql"
-	"github.com/gofrs/uuid"
+	"fmt"
 	"time"
+
+	"github.com/gofrs/uuid"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"go.uber.org/zap"
@@ -13,10 +15,12 @@ import (
 type Repository interface {
 	Create(ctx context.Context, user *User) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetById(ctx context.Context, id string) (*User, error)
 	Login(ctx context.Context, email, password string) (*User, error)
 	ForgotPassword(request ForgotPasswordPayload, passwordResetToken string) (*User, error)
 	VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error)
 	ResetPassword(request ResetPasswordPayload) (uuid.UUID, error)
+	UpdatePaystack(ctx context.Context, user *User) (uuid.UUID, error)
 	Close() error
 }
 
@@ -108,24 +112,25 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 	return user, nil
 }
 
-func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
+func (r userRepository) getUser(ctx context.Context, field string, value string) (*User, error) {
 	const SQL = "SELECT " +
-		"id," +
-		"username," +
-		"password," +
-		"first_name," +
-		"last_name," +
-		"email," +
-		"mobile," +
-		"address," +
-		"gender," +
-		"is_verified " +
-		"FROM users WHERE email = $1"
+	"id," +
+	"username," +
+	"password," +
+	"first_name," +
+	"last_name," +
+	"email," +
+	"mobile," +
+	"address," +
+	"gender," +
+	"is_verified," +
+	"paystack_customer_code " +
+	"FROM users WHERE %s = $1"
 
 	var err error
 	// first call, prepare statement for reuse
 	if r.getEmailStmt == nil {
-		r.getEmailStmt, err = r.db.PrepareContext(ctx, SQL)
+		r.getEmailStmt, err = r.db.PrepareContext(ctx, fmt.Sprintf(SQL, field))
 
 		if err != nil {
 			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
@@ -135,7 +140,7 @@ func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, er
 
 	var user User
 
-	err = r.getEmailStmt.QueryRowContext(ctx, email).Scan(
+	err = r.getEmailStmt.QueryRowContext(ctx, value).Scan(
 		&user.ID,
 		&user.UserName,
 		&user.Password,
@@ -146,6 +151,7 @@ func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, er
 		&user.Address,
 		&user.Gender,
 		&user.IsVerified,
+		&user.PaystackCustomerCode,
 	)
 
 	if err == sql.ErrNoRows {
@@ -157,12 +163,20 @@ func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, er
 			zap.String("error querying", ""),
 			zap.String("error", err.Error()),
 			zap.String("query", SQL),
-			zap.String("email", email),
+			zap.String(field, value),
 		)
 		return nil, err
 	}
 
 	return &user, nil
+}
+
+func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
+	return r.getUser(ctx, "email", email)
+}
+
+func (r userRepository) GetById(ctx context.Context, id string) (*User, error) {
+	return r.getUser(ctx, "id", id)
 }
 
 func (r userRepository) Login(ctx context.Context, email, password string) (*User, error) {
@@ -270,6 +284,27 @@ func (r *userRepository) ResetPassword(request ResetPasswordPayload) (uuid.UUID,
 	}
 	var userID uuid.UUID
 	row := stmt.QueryRow(request.Email, request.Password)
+	if err := row.Scan(&userID); err != nil {
+		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return uuid.Nil, err
+	}
+	return userID, nil
+}
+
+func (r *userRepository) UpdatePaystack(ctx context.Context, user *User) (uuid.UUID, error) {
+	sqlQuery := `UPDATE users SET paystack_customer_code=$1, paystack_customer_id=$2 WHERE id = $3 RETURNING id`
+	stmt, err := r.db.Prepare(sqlQuery)
+	if err != nil {
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return uuid.Nil, err
+	}
+	var userID uuid.UUID
+	row := stmt.QueryRowContext(
+		ctx, 
+		user.PaystackCustomerCode,
+		user.PaystackCustomerId,
+		user.ID,
+	)
 	if err := row.Scan(&userID); err != nil {
 		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return uuid.Nil, err

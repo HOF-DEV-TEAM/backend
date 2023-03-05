@@ -52,17 +52,19 @@ func (e *IsVerifiedEnum) UnMarshalText(from []byte) error {
 }
 
 type User struct {
-	ID           string         `sql:"id"`
-	UserName     string         `sql:"username"`
-	Password     string         `sql:"password" validate:"min=6"`
-	FirstName    string         `sql:"first_name" validate:"required"`
-	LastName     string         `sql:"last_name" validate:"required"`
-	Email        string         `sql:"email" validate:"required,email"`
-	Mobile       sql.NullString `sql:"mobile"`
-	Address      string         `sql:"address"`
-	Gender       string         `sql:"gender"`
-	PasswordHash sql.NullString `sql:"password_hash"`
-	IsVerified   IsVerifiedEnum `sql:"is_verified"`
+	ID                   string         `sql:"id"`
+	UserName             string         `sql:"username"`
+	Password             string         `sql:"password" validate:"min=6"`
+	FirstName            string         `sql:"first_name" validate:"required"`
+	LastName             string         `sql:"last_name" validate:"required"`
+	Email                string         `sql:"email" validate:"required,email"`
+	Mobile               sql.NullString `sql:"mobile"`
+	Address              string         `sql:"address"`
+	Gender               string         `sql:"gender"`
+	PasswordHash         sql.NullString `sql:"password_hash"`
+	IsVerified           IsVerifiedEnum `sql:"is_verified"`
+	PaystackCustomerCode sql.NullString `sql:"paystack_customer_code"`
+	PaystackCustomerId   sql.NullString `sql:"paystack_customer_id"`
 }
 
 type LoginUser struct {

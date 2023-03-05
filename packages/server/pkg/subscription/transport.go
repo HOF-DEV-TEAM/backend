@@ -7,6 +7,11 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 )
 
+type SubscriptionRequest struct {
+	Customer string `json:"customer,omitempty"`
+	Plan  	 string `json:"plan,omitempty"`
+}
+
 type SubscriptionPlanRequest struct {
 	Name string `json:"name,omitempty"`
 	Freq string `json:"interval,omitempty"`
@@ -30,23 +35,22 @@ func CreateSubscriptionHandler(svc SubscriptionService) http.HandlerFunc {
 }
 
 func createSubscriptionHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
-	var info  CustomerInfo
-	err := json.NewDecoder(r.Body).Decode(&info)
+	var subReq  SubscriptionRequest
+	err := json.NewDecoder(r.Body).Decode(&subReq)
 
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, wr)
 		return
 	}
 
-	svc.(SubscriptionService).CreateSubscription(r.Context())
+	sub, err := svc.(SubscriptionService).CreateSubscription(r.Context(), &subReq)
 
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, wr)
 		return
 	}
 
-	payload := struct{}{}
-	http_helper.EncodeResult(wr, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: payload}, http.StatusOK)
+	http_helper.EncodeResult(wr, sub, http.StatusOK)
 
 }
 
