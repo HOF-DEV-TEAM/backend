@@ -1,7 +1,8 @@
 package application
 
 import (
-	"errors"	
+	"bitbucket.org/hofng/hofApp/pkg/favourite"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -51,7 +52,7 @@ func (app *application) buildRoutes() {
 		audioMessageRepo := audio_message.NewRepository(app.db, app.logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, app.logger, &app.config.Security)
 		uploaderService := uploader.NewService(app.awsClient)
-		
+
 		subProvider := paystack.NewPaystackService(
 			paystack.NewPayStackHttpClient(
 				&app.config.PaystackConfig,
@@ -61,7 +62,7 @@ func (app *application) buildRoutes() {
 			userRepo,
 			&app.config.Security,
 		)
-		
+
 		subscritpionRepo := subscription.NewRepository(app.db, app.logger)
 		subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security)
 
@@ -122,10 +123,10 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	audioSeriesRouter := chi.NewRouter()
 
 	createAudioSeriesHandler := audio_message.CreateAudioSeriesHandler(svc)
-	getAudioSeriesHandler :=audio_message.GetAudioSeriesHandler(svc)
-	getAudioSeriesByIDHandler :=audio_message.GetAudioSeriesByIDHandler(svc)
-	updateAudioSeriesByIDHandler :=audio_message.UpdateAudioSeriesByIDHandler(svc)
-	deleteAudioSeriesByIDHandler :=audio_message.DeleteAudioSeriesByIDHandler(svc)
+	getAudioSeriesHandler := audio_message.GetAudioSeriesHandler(svc)
+	getAudioSeriesByIDHandler := audio_message.GetAudioSeriesByIDHandler(svc)
+	updateAudioSeriesByIDHandler := audio_message.UpdateAudioSeriesByIDHandler(svc)
+	deleteAudioSeriesByIDHandler := audio_message.DeleteAudioSeriesByIDHandler(svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
@@ -146,9 +147,17 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
 	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
 
-	
 	router.Post("/subscription", createSubscriptionHandler)
 	// router.Get("/subscription", createSubscriptionHandler)
 	router.Post("/subscription/plan", createSubscriptionPlanHandler)
 	router.Post("/subscription/offering", createSubscriptionOfferingHandler)
+}
+
+func buildFavEndpoints(router chi.Router, svc favourite.Service) {
+	favRouter := chi.NewRouter()
+	favHandler := favourite.CreateFavouriteHandler(svc)
+
+	favRouter.Post("/", favHandler)
+
+	router.Mount("/fav", favRouter)
 }
