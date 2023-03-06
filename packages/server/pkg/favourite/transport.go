@@ -158,16 +158,16 @@ func getFavouritesHandler(w http.ResponseWriter, r *http.Request, s interface{})
 	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
-// DeleteAudioSeriesByIDHandler godoc
+// DeleteFavouritesHandler godoc
 //
-//	@Summary		Delete Audio Series by ID
-//	@Description	The endpoint takes nothing as the request body and update the audio series by ID
-//	@Tags			Audio Series
+//	@Summary		Delete favourite by ID
+//	@Description	The endpoint takes nothing as the request body and deletes the favourite by ID
+//	@Tags			Favourites
 //	@Accept			json
 //	@Produce		json
 //	@Success		200			{object}	uuid.UUID
 //
-//	@Param			series_id	path		string	true	"audio series id"
+//	@Param			fav_id	path		string	true	"audio series id"
 //	@Failure		400			{object}	http_helper.errorResponse
 //
 //	@Router			/delete/{series_id} [delete]

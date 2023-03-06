@@ -1,5 +1,45 @@
 basePath: /hof
 definitions:
+  FavMessageJSON:
+    properties:
+      audio_url:
+        type: string
+      author:
+        type: string
+      description:
+        type: string
+      fav:
+        type: boolean
+      id:
+        type: string
+      image_url:
+        type: string
+      message_id:
+        type: string
+      series_id:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: string
+    type: object
+  FavouriteJSON:
+    properties:
+      date_added:
+        type: string
+      deleted_at:
+        type: string
+      fav:
+        type: boolean
+      id:
+        type: string
+      message_id:
+        type: string
+      series_id:
+        type: string
+      user_id:
+        type: string
+    type: object
   audio_message.AudioMessageJSON:
     properties:
       audio_url:
@@ -20,6 +60,20 @@ definitions:
         type: string
       title:
         type: string
+    type: object
+  favourite.GetFavouritesResponse:
+    properties:
+      favourites:
+        items:
+          $ref: '#/definitions/FavMessageJSON'
+        type: array
+      pagination:
+        $ref: '#/definitions/favourite.PageResponse'
+    type: object
+  favourite.PageResponse:
+    properties:
+      totalResults:
+        type: integer
     type: object
   http_helper.DefaultResponse:
     properties:
@@ -183,12 +237,12 @@ paths:
     delete:
       consumes:
       - application/json
-      description: The endpoint takes nothing as the request body and update the audio
-        series by ID
+      description: The endpoint takes nothing as the request body and deletes the
+        favourite by ID
       parameters:
       - description: audio series id
         in: path
-        name: series_id
+        name: fav_id
         required: true
         type: string
       produces:
@@ -202,9 +256,54 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/http_helper.errorResponse'
-      summary: Delete Audio Series by ID
+      summary: Delete favourite by ID
       tags:
-      - Audio Series
+      - Favourites
+  /fav:
+    post:
+      consumes:
+      - application/json
+      description: The endpoint takes a FavouriteJSON requests and creates a new favourite
+      parameters:
+      - description: create favourites request body
+        in: body
+        name: FavouriteJSON
+        required: true
+        schema:
+          $ref: '#/definitions/FavouriteJSON'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/FavouriteJSON'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
+      summary: Create Favourites
+      tags:
+      - Favourites
+  /favourites:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all favourite/liked messages
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/favourite.GetFavouritesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http_helper.errorResponse'
+      summary: Get Favourites
+      tags:
+      - Favourites
   /session/forgot_password:
     post:
       consumes:
