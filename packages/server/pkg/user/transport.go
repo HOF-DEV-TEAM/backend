@@ -89,7 +89,7 @@ func NewJSONUser(u *User) *UserJSON {
 	}
 }
 
-// CreateGetUserHandler godoc
+// GetUserHandler godoc
 //
 //	@Summary		Sign up a new user
 //	@Description	Creates a new user with the input payload
@@ -99,7 +99,11 @@ func NewJSONUser(u *User) *UserJSON {
 //	@Param			SignUpUserRequestJSON	body		SignUpUserRequestJSON	true	"Create user"
 //	@Success		200						{object}	UserJSON
 //	@Router			/session/sign_up [post]
-func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func GetUserHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getUserHandler, svc)
+}
+
+func getUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var u SignUpUserRequestJSON
 	err := json.NewDecoder(r.Body).Decode(&u)
 
@@ -129,7 +133,7 @@ func CreateGetUserHandler(w http.ResponseWriter, r *http.Request, svc interface{
 //	@Param			LoginRequestJSON	body		LoginRequestJSON	true	"Sign in user"
 //	@Success		200					{object}	UserSession
 //	@Router			/session/sign_in [post]
-func CreateSignInHandler(svc Service) http.HandlerFunc {
+func SignInHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req LoginRequestJSON
 		err := json.NewDecoder(r.Body).Decode(&req)

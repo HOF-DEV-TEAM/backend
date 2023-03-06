@@ -18,53 +18,6 @@
     "basePath": "/hof",
     "paths": {
         "/audio_message": {
-            "get": {
-                "description": "Retrieves an audio message",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Audio Message"
-                ],
-                "summary": "Get Audio Message",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "search message by series id =\u003e returns all messages if value is * i.e series_id=* or omitted, returns non-series messages if value is ? i.e series_id=?",
-                        "name": "series_id",
-                        "in": "path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/audio_message.GetAudiosMessagesResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            },
             "post": {
                 "description": "The endpoint takes an AudioMessageJSON requests and creates a new audio message",
                 "consumes": [
@@ -92,210 +45,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/audio_message/id/message/{message_id}": {
-            "get": {
-                "description": "Get Audio Message By ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Audio Message"
-                ],
-                "summary": "Get Audio Message",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audio message id",
-                        "name": "message_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/audio_series": {
-            "get": {
-                "description": "Retrieve an audio series",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Audio Series"
-                ],
-                "summary": "Get an audio series",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/audio_message.GetAudiosSeriesResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Admin will be able to create/insert new audio series with the input payload",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Audio Series"
-                ],
-                "summary": "Admin can create new audio series",
-                "parameters": [
-                    {
-                        "description": "Create audio series request body",
-                        "name": "AudioSeriesJSON",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/audio_message.AudioSeriesJSON"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/audio_message.AudioSeriesJSON"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/audio_series/id/series/{series_id}": {
-            "get": {
-                "description": "Get Audio Series By ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Audio Series"
-                ],
-                "summary": "Get an audio series",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audio series id",
-                        "name": "series_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "$ref": "#/definitions/audio_message.AudioSeriesJSON"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
                         }
                     },
                     "400": {
@@ -333,19 +83,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -383,19 +121,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -569,19 +295,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -619,19 +333,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/http_helper.DefaultResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "body": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -674,69 +376,6 @@
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "audio_message.AudioSeriesJSON": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "type": "string"
-                },
-                "date_added": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "description": "@Param series_id",
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "last_updated": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "audio_message.GetAudiosMessagesResponse": {
-            "type": "object",
-            "properties": {
-                "audio_messages": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/audio_message.AudioMessageJSON"
-                    }
-                },
-                "pagination": {
-                    "$ref": "#/definitions/audio_message.PageResponse"
-                }
-            }
-        },
-        "audio_message.GetAudiosSeriesResponse": {
-            "type": "object",
-            "properties": {
-                "audio_series": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/audio_message.AudioSeriesJSON"
-                    }
-                },
-                "pagination": {
-                    "$ref": "#/definitions/audio_message.PageResponse"
-                }
-            }
-        },
-        "audio_message.PageResponse": {
-            "type": "object",
-            "properties": {
-                "totalResults": {
-                    "type": "integer"
                 }
             }
         },

@@ -49,8 +49,7 @@ func (r audioMessageRepository) Close() error {
 	return nil
 }
 
-func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {
-	// sql insert query, primary key provided by autoincrement
+func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {	
 	const SQL = "INSERT INTO audio_messages (" +
 		"title," +
 		"author," +
@@ -278,9 +277,9 @@ func buildQuery(query string, filter *Filter) (string, []interface{}, error) {
 	case "", "*":
 		break
 	case "?":
-		sqlSmt += " WHERE series_id IS NULL"
+		sqlSmt += " AND series_id IS NULL"
 	default:
-		sqlSmt += " WHERE series_id=$1"
+		sqlSmt += " AND series_id=$1"
 		queryParams = append(queryParams, filter.SeriesID)
 	}
 	return sqlSmt, queryParams, nil

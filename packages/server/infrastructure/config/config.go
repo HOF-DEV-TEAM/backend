@@ -16,6 +16,12 @@ type ServerConfig struct {
 	Database         DatabaseConfig
 	AwsConfiguration AwsConfiguration
 	Security         security.SecurityConfig
+	PaystackConfig   PaystackConfig
+}
+
+type PaystackConfig struct {
+	Addr           string `env:"PAYSTACK_ADDR" envDefault:"https://api.paystack.co"`
+	PaystackSecret string `env:"PAYSTACK_SECRET"`
 }
 
 type AwsConfiguration struct {
@@ -43,6 +49,7 @@ func Read(logger zap.Logger) (*ServerConfig, error) {
 		&serverConfig.Database,
 		&serverConfig.Security,
 		&serverConfig.AwsConfiguration,
+		&serverConfig.PaystackConfig,
 	} {
 		if err := env.Parse(target); err != nil {
 			return &serverConfig, err
