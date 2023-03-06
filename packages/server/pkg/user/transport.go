@@ -123,7 +123,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	http_helper.EncodeResult(w, payload, http.StatusOK)
 }
 
-// CreateSignInHandler godoc
+// SignInHandler godoc
 //
 //	@Summary		Create a new session
 //	@Description	Authenticates a user and returns a session

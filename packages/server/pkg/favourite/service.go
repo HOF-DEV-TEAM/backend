@@ -17,8 +17,8 @@ var (
 
 type Service interface {
 	CreateFavourite(ctx context.Context, favourite *Favourite) (*Favourite, error)
-	GetFavourites(ctx context.Context) ([]*Favourite, int, error)
-	DeleteFavourite(ctx context.Context, favId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error)
+	GetFavourites(ctx context.Context) (GetFavouritesResponse, error)
+	DeleteFavourite(ctx context.Context, favId string) (uuid.UUID, error)
 }
 type favouritesService struct {
 	repo   Repository
@@ -71,7 +71,7 @@ func (s *favouritesService) CreateFavourite(ctx context.Context, favourite *Favo
 
 	if err != nil {
 		s.log.Error("msg",
-			zap.String("method", "CreateAudioMessage"),
+			zap.String("method", "CreateFavourite"),
 			zap.String("error", err.Error()),
 		)
 		return nil, err
@@ -79,10 +79,37 @@ func (s *favouritesService) CreateFavourite(ctx context.Context, favourite *Favo
 	return result, nil
 }
 
-func (s *favouritesService) GetFavourites(ctx context.Context) ([]*Favourite, int, error) {
-	return nil, 0, nil
+func (s *favouritesService) GetFavourites(ctx context.Context) (GetFavouritesResponse, error) {
+	result := GetFavouritesResponse{}
+
+	fav, count, err := s.repo.GetFavourites(ctx)
+	if err == sql.ErrNoRows {
+		return result, err
+	}
+
+	result.Favourites = []*FavMessageJSON{}
+
+	for _, as := range fav {
+		result.Favourites = append(result.Favourites, NewJSONFavMessage(as))
+	}
+
+	result.Pagination = PageResponse{
+		TotalResults: int32(count),
+	}
+
+	return result, nil
 }
 
-func (s *favouritesService) DeleteFavourite(ctx context.Context, favId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error) {
-	return uuid.Nil, nil
+func (s *favouritesService) DeleteFavourite(ctx context.Context, favId string) (uuid.UUID, error) {
+	favID, err := uuid.FromString(favId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	result, err := s.repo.DeleteFavourite(ctx, favID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return result, nil
 }

@@ -66,11 +66,15 @@ func (app *application) buildRoutes() {
 		subscritpionRepo := subscription.NewRepository(app.db, app.logger)
 		subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security)
 
+		favouritesRepo := favourite.NewRepository(app.db, app.logger)
+		favouritesService := favourite.NewService(favouritesRepo, app.logger, &app.config.Security)
+
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
 		buildAudioSeriesEndpoints(r, audioMessageService)
 		buildUploadEndpoints(r, uploaderService)
 		buildSubscriptionEndpoints(r, subscriptionSvc)
+		buildFavEndpoints(r, favouritesService)
 	})
 
 	//unprotected routes
@@ -155,9 +159,13 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 
 func buildFavEndpoints(router chi.Router, svc favourite.Service) {
 	favRouter := chi.NewRouter()
-	favHandler := favourite.CreateFavouriteHandler(svc)
+	createFavouriteHandler := favourite.CreateFavouriteHandler(svc)
+	getAllFavouritesHandler := favourite.GetFavouritesHandler(svc)
+	deleteFavouriteHandler := favourite.DeleteFavouritesHandler(svc)
 
-	favRouter.Post("/", favHandler)
+	favRouter.Post("/", createFavouriteHandler)
+	favRouter.Get("/favourites", getAllFavouritesHandler)
+	favRouter.Delete("/delete/{fav_id}", deleteFavouriteHandler)
 
 	router.Mount("/fav", favRouter)
 }
