@@ -167,7 +167,7 @@ func getFavouritesHandler(w http.ResponseWriter, r *http.Request, s interface{})
 //	@Produce		json
 //	@Success		200			{object}	uuid.UUID
 //
-//	@Param			fav_id	path		string	true	"audio series id"
+//	@Param			fav_id	path		string	true	"favourite id"
 //	@Failure		400			{object}	http_helper.errorResponse
 //
 //	@Router			/delete/{series_id} [delete]
