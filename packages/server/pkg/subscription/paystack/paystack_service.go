@@ -36,8 +36,6 @@ func (pc *paystackService) CreateSubscription(ctx context.Context, subReq *subsc
 
 	var paystackCustomerCode string
 
-	// fmt.Printf("%+v", user)
-
 	if !user.PaystackCustomerCode.Valid {
 		customer := PaystackCustomer{
 			Email: user.Email,
@@ -78,6 +76,7 @@ func (pc *paystackService) CreateSubscription(ctx context.Context, subReq *subsc
 
 func (pc *paystackService) CreateSubscriptionPlan(ctx context.Context, subscritpionPlan *subscription.SubscriptionPlanRequest) (*subscription.SubscriptionPlan, error) {
 	result, err := pc.payStackClient.CreateSubscriptionPlan(ctx, subscritpionPlan)
+	
 
 	if err != nil {
 		return nil, err
@@ -94,4 +93,12 @@ func (pc *paystackService) ChangeSubscription(ctx context.Context) {
 }
 
 func (pc *paystackService) MakePayment(ctx context.Context) {
+}
+
+func (pc *paystackService) GetSubscriptionPlanOfferings(ctx context.Context) ([]*subscription.SubscriptionPlanOffering, int, error) {
+	return []*subscription.SubscriptionPlanOffering{}, 0, nil
+}
+
+func (pc *paystackService) CreateSubscriptionPlanOffering(ctx context.Context, _ *subscription.SubscriptionPlanOfferingRequest) (string, error) {
+	return "", nil
 }

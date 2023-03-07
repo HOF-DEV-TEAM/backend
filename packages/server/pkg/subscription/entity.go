@@ -2,7 +2,10 @@ package subscription
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"errors"
+	"strings"
 )
 
 type SubscriptionProvider struct {
@@ -93,7 +96,7 @@ func (e FreqEnum) MarshalText() ([]byte, error) {
 
 // UnMarshalText interface implementation FreqEnum into text.
 func (e *FreqEnum) UnMarshalText(from []byte) error {
-	switch string(from) {
+	switch strings.ToLower(string(from)) {
 	case "hourly":
 		*e = Hourly
 	case "daily":
@@ -112,10 +115,158 @@ func (e *FreqEnum) UnMarshalText(from []byte) error {
 	return nil
 }
 
+// MarshalText interface implementation FreqEnum into text.
+func (e FreqEnum) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.String())	
+}
+
+
+// UnMarshalText interface implementation FreqEnum into text.
+func (e *FreqEnum) UnmarshalJSON(from []byte) error {	
+	switch strings.ToLower(string(from)) {
+	case "hourly":
+		*e = Hourly
+	case "daily":
+		*e = Daily
+	case "weekly":
+		*e = Weekly
+	case "monthly":
+		*e = Monthly
+	case "quarterly":
+		*e = Quarterly
+	case "yearly", "annually":
+		*e = Yearly
+	default:
+		return errors.New("invalid FreqEnum")
+	}
+	return nil
+}
+
+// sql/driver.Valuer interface implementation for TypeEnum
+func (e FreqEnum) Value() (driver.Value, error) {
+	switch e {
+	case Hourly:
+		return 0, nil
+	case Daily:
+		return 1, nil
+	case Weekly:
+		return 2, nil
+	case Monthly:		
+		return 3, nil
+	case Quarterly:
+		return 4, nil
+	case Yearly:
+		return 5, nil
+
+	default:
+		return 3, nil
+	}
+}
+
+// UnMarshalText interface implementation FreqEnum into text.
+// func (e *FreqEnum) Scan(src interface{}) error {
+// 	if src == nil {
+// 		*e = Monthly
+// 		return nil
+// 	}
+	
+// 	buf, ok := src.([]byte)
+
+// 	if !ok {
+// 		return errors.New("invalid FreqEnum")		
+// 	}
+// 	fmt.Println(string(buf), "buffer")
+// 	return e.UnMarshalText(buf)
+// }
+
+
+type TypeEnum uint16
+
+const (
+	Premium = TypeEnum(1)
+	Regular = TypeEnum(0)
+)
+
+func (e TypeEnum) String() string {
+	switch e {
+	case Premium:
+		return "Premium"
+	case Regular:
+		return "Regular"
+	default:
+		return "invalid"
+	}
+}
+
+// MarshalText interface implementation TypeEnum into text.
+func (e TypeEnum) MarshalText() ([]byte, error) {
+	return []byte(e.String()), nil
+}
+
+// UnMarshalText interface implementation TypeEnum into text.
+func (e *TypeEnum) UnMarshalText(from []byte) error {
+	switch strings.ToLower(string(from)) {
+	case "premium":
+		*e = Premium
+	case "regular":
+		*e = Regular
+	default:
+		return errors.New("invalid TypeEnum")
+	}
+	return nil
+}
+
+// MarshalText interface implementation TypeEnum into text.
+func (e TypeEnum) MarshalJSON() ([]byte, error) {
+	return json.Marshal(e.String())	
+}
+
+// UnMarshalText interface implementation TypeEnum into text.
+func (e *TypeEnum) UnmarshalJSON(from []byte) error {
+	s := strings.ToLower(string(from))	
+	switch s {
+	case "premium":		
+		*e = Premium
+	case "regular":
+		*e = Regular
+	default:
+		return errors.New("invalid TypeEnum")
+	}
+	return nil
+}
+
+
+// sql/driver.Valuer interface implementation for TypeEnum
+func (e TypeEnum) Value() (driver.Value, error) {
+	switch e {
+	case Premium:
+		return 1, nil
+	case Regular:
+		return 0, nil
+	default:
+		return 0, nil
+	}
+}
+
+// UnMarshalText interface implementation TypeEnum into text.
+// func (e *TypeEnum) Scan(src interface{}) error {
+// 	if src == nil {
+// 		*e = Regular
+// 		return nil
+// 	}
+	
+// 	buf, ok := src.([]byte)
+
+// 	if !ok {
+// 		return errors.New("invalid TypeEnum")		
+// 	}
+// 	return e.UnMarshalText(buf)
+// }
+
 type SubscriptionPlan struct {
 	ID                     string         `sql:"id"`
 	Name                   string         `sql:"name" validate:"required"`
-	Type                   int            `sql:"int"`
+	Type                   TypeEnum  	  `sql:"int"`
 	Freq                   FreqEnum       `sql:"freq"`
 	Fee                    float64        `sql:"float64"`
 	Status                 StatusEnum     `sql:"status"`
@@ -139,12 +290,21 @@ type SubscriptionOffering struct {
 }
 
 type SubscriptionPlanOffering struct {
+	//SubscriptionPlan
+	Type   TypeEnum  `sql:"int"`
+	Freq   FreqEnum       `sql:"freq"`
+	Fee    float64        `sql:"float64"`
+	PlanCode string `sql:"code"`
+
+	//SubscriptionOffering
+	Name string `sql:"name" validate:"required"`
+
 	ID                     string         `sql:"id"`
 	Status                 int            `sql:"freq"`
 	DateAdded              sql.NullString `sql:"date_added"`
 	LastUpdated            sql.NullString `sql:"last_updated"`
-	SubscritpionProviderID sql.NullString `sql:"subscription_provider_id"`
-	SubscritpionOfferingID sql.NullString `sql:"subscription_offering_id"`
+	SubscriptionPlanID     sql.NullString `sql:"subscription_plan_id"`
+	SubscriptionOfferingID sql.NullString `sql:"subscription_offering_id"`
 	DeletedAt              sql.NullString `sql:"deleted_at"`
 }
 
