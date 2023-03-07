@@ -48,8 +48,7 @@ func (r *PayStackClientHttp) getHeaders(_ context.Context) (http_helper.HttpHead
 	return headerValues, nil
 }
 
-func (r *PayStackClientHttp) CreateSubscription(ctx context.Context, subRequest *subscription.SubscriptionRequest) (*SubscriptionResponse, error){
-	fmt.Println(subRequest, "subRequest")
+func (r *PayStackClientHttp) CreateSubscription(ctx context.Context, subRequest *subscription.SubscriptionRequest) (*SubscriptionResponse, error){	
 	resp, err := r.doPostSubscription(ctx, subRequest)
 
 	if err != nil {
@@ -67,7 +66,7 @@ func (r *PayStackClientHttp) CreateSubscription(ctx context.Context, subRequest 
 
 	json.Unmarshal(bytes, &response)
 	r.logger.Info("msg", zap.String(response.Message, ""))
-	fmt.Printf("%+v", response)
+		
 	if !response.Status {
 		return nil, errors.New(response.Message)
 	}
@@ -99,8 +98,6 @@ func (r *PayStackClientHttp) CreateSubscriptionPlan(ctx context.Context, planInf
 	if !response.Status {
 		return nil, errors.New(response.Message)
 	}
-
-	
 
 	return &response, nil
 }

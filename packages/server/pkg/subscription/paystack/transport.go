@@ -15,7 +15,7 @@ type PaystackResponse struct {
 
 type PlanResponseData struct {
 	Name         string                `json:"name"`
-	Interval     subscription.FreqEnum `json:"interval"`
+	Interval     subscription.FreqEnum `json:"interval,string,omit_empty"`
 	Currency     string                `json:"currency"`
 	PlanCode     string                `json:"plan_code"`
 	Amount       float64               `json:"amount"`

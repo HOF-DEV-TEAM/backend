@@ -145,10 +145,13 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	createSubscriptionHandler := subscription.CreateSubscriptionHandler(svc)
 	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
 	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
-
+	getSubscriptionPlanOfferings := subscription.GetSubscriptionPlanOfferingsHandler(svc)
+	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
 	
 	router.Post("/subscription", createSubscriptionHandler)
-	// router.Get("/subscription", createSubscriptionHandler)
+	// router.Get("/subscription", createSubscriptionHandler)	
 	router.Post("/subscription/plan", createSubscriptionPlanHandler)
 	router.Post("/subscription/offering", createSubscriptionOfferingHandler)
+	router.Get("/subscription/plan/offering", getSubscriptionPlanOfferings)
+	router.Post("/subscription/plan/offering", createSubscritionPlanOfferings)
 }
