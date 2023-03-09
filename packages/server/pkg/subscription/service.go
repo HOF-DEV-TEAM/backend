@@ -2,11 +2,12 @@ package subscription
 
 import (
 	"context"
-	"database/sql"	
+	"database/sql"
 	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
+	"bitbucket.org/hofng/hofApp/pkg/user"
 )
 
 type SubscriptionService interface {
@@ -16,22 +17,25 @@ type SubscriptionService interface {
 	CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOfferingRequest) (string, error)
+	VerifySubscription(ctx context.Context, subRef string) (*Subscription, error)
 	MakePayment(ctx context.Context)
 }
 
 type Service interface {
+	GetSession(ctx context.Context) (*user.UserSession, error)
 	CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error)
 	SubscriptionService
 }
 
 type subscriptionSvc struct {
 	repo        Repository
+	userRepo    user.Repository
 	config      *security.SecurityConfig
 	subProvider SubscriptionService //implements subsription service
 }
 
-func NewService(subProvider SubscriptionService, repo Repository, config *security.SecurityConfig) Service {
-	return &subscriptionSvc{subProvider: subProvider, repo: repo, config: config}
+func NewService(subProvider SubscriptionService, repo Repository, config *security.SecurityConfig, userRepo user.Repository) Service {
+	return &subscriptionSvc{subProvider: subProvider, repo: repo, userRepo: userRepo, config: config}
 }
 
 func (ss *subscriptionSvc) CreateSubscription(ctx context.Context, subReq *SubscriptionRequest) (*Subscription, error) {
@@ -79,7 +83,7 @@ func (ss *subscriptionSvc) ChangeSubscription(ctx context.Context) {
 func (ss *subscriptionSvc) CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error) {
 	//validate input
 	planType := subscriptionPlan.Type
-	var dummyType  TypeEnum
+	var dummyType TypeEnum
 	subscriptionPlan.Type = dummyType
 
 	plan, err := ss.subProvider.CreateSubscriptionPlan(ctx, subscriptionPlan)
@@ -90,7 +94,6 @@ func (ss *subscriptionSvc) CreateSubscriptionPlan(ctx context.Context, subscript
 
 	plan.Type = planType
 	return ss.repo.CreateSubscriptionPlan(ctx, plan)
-
 }
 
 func (ss *subscriptionSvc) MakePayment(ctx context.Context) {
@@ -103,6 +106,10 @@ func (ss *subscriptionSvc) CreateSubscriptionOffering(ctx context.Context, offer
 
 func (ss *subscriptionSvc) GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error) {
 	return ss.repo.GetSubscriptionPlanOfferings(ctx)
+}
+
+func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subRef string) (*Subscription, error) {
+	return ss.subProvider.VerifySubscription(ctx, subRef)
 }
 
 func (ss *subscriptionSvc) CreateSubscriptionPlanOffering(ctx context.Context, subReq *SubscriptionPlanOfferingRequest) (string, error) {
@@ -120,4 +127,27 @@ func (ss *subscriptionSvc) CreateSubscriptionPlanOffering(ctx context.Context, s
 	}
 
 	return ss.repo.CreateSubscriptionPlanOffering(ctx, sub)
+}
+
+func (ss *subscriptionSvc) GetSession(ctx context.Context) (*user.UserSession, error) {
+	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim)
+	userId := claims.JWTClaimsMain.LoggedInUserId
+
+	if !ok {
+		return nil, nil
+	}
+
+	u, err := ss.userRepo.GetById(ctx, userId)
+	if err != nil {
+
+		return nil, err
+	}
+
+	updatedJWTToken, err := claims.PutUserIDAndSign(ss.config, claims.JWTClaimsMain.LoggedInUserId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user.UserSession{User: user.NewJSONUser(u), Token: updatedJWTToken}, nil
 }

@@ -25,6 +25,7 @@ pipelines:
               - export WEB_DOCKER_IMAGE_ID=$(cat WEB_DOCKER_IMAGE_ID)
               - chmod +x ./deploy.sh
               - ./deploy.sh
+              - heroku container:release web -a $APP_NAME
               - echo "Done..."
 
 
