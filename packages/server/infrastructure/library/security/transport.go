@@ -1,7 +1,7 @@
 package security
 
 import (
-	"context"	
+	"context"
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
@@ -15,42 +15,26 @@ func (config *SecurityConfig) Authenticator(next http.Handler) http.Handler {
 
 		tokenString,  err := config.FromContext(ctx)
 		if err != nil {
-			http_helper.EncodeJSONError(ctx, ErrUnauthorized, w)
+			http_helper.EncodeJSONError(ctx, http_helper.ErrUnauthorized, w)
 			return
 		}
 
 		claims := &JWTClaim{}
 		token, err := jwt.ParseWithClaims((tokenString), claims, func(t *jwt.Token) (interface{}, error) {			
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {							
-				return nil, ErrUnauthorized
+				return nil, http_helper.ErrUnauthorized
 			}
 			
 			return []byte(config.JWTSecret), nil
 		})
 
 		if err != nil {
-			if e, ok := err.(*jwt.ValidationError); ok {
-				switch {
-				case e.Errors&jwt.ValidationErrorMalformed !=0:
-					//Token is malformed
-					http_helper.EncodeJSONError(ctx, ErrUnauthorized, w)
-					return
-				case e.Errors&jwt.ValidationErrorExpired !=0:
-					//Token is expired
-					http_helper.EncodeJSONError(ctx, ErrUnauthorized, w)
-					return
-				case e.Errors&jwt.ValidationErrorNotValidYet !=0:					
-					//Token is not active yet
-					http_helper.EncodeJSONError(ctx, ErrUnauthorized, w)
-					return
-				case e.Inner != nil:
-					http_helper.EncodeJSONError(ctx, e.Inner, w)
-					return
-				}
-			}
+			http_helper.EncodeJSONError(ctx, err, w)	
+			return	
 		}
+
 		if !token.Valid {			
-			http_helper.EncodeJSONError(ctx, ErrUnauthorized, w)
+			http_helper.EncodeJSONError(ctx, http_helper.ErrUnauthorized, w)
 			return
 		}
 
@@ -65,3 +49,5 @@ func (v *JWTClaim) PutUserIDAndSign(config *SecurityConfig, userId string) (stri
 	v.JWTClaimsMain.LoggedInUserId = userId
 	return v.Sign(config)
 }
+
+

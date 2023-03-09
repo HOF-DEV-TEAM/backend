@@ -31,7 +31,7 @@ type UserJSON struct {
 	Address     string         `json:"address,omitempty"`
 	Mobile      string         `json:"mobile,omitempty"`
 	Gender      string         `json:"gender,omitempty"`
-	IsVerified  IsVerifiedEnum `json:"is_verified,omitempty"`
+	IsVerified  IsVerifiedEnum `json:"is_verified"`
 	NewJWTToken string         `json:"newToken,omitempty"`
 } //	@name	UserJSON
 
@@ -57,6 +57,7 @@ func (u *UserJSON) ToUser() *User {
 		LastName:  u.LastName,
 		Address:   u.Address,
 		Gender:    u.Gender,
+		IsVerified: u.IsVerified,
 	}
 
 	if u.Mobile != "" {
@@ -86,6 +87,7 @@ func NewJSONUser(u *User) *UserJSON {
 		Mobile:    u.Mobile.String,
 		Gender:    u.Gender,
 		Username:  u.UserName,
+		IsVerified: u.IsVerified,
 	}
 }
 

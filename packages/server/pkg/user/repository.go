@@ -292,7 +292,7 @@ func (r *userRepository) ResetPassword(request ResetPasswordPayload) (uuid.UUID,
 }
 
 func (r *userRepository) UpdatePaystack(ctx context.Context, user *User) (uuid.UUID, error) {
-	sqlQuery := `UPDATE users SET paystack_customer_code=$1, paystack_customer_id=$2 WHERE id = $3 RETURNING id`
+	sqlQuery := `UPDATE users SET paystack_customer_code=$1, paystack_customer_id=$2, is_verified=$3 WHERE id = $4 RETURNING id`
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
 		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
@@ -303,7 +303,8 @@ func (r *userRepository) UpdatePaystack(ctx context.Context, user *User) (uuid.U
 		ctx, 
 		user.PaystackCustomerCode,
 		user.PaystackCustomerId,
-		user.ID,
+		user.IsVerified,
+		user.ID,		
 	)
 	if err := row.Scan(&userID); err != nil {
 		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
