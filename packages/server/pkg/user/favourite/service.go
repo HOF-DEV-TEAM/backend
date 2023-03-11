@@ -1,6 +1,7 @@
 package favourite
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
 	"context"
 	"database/sql"
@@ -16,7 +17,7 @@ var (
 )
 
 type Service interface {
-	CreateFavourite(ctx context.Context, favourite *Favourite) (*Favourite, error)
+	CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error)
 	GetFavourites(ctx context.Context) (GetFavouritesResponse, error)
 	DeleteFavourite(ctx context.Context, favId string) (uuid.UUID, error)
 }
@@ -30,19 +31,19 @@ func NewService(repo Repository, log *zap.Logger, config *security.SecurityConfi
 	return &favouritesService{log: log, repo: repo, config: config}
 }
 
-func (s *favouritesService) validateStruct(audioMessage *Favourite) error {
+func (s *favouritesService) validateStruct(fav *Favourites) error {
 	validate := validator.New()
 
-	return validate.Struct(audioMessage)
+	return validate.Struct(fav)
 }
 
-func (s *favouritesService) validateAudioSeriesStruct(audioSeries *Favourite) error {
+func (s *favouritesService) validateFavouriteStruct(audioSeries *Favourites) error {
 	validate := validator.New()
 
 	return validate.Struct(audioSeries)
 }
 
-func (s *favouritesService) CreateFavourite(ctx context.Context, favourite *Favourite) (*Favourite, error) {
+func (s *favouritesService) CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error) {
 	err := s.validateStruct(favourite)
 	if err != nil {
 		tErr, ok := err.(validator.ValidationErrors)
@@ -55,15 +56,22 @@ func (s *favouritesService) CreateFavourite(ctx context.Context, favourite *Favo
 			switch e.StructField() {
 			case "UserID":
 				return nil, ErrFieldRequired
-			case "MessageID":
-				return nil, ErrFieldRequired
 			default:
 				s.log.Info("untyped validation error", zap.String("field", e.StructField()))
 			}
 		}
 		return nil, err
 	}
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return nil, http_helper.ErrInvalidAccount
+	}
+	userId, err := uuid.FromString(claims.JWTClaimsMain.LoggedInUserId)
+	if err != nil {
+		return nil, err
+	}
 
+	favourite.UserID = userId
 	result, err := s.repo.CreateFavourite(ctx, favourite)
 	if err == sql.ErrNoRows {
 		return nil, err
@@ -82,7 +90,17 @@ func (s *favouritesService) CreateFavourite(ctx context.Context, favourite *Favo
 func (s *favouritesService) GetFavourites(ctx context.Context) (GetFavouritesResponse, error) {
 	result := GetFavouritesResponse{}
 
-	fav, count, err := s.repo.GetFavourites(ctx)
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return result, http_helper.ErrInvalidAccount
+	}
+
+	userId, err := uuid.FromString(claims.JWTClaimsMain.LoggedInUserId)
+	if err != nil {
+		return result, err
+	}
+
+	fav, count, err := s.repo.GetFavourites(ctx, userId)
 	if err == sql.ErrNoRows {
 		return result, err
 	}
@@ -100,13 +118,21 @@ func (s *favouritesService) GetFavourites(ctx context.Context) (GetFavouritesRes
 	return result, nil
 }
 
-func (s *favouritesService) DeleteFavourite(ctx context.Context, favId string) (uuid.UUID, error) {
-	favID, err := uuid.FromString(favId)
+func (s *favouritesService) DeleteFavourite(ctx context.Context, messageId string) (uuid.UUID, error) {
+	messageID, err := uuid.FromString(messageId)
 	if err != nil {
 		return uuid.Nil, err
 	}
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return uuid.Nil, http_helper.ErrInvalidAccount
+	}
 
-	result, err := s.repo.DeleteFavourite(ctx, favID)
+	userId, err := uuid.FromString(claims.JWTClaimsMain.LoggedInUserId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	result, err := s.repo.DeleteFavourite(ctx, messageID, userId)
 	if err != nil {
 		return uuid.Nil, err
 	}

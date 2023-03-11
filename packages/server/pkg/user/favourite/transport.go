@@ -2,7 +2,6 @@ package favourite
 
 import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
-	"database/sql"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/gofrs/uuid"
@@ -10,23 +9,24 @@ import (
 	"time"
 )
 
-func NullSQL(s sql.NullString) string {
-	if !s.Valid {
-		return ""
-	}
-
-	return s.String
-}
-
 type FavouriteJSON struct {
-	ID        uuid.UUID `json:"id,omitempty"`
-	UserID    uuid.UUID `json:"user_id"`
+	ID     uuid.UUID     `json:"id,omitempty"`
+	UserID uuid.UUID     `json:"user_id"`
+	Fav    []FavBodyJSON `json:"fav"`
+} // @name FavouriteJSON
+
+//type FavsJSON struct {
+//	Favourite []FavBodyJSON `json:"favourite"`
+//} // @name FavsJSON
+//
+
+type FavBodyJSON struct {
 	MessageID uuid.UUID `json:"message_id"`
 	SeriesID  string    `json:"series_id"`
 	Fav       bool      `json:"fav"`
 	DateAdded string    `json:"date_added"`
 	DeletedAt string    `json:"deleted_at"`
-} // @name FavouriteJSON
+} // @name FavBodyJSON
 
 type FavMessageJSON struct {
 	ID          uuid.UUID `json:"id"`
@@ -50,36 +50,64 @@ type GetFavouritesResponse struct {
 	Pagination PageResponse      `json:"pagination"`
 } //	@name	GetAudiosSeriesResponse
 
-func (fav *FavouriteJSON) ToFavourite() *Favourite {
+func (fav *FavouriteJSON) ToFavourite() *Favourites {
+	var favBody []FavBody
 
-	result := &Favourite{
-		UserID:    fav.UserID,
-		MessageID: fav.MessageID,
+	for _, val := range fav.Fav {
+		fav := FavBody{
+			MessageID: val.MessageID,
+			SeriesID:  val.SeriesID,
+			Fav:       val.Fav,
+			DateAdded: val.DateAdded,
+			DeletedAt: val.DeletedAt,
+		}
+		favBody = append(favBody, fav)
 	}
-	if fav.Fav {
-		result.Fav = fav.Fav
+
+	//result := &Favourites{
+	//	UserID: fav.UserID,
+	//	Fav: Favs{
+	//		favBody,
+	//	},
+	//}
+
+	result := &Favourites{
+		UserID: fav.UserID,
+		Fav:    favBody,
 	}
-	if fav.SeriesID != "" {
-		result.SeriesID = sql.NullString{Valid: true, String: fav.SeriesID}
-	}
-	if fav.DateAdded != "" {
-		result.DateAdded = sql.NullString{Valid: true, String: fav.DateAdded}
-	}
-	if fav.DeletedAt != "" {
-		result.DateAdded = sql.NullString{Valid: true, String: fav.DeletedAt}
-	}
+
 	return result
 }
 
-func NewJSONFavourite(fav *Favourite) *FavouriteJSON {
+func NewJSONFavourite(fav *Favourites) *FavouriteJSON {
+	var favBodyJson []FavBodyJSON
+
+	//for _, val := range fav.Fav.Favourite {
+	//	fav := FavBodyJSON{
+	//		MessageID: val.MessageID,
+	//		SeriesID:  val.SeriesID,
+	//		Fav:       val.Fav,
+	//		DateAdded: val.DateAdded,
+	//		DeletedAt: val.DeletedAt,
+	//	}
+	//	favBodyJson = append(favBodyJson, fav)
+	//}
+
+	for _, val := range fav.Fav {
+		fav := FavBodyJSON{
+			MessageID: val.MessageID,
+			SeriesID:  val.SeriesID,
+			Fav:       val.Fav,
+			DateAdded: val.DateAdded,
+			DeletedAt: val.DeletedAt,
+		}
+		favBodyJson = append(favBodyJson, fav)
+	}
+
 	return &FavouriteJSON{
-		ID:        fav.ID,
-		UserID:    fav.UserID,
-		MessageID: fav.MessageID,
-		SeriesID:  fav.SeriesID.String,
-		Fav:       fav.Fav,
-		DateAdded: fav.DateAdded.String,
-		DeletedAt: fav.DeletedAt.String,
+		ID:     fav.ID,
+		UserID: fav.UserID,
+		Fav:    favBodyJson,
 	}
 }
 
@@ -115,15 +143,22 @@ func CreateFavouriteHandler(svc Service) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(createFavouriteHandler, svc)
 }
 func createFavouriteHandler(w http.ResponseWriter, r *http.Request, s interface{}) {
-	var fav FavouriteJSON
-
+	var (
+		fav       FavouriteJSON
+		Favourite []FavBodyJSON
+	)
 	err := json.NewDecoder(r.Body).Decode(&fav)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
 
-	fav.DateAdded = time.Now().Format(time.RFC3339)
+	for _, bodyJSON := range fav.Fav {
+		bodyJSON.DateAdded = time.Now().Format(time.RFC3339)
+		Favourite = append(Favourite, bodyJSON)
+	}
+	fav.Fav = Favourite
+
 	result, err := s.(Service).CreateFavourite(r.Context(), fav.ToFavourite())
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
@@ -149,6 +184,7 @@ func GetFavouritesHandler(svc Service) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(getFavouritesHandler, svc)
 }
 func getFavouritesHandler(w http.ResponseWriter, r *http.Request, s interface{}) {
+
 	result, err := s.(Service).GetFavourites(r.Context())
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
@@ -174,10 +210,9 @@ func getFavouritesHandler(w http.ResponseWriter, r *http.Request, s interface{})
 func DeleteFavouritesHandler(svc Service) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(deleteFavouritesHandler, svc)
 }
-
 func deleteFavouritesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	favIdParam := chi.URLParam(r, "fav_id")
-	result, err := svc.(Service).DeleteFavourite(r.Context(), favIdParam)
+	messageIdParam := chi.URLParam(r, "message_id")
+	result, err := svc.(Service).DeleteFavourite(r.Context(), messageIdParam)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return

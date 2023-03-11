@@ -1,7 +1,6 @@
 package application
 
 import (
-	"bitbucket.org/hofng/hofApp/pkg/favourite"
 	"errors"
 	"net/http"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/subscription"
 	"bitbucket.org/hofng/hofApp/pkg/subscription/paystack"
 	"bitbucket.org/hofng/hofApp/pkg/user"
+	"bitbucket.org/hofng/hofApp/pkg/user/favourite"
 
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
 	"github.com/go-chi/chi/v5"
@@ -165,7 +165,7 @@ func buildFavEndpoints(router chi.Router, svc favourite.Service) {
 
 	favRouter.Post("/", createFavouriteHandler)
 	favRouter.Get("/favourites", getAllFavouritesHandler)
-	favRouter.Delete("/delete/{fav_id}", deleteFavouriteHandler)
+	favRouter.Delete("/delete/{message_id}", deleteFavouriteHandler)
 
 	router.Mount("/fav", favRouter)
 }
