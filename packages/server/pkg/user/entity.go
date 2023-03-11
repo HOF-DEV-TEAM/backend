@@ -2,6 +2,7 @@ package user
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 )
 
@@ -37,7 +38,7 @@ func (e IsVerifiedEnum) MarshalText() ([]byte, error) {
 // UnMarshalText interface implementation IsVerifiedEnum into text.
 func (e *IsVerifiedEnum) UnMarshalText(from []byte) error {
 	switch string(from) {
-	case "o":
+	case "0":
 		*e = Unverfified
 	case "1":
 		*e = PhoneVerified
@@ -49,6 +50,22 @@ func (e *IsVerifiedEnum) UnMarshalText(from []byte) error {
 		return errors.New("invalid IsVerifiedEnum")
 	}
 	return nil
+}
+
+// sql/driver.Valuer interface implementation for IsVerifiedEnum
+func (e IsVerifiedEnum) Value() (driver.Value, error) {
+	switch e {
+	case Unverfified:
+		return 0, nil
+	case PhoneVerified:
+		return 1, nil
+	case EmailVerified:
+		return 2, nil
+	case EmailAndPhoneVerified:
+		return 3, nil
+	default:
+		return 0, nil
+	}
 }
 
 type User struct {

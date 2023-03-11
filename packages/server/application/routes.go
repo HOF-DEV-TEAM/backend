@@ -26,6 +26,20 @@ func (app *application) buildRoutes() {
 	userRepo := user.NewRepository(app.db, app.logger)
 	userService := user.NewService(userRepo, app.logger, &app.config.Security)
 
+	subscritpionRepo := subscription.NewRepository(app.db, app.logger)
+
+	subProvider := paystack.NewPaystackService(
+		paystack.NewPayStackHttpClient(
+			&app.config.PaystackConfig,
+			http_helper.NewHTTPCaller(),
+			app.logger,
+		),
+		userRepo,
+		subscritpionRepo,
+		&app.config.Security,
+	)
+
+	subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security, userRepo)
 	// TODO - group routing better
 	//setup routes
 
@@ -53,19 +67,6 @@ func (app *application) buildRoutes() {
 		audioMessageService := audio_message.NewService(audioMessageRepo, app.logger, &app.config.Security)
 		uploaderService := uploader.NewService(app.awsClient)
 
-		subProvider := paystack.NewPaystackService(
-			paystack.NewPayStackHttpClient(
-				&app.config.PaystackConfig,
-				http_helper.NewHTTPCaller(),
-				app.logger,
-			),
-			userRepo,
-			&app.config.Security,
-		)
-
-		subscritpionRepo := subscription.NewRepository(app.db, app.logger)
-		subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security)
-
 		favouritesRepo := favourite.NewRepository(app.db, app.logger)
 		favouritesService := favourite.NewService(favouritesRepo, app.logger, &app.config.Security)
 
@@ -80,6 +81,11 @@ func (app *application) buildRoutes() {
 	//unprotected routes
 	app.router.Group(func(r chi.Router) {
 		buildSessionEndpoints(r, userService)
+		//webhook
+
+		subEvent := subscription.NewSubEvent(userRepo, subscritpionRepo, app.logger)
+		createSubscriptionHookHandler := subscription.CreateSubscriptionHookHandler(subEvent)
+		r.Post("/subscription/webhook", createSubscriptionHookHandler)
 	})
 
 }
@@ -96,11 +102,13 @@ func buildSessionEndpoints(router chi.Router, svc user.Service) {
 	signUpUserHandler := user.GetUserHandler(svc)
 	forgotPasswordHandler := user.ForgotPasswordHandler(svc)
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
+	// authenticateHandler := user.AuthenticateHandler(svc)
 
 	sessionsRouter.Post("/sign_in", signInHandler)
 	sessionsRouter.Post("/sign_up", signUpUserHandler)
 	sessionsRouter.Post("/forgot_password", forgotPasswordHandler)
 	sessionsRouter.Post("/reset_password/{token}", resetPasswordHandler)
+	// sessionsRouter.Post("/authenticate/{token}", resetPasswordHandler)
 
 	router.Mount("/session", sessionsRouter)
 }
@@ -147,14 +155,25 @@ func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
 }
 
 func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
+	subRouter := chi.NewRouter()
+
 	createSubscriptionHandler := subscription.CreateSubscriptionHandler(svc)
 	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
 	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
+	getSubscriptionPlanOfferings := subscription.GetSubscriptionPlanOfferingsHandler(svc)
+	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
+	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
 
-	router.Post("/subscription", createSubscriptionHandler)
-	// router.Get("/subscription", createSubscriptionHandler)
-	router.Post("/subscription/plan", createSubscriptionPlanHandler)
-	router.Post("/subscription/offering", createSubscriptionOfferingHandler)
+	subRouter.Post("/", createSubscriptionHandler)
+	// subRouter.Get("/", createSubscriptionHandler)
+	subRouter.Post("/plan", createSubscriptionPlanHandler)
+	subRouter.Get("/verify/{ref_id}", verifySubscriptionHandler)
+
+	subRouter.Post("/offering", createSubscriptionOfferingHandler)
+	subRouter.Get("/plan/offering", getSubscriptionPlanOfferings)
+	subRouter.Post("/plan/offering", createSubscritionPlanOfferings)
+
+	router.Mount("/subscription", subRouter)
 }
 
 func buildFavEndpoints(router chi.Router, svc favourite.Service) {

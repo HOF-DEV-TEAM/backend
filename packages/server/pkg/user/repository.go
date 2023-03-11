@@ -114,18 +114,18 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 
 func (r userRepository) getUser(ctx context.Context, field string, value string) (*User, error) {
 	const SQL = "SELECT " +
-	"id," +
-	"username," +
-	"password," +
-	"first_name," +
-	"last_name," +
-	"email," +
-	"mobile," +
-	"address," +
-	"gender," +
-	"is_verified," +
-	"paystack_customer_code " +
-	"FROM users WHERE %s = $1"
+		"id," +
+		"username," +
+		"password," +
+		"first_name," +
+		"last_name," +
+		"email," +
+		"mobile," +
+		"address," +
+		"gender," +
+		"is_verified," +
+		"paystack_customer_code " +
+		"FROM users WHERE %s = $1"
 
 	var err error
 	// first call, prepare statement for reuse
@@ -292,7 +292,7 @@ func (r *userRepository) ResetPassword(request ResetPasswordPayload) (uuid.UUID,
 }
 
 func (r *userRepository) UpdatePaystack(ctx context.Context, user *User) (uuid.UUID, error) {
-	sqlQuery := `UPDATE users SET paystack_customer_code=$1, paystack_customer_id=$2 WHERE id = $3 RETURNING id`
+	sqlQuery := `UPDATE users SET paystack_customer_code=$1, paystack_customer_id=$2, is_verified=$3 WHERE id = $4 RETURNING id`
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
 		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
@@ -300,9 +300,10 @@ func (r *userRepository) UpdatePaystack(ctx context.Context, user *User) (uuid.U
 	}
 	var userID uuid.UUID
 	row := stmt.QueryRowContext(
-		ctx, 
+		ctx,
 		user.PaystackCustomerCode,
 		user.PaystackCustomerId,
+		user.IsVerified,
 		user.ID,
 	)
 	if err := row.Scan(&userID); err != nil {

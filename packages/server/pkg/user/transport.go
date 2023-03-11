@@ -31,7 +31,7 @@ type UserJSON struct {
 	Address     string         `json:"address,omitempty"`
 	Mobile      string         `json:"mobile,omitempty"`
 	Gender      string         `json:"gender,omitempty"`
-	IsVerified  IsVerifiedEnum `json:"is_verified,omitempty"`
+	IsVerified  IsVerifiedEnum `json:"is_verified"`
 	NewJWTToken string         `json:"newToken,omitempty"`
 } //	@name	UserJSON
 
@@ -49,14 +49,15 @@ type SignUpUserRequestJSON struct {
 
 func (u *UserJSON) ToUser() *User {
 	result := &User{
-		ID:        u.ID,
-		Email:     u.Email,
-		Password:  u.Password,
-		UserName:  u.Username,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Address:   u.Address,
-		Gender:    u.Gender,
+		ID:         u.ID,
+		Email:      u.Email,
+		Password:   u.Password,
+		UserName:   u.Username,
+		FirstName:  u.FirstName,
+		LastName:   u.LastName,
+		Address:    u.Address,
+		Gender:     u.Gender,
+		IsVerified: u.IsVerified,
 	}
 
 	if u.Mobile != "" {
@@ -78,14 +79,15 @@ func (u *SignUpUserRequestJSON) ToSignUpUser() *SignUpUser {
 
 func NewJSONUser(u *User) *UserJSON {
 	return &UserJSON{
-		ID:        u.ID,
-		Email:     u.Email,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Address:   u.Address,
-		Mobile:    u.Mobile.String,
-		Gender:    u.Gender,
-		Username:  u.UserName,
+		ID:         u.ID,
+		Email:      u.Email,
+		FirstName:  u.FirstName,
+		LastName:   u.LastName,
+		Address:    u.Address,
+		Mobile:     u.Mobile.String,
+		Gender:     u.Gender,
+		Username:   u.UserName,
+		IsVerified: u.IsVerified,
 	}
 }
 

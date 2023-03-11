@@ -6,11 +6,29 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/golang-jwt/jwt"
 )
 
 const (
 	PasswordMinLength = 6
 )
+
+func ParseJWTError(err error) (error, bool) {
+	if e, ok := err.(*jwt.ValidationError); ok {
+		switch e.Errors {
+		case jwt.ValidationErrorMalformed, jwt.ValidationErrorExpired, jwt.ValidationErrorNotValidYet, jwt.ValidationErrorClaimsInvalid:
+			//Token is malformed, Token is expired, Token is not active yet
+			if e.Inner != nil {
+				return e.Inner, true
+			}
+		default:
+			return ErrUnauthorized, true
+
+		}
+	}
+	return nil, false
+}
 
 var (
 	ErrUnauthorized          = errors.New("unauthorized")
@@ -31,6 +49,10 @@ var (
 )
 
 func CodeFrom(err error) int {
+	if _, ok := ParseJWTError(err); ok {
+		return http.StatusUnauthorized
+	}
+
 	switch err {
 	case ErrNotFound:
 		return http.StatusNotFound
