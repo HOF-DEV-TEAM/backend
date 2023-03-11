@@ -329,7 +329,7 @@ func (r userRepository) getFavourites(ctx context.Context, userId uuid.UUID) (*F
 		savedFav    Favourite
 	)
 
-	err = tmpSmt.QueryRowContext(ctx, "61e346e0-dbb8-40ef-8c79-65612d0a69a1").Scan(&favouriteID, &savedFav)
+	err = tmpSmt.QueryRowContext(ctx, userId).Scan(&favouriteID, &savedFav)
 	favourite := &Favourites{
 		ID:     favouriteID,
 		UserID: userId,
