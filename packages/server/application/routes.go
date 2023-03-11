@@ -13,10 +13,8 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
 	"bitbucket.org/hofng/hofApp/pkg/subscription"
 	"bitbucket.org/hofng/hofApp/pkg/subscription/paystack"
-	"bitbucket.org/hofng/hofApp/pkg/user"
-	"bitbucket.org/hofng/hofApp/pkg/user/favourite"
-
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
+	"bitbucket.org/hofng/hofApp/pkg/user"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -67,15 +65,11 @@ func (app *application) buildRoutes() {
 		audioMessageService := audio_message.NewService(audioMessageRepo, app.logger, &app.config.Security)
 		uploaderService := uploader.NewService(app.awsClient)
 
-		favouritesRepo := favourite.NewRepository(app.db, app.logger)
-		favouritesService := favourite.NewService(favouritesRepo, app.logger, &app.config.Security)
-
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
 		buildAudioSeriesEndpoints(r, audioMessageService)
 		buildUploadEndpoints(r, uploaderService)
 		buildSubscriptionEndpoints(r, subscriptionSvc)
-		buildFavEndpoints(r, favouritesService)
 	})
 
 	//unprotected routes
@@ -88,11 +82,19 @@ func (app *application) buildRoutes() {
 		r.Post("/subscription/webhook", createSubscriptionHookHandler)
 	})
 
+	//app.router.Group(func(r chi.Router) {
+	//	buildFavEndpoints(r, userService)
+	//})
+
 }
 
 func buildUserEndpoints(router chi.Router, svc user.Service) {
 	userRouter := chi.NewRouter()
-	router.Mount("/user", userRouter)
+	favRouter := buildFavEndpoints(svc)
+	router.Route("/user", func(r chi.Router) {
+		r.Mount("/favourite", favRouter)
+		r.Mount("/", userRouter)
+	})
 }
 
 func buildSessionEndpoints(router chi.Router, svc user.Service) {
@@ -176,15 +178,15 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	router.Mount("/subscription", subRouter)
 }
 
-func buildFavEndpoints(router chi.Router, svc favourite.Service) {
+func buildFavEndpoints(svc user.Service) http.Handler {
 	favRouter := chi.NewRouter()
-	createFavouriteHandler := favourite.CreateFavouriteHandler(svc)
-	getAllFavouritesHandler := favourite.GetFavouritesHandler(svc)
-	deleteFavouriteHandler := favourite.DeleteFavouritesHandler(svc)
+	createFavouriteHandler := user.CreateFavouriteHandler(svc)
+	getAllFavouritesHandler := user.GetFavouritesHandler(svc)
+	deleteFavouriteHandler := user.DeleteFavouritesHandler(svc)
 
 	favRouter.Post("/", createFavouriteHandler)
-	favRouter.Get("/favourites", getAllFavouritesHandler)
+	favRouter.Get("/favs", getAllFavouritesHandler)
 	favRouter.Delete("/delete/{message_id}", deleteFavouriteHandler)
 
-	router.Mount("/fav", favRouter)
+	return favRouter
 }
