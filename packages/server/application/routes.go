@@ -82,10 +82,6 @@ func (app *application) buildRoutes() {
 		r.Post("/subscription/webhook", createSubscriptionHookHandler)
 	})
 
-	//app.router.Group(func(r chi.Router) {
-	//	buildFavEndpoints(r, userService)
-	//})
-
 }
 
 func buildUserEndpoints(router chi.Router, svc user.Service) {
