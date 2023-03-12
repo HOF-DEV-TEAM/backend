@@ -1,7 +1,7 @@
 package application
 
 import (
-	"errors"	
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,9 +13,8 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
 	"bitbucket.org/hofng/hofApp/pkg/subscription"
 	"bitbucket.org/hofng/hofApp/pkg/subscription/paystack"
-	"bitbucket.org/hofng/hofApp/pkg/user"
-
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
+	"bitbucket.org/hofng/hofApp/pkg/user"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -37,7 +36,6 @@ func (app *application) buildRoutes() {
 		subscritpionRepo,
 		&app.config.Security,
 	)
-	
 
 	subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security, userRepo)
 	// TODO - group routing better
@@ -66,7 +64,7 @@ func (app *application) buildRoutes() {
 		audioMessageRepo := audio_message.NewRepository(app.db, app.logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, app.logger, &app.config.Security)
 		uploaderService := uploader.NewService(app.awsClient)
-			
+
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
 		buildAudioSeriesEndpoints(r, audioMessageService)
@@ -78,7 +76,7 @@ func (app *application) buildRoutes() {
 	app.router.Group(func(r chi.Router) {
 		buildSessionEndpoints(r, userService)
 		//webhook
-		
+
 		subEvent := subscription.NewSubEvent(userRepo, subscritpionRepo, app.logger)
 		createSubscriptionHookHandler := subscription.CreateSubscriptionHookHandler(subEvent)
 		r.Post("/subscription/webhook", createSubscriptionHookHandler)
@@ -88,7 +86,11 @@ func (app *application) buildRoutes() {
 
 func buildUserEndpoints(router chi.Router, svc user.Service) {
 	userRouter := chi.NewRouter()
-	router.Mount("/user", userRouter)
+	favRouter := buildFavEndpoints(svc)
+	router.Route("/user", func(r chi.Router) {
+		r.Mount("/favourite", favRouter)
+		r.Mount("/", userRouter)
+	})
 }
 
 func buildSessionEndpoints(router chi.Router, svc user.Service) {
@@ -131,10 +133,10 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	audioSeriesRouter := chi.NewRouter()
 
 	createAudioSeriesHandler := audio_message.CreateAudioSeriesHandler(svc)
-	getAudioSeriesHandler :=audio_message.GetAudioSeriesHandler(svc)
-	getAudioSeriesByIDHandler :=audio_message.GetAudioSeriesByIDHandler(svc)
-	updateAudioSeriesByIDHandler :=audio_message.UpdateAudioSeriesByIDHandler(svc)
-	deleteAudioSeriesByIDHandler :=audio_message.DeleteAudioSeriesByIDHandler(svc)
+	getAudioSeriesHandler := audio_message.GetAudioSeriesHandler(svc)
+	getAudioSeriesByIDHandler := audio_message.GetAudioSeriesByIDHandler(svc)
+	updateAudioSeriesByIDHandler := audio_message.UpdateAudioSeriesByIDHandler(svc)
+	deleteAudioSeriesByIDHandler := audio_message.DeleteAudioSeriesByIDHandler(svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
@@ -160,15 +162,27 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
 	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
 
-	
 	subRouter.Post("/", createSubscriptionHandler)
-	// subRouter.Get("/", createSubscriptionHandler)	
+	// subRouter.Get("/", createSubscriptionHandler)
 	subRouter.Post("/plan", createSubscriptionPlanHandler)
 	subRouter.Get("/verify/{ref_id}", verifySubscriptionHandler)
 
 	subRouter.Post("/offering", createSubscriptionOfferingHandler)
 	subRouter.Get("/plan/offering", getSubscriptionPlanOfferings)
-	subRouter.Post("/plan/offering", createSubscritionPlanOfferings)	
+	subRouter.Post("/plan/offering", createSubscritionPlanOfferings)
 
 	router.Mount("/subscription", subRouter)
+}
+
+func buildFavEndpoints(svc user.Service) http.Handler {
+	favRouter := chi.NewRouter()
+	createFavouriteHandler := user.CreateFavouriteHandler(svc)
+	getAllFavouritesHandler := user.GetFavouritesHandler(svc)
+	deleteFavouriteHandler := user.DeleteFavouritesHandler(svc)
+
+	favRouter.Post("/", createFavouriteHandler)
+	favRouter.Get("/favs", getAllFavouritesHandler)
+	favRouter.Delete("/delete/{message_id}", deleteFavouriteHandler)
+
+	return favRouter
 }

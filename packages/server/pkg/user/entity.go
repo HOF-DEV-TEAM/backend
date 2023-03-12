@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"github.com/gofrs/uuid"
 )
 
 type IsVerifiedEnum uint16
@@ -61,7 +62,7 @@ func (e IsVerifiedEnum) Value() (driver.Value, error) {
 		return 1, nil
 	case EmailVerified:
 		return 2, nil
-	case EmailAndPhoneVerified:		
+	case EmailAndPhoneVerified:
 		return 3, nil
 	default:
 		return 0, nil
@@ -119,3 +120,30 @@ type ResetPasswordPayload struct {
 	Password        string `json:"password" validate:"min=6" binding:"required"`
 	PasswordConfirm string `json:"password_confirm" validate:"min=6" binding:"required"`
 } //	@name	ResetPasswordPayload
+
+type Favourites struct {
+	ID     uuid.UUID `sql:"id"`
+	UserID uuid.UUID `sql:"user_id" validate:"required"`
+	Fav    []FavBody `sql:"fav" json:"fav"`
+}
+
+type FavBody struct {
+	MessageID uuid.UUID `sql:"message_id" json:"message_id"`
+	SeriesID  string    `sql:"series_id" json:"series_id"`
+	Fav       bool      `sql:"fav" json:"fav"`
+	DateAdded string    `sql:"date_added" json:"date_added"`
+	DeletedAt string    `sql:"deleted_at" json:"deleted_at"`
+}
+
+type FavMessage struct {
+	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"user_id"`
+	Fav         bool      `json:"fav"`
+	MessageID   uuid.UUID `json:"message_id"`
+	SeriesID    uuid.UUID `json:"series_id"`
+	Title       string    `json:"title"`
+	Author      string    `json:"author"`
+	ImageUrl    string    `json:"image_url"`
+	AudioUrl    string    `json:"audio_url"`
+	Description string    `json:"description"`
+}

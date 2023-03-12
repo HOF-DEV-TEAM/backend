@@ -1,14 +1,14 @@
 package subscription
 
 import (
-	"context"	
+	"context"
 
 	"bitbucket.org/hofng/hofApp/pkg/user"
 	"go.uber.org/zap"
 )
 
 type Event interface {
-	HandleEvent(ctx context.Context, event *SubscriptionEvent) 
+	HandleEvent(ctx context.Context, event *SubscriptionEvent)
 }
 
 type EventType string
@@ -18,22 +18,22 @@ const (
 	SubscriptionCreate = EventType("subscription.create")
 )
 
-type SubscriptionEvent  struct {
-	Event EventType `json:"event"`
-	Data SubscriptionResponseData `json:"data"`
+type SubscriptionEvent struct {
+	Event EventType                `json:"event"`
+	Data  SubscriptionResponseData `json:"data"`
 }
 
 type subEvent struct {
 	userRepo user.Repository
-	subRepo Repository	
-	logger *zap.Logger
+	subRepo  Repository
+	logger   *zap.Logger
 }
 
 func NewSubEvent(userRepo user.Repository, subRepo Repository, logger *zap.Logger) Event {
 	return &subEvent{userRepo: userRepo, subRepo: subRepo, logger: logger}
 }
 
-func(se *subEvent) HandleEvent(ctx context.Context, event *SubscriptionEvent) {
+func (se *subEvent) HandleEvent(ctx context.Context, event *SubscriptionEvent) {
 	switch event.Event {
 	case SubscriptionCreate:
 		sub := event.Data.ToSubscription()
@@ -41,7 +41,7 @@ func(se *subEvent) HandleEvent(ctx context.Context, event *SubscriptionEvent) {
 
 		if err != nil {
 			se.logger.Info("msg", zap.String(string(event.Event), err.Error()))
-			return 
+			return
 		}
 
 		userFromDB, err := se.userRepo.GetByEmail(ctx, event.Data.Customer.Email)
