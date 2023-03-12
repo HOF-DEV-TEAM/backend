@@ -61,7 +61,7 @@ func (e IsVerifiedEnum) Value() (driver.Value, error) {
 		return 1, nil
 	case EmailVerified:
 		return 2, nil
-	case EmailAndPhoneVerified:		
+	case EmailAndPhoneVerified:
 		return 3, nil
 	default:
 		return 0, nil
@@ -101,6 +101,7 @@ type UserPasswordToken struct {
 	Email              string `sql:"email" validate:"required,email"`
 	PasswordResetToken string `sql:"password_reset_token"`
 	PasswordResetAt    int64  `sql:"password_reset_at"`
+	Validated          bool   `sql:"validated"`
 }
 
 type ForgotPasswordPayload struct {
@@ -119,3 +120,14 @@ type ResetPasswordPayload struct {
 	Password        string `json:"password" validate:"min=6" binding:"required"`
 	PasswordConfirm string `json:"password_confirm" validate:"min=6" binding:"required"`
 } //	@name	ResetPasswordPayload
+
+type OTPRequest struct {
+	Target string `json:"target"`
+}
+
+type OTPResponse struct {
+	Target              string `json:"target"`
+	OTP                 string `json:"otp"`
+	Token               string `json:"token"`
+	ExpireTimeInSeconds int64  `json:"expireTimeInSeconds"`
+}
