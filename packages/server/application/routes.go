@@ -1,7 +1,7 @@
 package application
 
 import (
-	"errors"	
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,7 +37,6 @@ func (app *application) buildRoutes() {
 		subscritpionRepo,
 		&app.config.Security,
 	)
-	
 
 	subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security, userRepo)
 	// TODO - group routing better
@@ -66,7 +65,7 @@ func (app *application) buildRoutes() {
 		audioMessageRepo := audio_message.NewRepository(app.db, app.logger)
 		audioMessageService := audio_message.NewService(audioMessageRepo, app.logger, &app.config.Security)
 		uploaderService := uploader.NewService(app.awsClient)
-			
+
 		buildUserEndpoints(r, userService)
 		buildAudioMessageEndpoints(r, audioMessageService)
 		buildAudioSeriesEndpoints(r, audioMessageService)
@@ -78,7 +77,7 @@ func (app *application) buildRoutes() {
 	app.router.Group(func(r chi.Router) {
 		buildSessionEndpoints(r, userService)
 		//webhook
-		
+
 		subEvent := subscription.NewSubEvent(userRepo, subscritpionRepo, app.logger)
 		createSubscriptionHookHandler := subscription.CreateSubscriptionHookHandler(subEvent)
 		r.Post("/subscription/webhook", createSubscriptionHookHandler)
@@ -96,13 +95,16 @@ func buildSessionEndpoints(router chi.Router, svc user.Service) {
 
 	signInHandler := user.SignInHandler(svc)
 	signUpUserHandler := user.GetUserHandler(svc)
-	forgotPasswordHandler := user.ForgotPasswordHandler(svc)
+	forgotResetPasswordHandler := user.ForgotPasswordHandler(svc)
+	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(svc)
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
+
 	// authenticateHandler := user.AuthenticateHandler(svc)
 
 	sessionsRouter.Post("/sign_in", signInHandler)
 	sessionsRouter.Post("/sign_up", signUpUserHandler)
-	sessionsRouter.Post("/forgot_password", forgotPasswordHandler)
+	sessionsRouter.Post("/forgot_password", forgotResetPasswordHandler)
+	sessionsRouter.Put("/verify_token", verifyResetPasswordOTPHandler)
 	sessionsRouter.Post("/reset_password/{token}", resetPasswordHandler)
 	// sessionsRouter.Post("/authenticate/{token}", resetPasswordHandler)
 
@@ -131,10 +133,10 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	audioSeriesRouter := chi.NewRouter()
 
 	createAudioSeriesHandler := audio_message.CreateAudioSeriesHandler(svc)
-	getAudioSeriesHandler :=audio_message.GetAudioSeriesHandler(svc)
-	getAudioSeriesByIDHandler :=audio_message.GetAudioSeriesByIDHandler(svc)
-	updateAudioSeriesByIDHandler :=audio_message.UpdateAudioSeriesByIDHandler(svc)
-	deleteAudioSeriesByIDHandler :=audio_message.DeleteAudioSeriesByIDHandler(svc)
+	getAudioSeriesHandler := audio_message.GetAudioSeriesHandler(svc)
+	getAudioSeriesByIDHandler := audio_message.GetAudioSeriesByIDHandler(svc)
+	updateAudioSeriesByIDHandler := audio_message.UpdateAudioSeriesByIDHandler(svc)
+	deleteAudioSeriesByIDHandler := audio_message.DeleteAudioSeriesByIDHandler(svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
@@ -160,15 +162,14 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
 	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
 
-	
 	subRouter.Post("/", createSubscriptionHandler)
-	// subRouter.Get("/", createSubscriptionHandler)	
+	// subRouter.Get("/", createSubscriptionHandler)
 	subRouter.Post("/plan", createSubscriptionPlanHandler)
 	subRouter.Get("/verify/{ref_id}", verifySubscriptionHandler)
 
 	subRouter.Post("/offering", createSubscriptionOfferingHandler)
 	subRouter.Get("/plan/offering", getSubscriptionPlanOfferings)
-	subRouter.Post("/plan/offering", createSubscritionPlanOfferings)	
+	subRouter.Post("/plan/offering", createSubscritionPlanOfferings)
 
 	router.Mount("/subscription", subRouter)
 }

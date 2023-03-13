@@ -116,7 +116,7 @@ type ForgotPasswordResponse struct {
 
 type ResetPasswordPayload struct {
 	// The ULID of ResetPasswordPayload
-	Email           string `json:"email" validate:"required,email"`
+	ID              string `json:"id" validate:"required,id"`
 	Password        string `json:"password" validate:"min=6" binding:"required"`
 	PasswordConfirm string `json:"password_confirm" validate:"min=6" binding:"required"`
 } //	@name	ResetPasswordPayload
@@ -128,6 +128,10 @@ type OTPRequest struct {
 type OTPResponse struct {
 	Target              string `json:"target"`
 	OTP                 string `json:"otp"`
-	Token               string `json:"token"`
 	ExpireTimeInSeconds int64  `json:"expireTimeInSeconds"`
+}
+
+type VerifyOTP struct {
+	Target string `json:"target"`
+	OTP    string `json:"otp"`
 }

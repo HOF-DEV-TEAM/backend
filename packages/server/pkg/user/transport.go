@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
-	"github.com/go-chi/chi/v5"
 )
 
 type UserAndToken struct {
@@ -49,14 +48,14 @@ type SignUpUserRequestJSON struct {
 
 func (u *UserJSON) ToUser() *User {
 	result := &User{
-		ID:        u.ID,
-		Email:     u.Email,
-		Password:  u.Password,
-		UserName:  u.Username,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Address:   u.Address,
-		Gender:    u.Gender,
+		ID:         u.ID,
+		Email:      u.Email,
+		Password:   u.Password,
+		UserName:   u.Username,
+		FirstName:  u.FirstName,
+		LastName:   u.LastName,
+		Address:    u.Address,
+		Gender:     u.Gender,
 		IsVerified: u.IsVerified,
 	}
 
@@ -79,14 +78,14 @@ func (u *SignUpUserRequestJSON) ToSignUpUser() *SignUpUser {
 
 func NewJSONUser(u *User) *UserJSON {
 	return &UserJSON{
-		ID:        u.ID,
-		Email:     u.Email,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Address:   u.Address,
-		Mobile:    u.Mobile.String,
-		Gender:    u.Gender,
-		Username:  u.UserName,
+		ID:         u.ID,
+		Email:      u.Email,
+		FirstName:  u.FirstName,
+		LastName:   u.LastName,
+		Address:    u.Address,
+		Mobile:     u.Mobile.String,
+		Gender:     u.Gender,
+		Username:   u.UserName,
 		IsVerified: u.IsVerified,
 	}
 }
@@ -199,6 +198,37 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 //	@Param			ResetPasswordPayload	body		ResetPasswordPayload	true	"Reset password"
 //	@Success		200						{object}	http_helper.DefaultResponse
 //	@Router			/session/reset_password/{password_token} [post]
+func VerifyPasswordResetOTPHandler(svc Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request *VerifyOTP
+		err := json.NewDecoder(r.Body).Decode(request)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		result, err := svc.VerifyPasswordResetOTP(request)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		payload := UserSession{
+			Token: result.Token,
+		}
+
+		http_helper.EncodeResult(w, payload, http.StatusOK)
+	}
+}
+
+// ResetPasswordHandler godoc
+//
+//	@Summary		Rest user password
+//	@Description	Creat new password with the input payload
+//	@Tags			Sessions
+//	@Accept			json
+//	@Produce		json
+//	@Param			ResetPasswordPayload	body		ResetPasswordPayload	true	"Reset password"
+//	@Success		200						{object}	http_helper.DefaultResponse
+//	@Router			/session/reset_password/{password_token} [post]
 func ResetPasswordHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequest ResetPasswordPayload
@@ -207,14 +237,7 @@ func ResetPasswordHandler(svc Service) http.HandlerFunc {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		passwordTokenParam := chi.URLParam(r, "token")
-		_, err = svc.VerifyPasswordToken(resetPasswordRequest, passwordTokenParam)
-		if err != nil {
-			http_helper.EncodeJSONError(r.Context(), err, w)
-			return
-		}
-
-		_, err = svc.ResetPassword(resetPasswordRequest)
+		_, err = svc.ResetPassword(r.Context(), resetPasswordRequest)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
