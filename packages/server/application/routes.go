@@ -13,9 +13,8 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
 	"bitbucket.org/hofng/hofApp/pkg/subscription"
 	"bitbucket.org/hofng/hofApp/pkg/subscription/paystack"
-	"bitbucket.org/hofng/hofApp/pkg/user"
-
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
+	"bitbucket.org/hofng/hofApp/pkg/user"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -87,7 +86,14 @@ func (app *application) buildRoutes() {
 
 func buildUserEndpoints(router chi.Router, svc user.Service) {
 	userRouter := chi.NewRouter()
-	router.Mount("/user", userRouter)
+	favRouter := buildFavEndpoints(svc)
+	resetPasswordHandler := user.ResetPasswordHandler(svc)
+	router.Route("/user", func(r chi.Router) {
+		r.Mount("/favourite", favRouter)
+		r.Mount("/", userRouter)
+		r.Post("/reset_password", resetPasswordHandler)
+
+	})
 }
 
 func buildSessionEndpoints(router chi.Router, svc user.Service) {
@@ -97,15 +103,12 @@ func buildSessionEndpoints(router chi.Router, svc user.Service) {
 	signUpUserHandler := user.GetUserHandler(svc)
 	forgotResetPasswordHandler := user.ForgotPasswordHandler(svc)
 	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(svc)
-	resetPasswordHandler := user.ResetPasswordHandler(svc)
-
 	// authenticateHandler := user.AuthenticateHandler(svc)
 
 	sessionsRouter.Post("/sign_in", signInHandler)
 	sessionsRouter.Post("/sign_up", signUpUserHandler)
 	sessionsRouter.Post("/forgot_password", forgotResetPasswordHandler)
 	sessionsRouter.Put("/verify_token", verifyResetPasswordOTPHandler)
-	sessionsRouter.Post("/reset_password/{token}", resetPasswordHandler)
 	// sessionsRouter.Post("/authenticate/{token}", resetPasswordHandler)
 
 	router.Mount("/session", sessionsRouter)
@@ -172,4 +175,17 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	subRouter.Post("/plan/offering", createSubscritionPlanOfferings)
 
 	router.Mount("/subscription", subRouter)
+}
+
+func buildFavEndpoints(svc user.Service) http.Handler {
+	favRouter := chi.NewRouter()
+	createFavouriteHandler := user.CreateFavouriteHandler(svc)
+	getAllFavouritesHandler := user.GetFavouritesHandler(svc)
+	deleteFavouriteHandler := user.DeleteFavouritesHandler(svc)
+
+	favRouter.Post("/", createFavouriteHandler)
+	favRouter.Get("/favs", getAllFavouritesHandler)
+	favRouter.Delete("/delete/{message_id}", deleteFavouriteHandler)
+
+	return favRouter
 }

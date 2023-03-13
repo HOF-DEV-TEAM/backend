@@ -117,12 +117,11 @@ func (e *FreqEnum) UnMarshalText(from []byte) error {
 
 // MarshalText interface implementation FreqEnum into text.
 func (e FreqEnum) MarshalJSON() ([]byte, error) {
-	return json.Marshal(e.String())	
+	return json.Marshal(e.String())
 }
 
-
 // UnMarshalText interface implementation FreqEnum into text.
-func (e *FreqEnum) UnmarshalJSON(from []byte) error {	
+func (e *FreqEnum) UnmarshalJSON(from []byte) error {
 	switch strings.ToLower(string(from)) {
 	case "hourly":
 		*e = Hourly
@@ -151,7 +150,7 @@ func (e FreqEnum) Value() (driver.Value, error) {
 		return 1, nil
 	case Weekly:
 		return 2, nil
-	case Monthly:		
+	case Monthly:
 		return 3, nil
 	case Quarterly:
 		return 4, nil
@@ -169,16 +168,15 @@ func (e FreqEnum) Value() (driver.Value, error) {
 // 		*e = Monthly
 // 		return nil
 // 	}
-	
+
 // 	buf, ok := src.([]byte)
 
 // 	if !ok {
-// 		return errors.New("invalid FreqEnum")		
+// 		return errors.New("invalid FreqEnum")
 // 	}
 // 	fmt.Println(string(buf), "buffer")
 // 	return e.UnMarshalText(buf)
 // }
-
 
 type TypeEnum uint16
 
@@ -218,14 +216,14 @@ func (e *TypeEnum) UnMarshalText(from []byte) error {
 
 // MarshalText interface implementation TypeEnum into text.
 func (e TypeEnum) MarshalJSON() ([]byte, error) {
-	return json.Marshal(e.String())	
+	return json.Marshal(e.String())
 }
 
 // UnMarshalText interface implementation TypeEnum into text.
 func (e *TypeEnum) UnmarshalJSON(from []byte) error {
-	s := strings.ToLower(string(from))	
+	s := strings.ToLower(string(from))
 	switch s {
-	case "premium":		
+	case "premium":
 		*e = Premium
 	case "regular":
 		*e = Regular
@@ -234,7 +232,6 @@ func (e *TypeEnum) UnmarshalJSON(from []byte) error {
 	}
 	return nil
 }
-
 
 // sql/driver.Valuer interface implementation for TypeEnum
 func (e TypeEnum) Value() (driver.Value, error) {
@@ -254,11 +251,11 @@ func (e TypeEnum) Value() (driver.Value, error) {
 // 		*e = Regular
 // 		return nil
 // 	}
-	
+
 // 	buf, ok := src.([]byte)
 
 // 	if !ok {
-// 		return errors.New("invalid TypeEnum")		
+// 		return errors.New("invalid TypeEnum")
 // 	}
 // 	return e.UnMarshalText(buf)
 // }
@@ -266,7 +263,7 @@ func (e TypeEnum) Value() (driver.Value, error) {
 type SubscriptionPlan struct {
 	ID                     string         `sql:"id"`
 	Name                   string         `sql:"name" validate:"required"`
-	Type                   TypeEnum  	  `sql:"int"`
+	Type                   TypeEnum       `sql:"int"`
 	Freq                   FreqEnum       `sql:"freq"`
 	Fee                    float64        `sql:"float64"`
 	Status                 StatusEnum     `sql:"status"`
@@ -291,10 +288,10 @@ type SubscriptionOffering struct {
 
 type SubscriptionPlanOffering struct {
 	//SubscriptionPlan
-	Type   TypeEnum  `sql:"int"`
-	Freq   FreqEnum       `sql:"freq"`
-	Fee    float64        `sql:"float64"`
-	PlanCode string `sql:"code"`
+	Type     TypeEnum `sql:"int"`
+	Freq     FreqEnum `sql:"freq"`
+	Fee      float64  `sql:"float64"`
+	PlanCode string   `sql:"code"`
 
 	//SubscriptionOffering
 	Name string `sql:"name" validate:"required"`

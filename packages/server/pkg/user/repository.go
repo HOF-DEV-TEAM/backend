@@ -20,8 +20,11 @@ type Repository interface {
 	Login(ctx context.Context, email, password string) (*User, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(request *VerifyOTP) (*User, error)
-	ResetPassword(request ResetPasswordPayload) (uuid.UUID, error)
+	ResetPassword(userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error)
 	UpdatePaystack(ctx context.Context, user *User) (uuid.UUID, error)
+	CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error)
+	GetFavourites(ctx context.Context, userId uuid.UUID) ([]*FavMessage, int, error)
+	DeleteFavourite(ctx context.Context, messageId, userId uuid.UUID) (uuid.UUID, error)
 	Close() error
 }
 
@@ -34,7 +37,7 @@ type userRepository struct {
 }
 
 func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
-	return &userRepository{db: db, log: logger}
+	return &userRepository{db: db, log: logger, otpGenerator: NewOTPGenerator()}
 }
 
 func (r userRepository) Close() error {
@@ -226,15 +229,22 @@ func (r *userRepository) VerifyPasswordResetOTP(request *VerifyOTP) (*User, erro
 	return user, nil
 }
 
-func (r *userRepository) ResetPassword(request ResetPasswordPayload) (uuid.UUID, error) {
-	sqlQuery := `UPDATE users SET password_hash=$2 WHERE id = $1 RETURNING id`
+func (r *userRepository) ResetPassword(userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error) {
+	user, err := r.GetById(context.Background(), userId.String())
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if user.Email != request.Email {
+		return uuid.Nil, errors.New("invalid user")
+	}
+	sqlQuery := `UPDATE users SET password=$2 WHERE id = $1 RETURNING id`
 	stmt, err := r.db.Prepare(sqlQuery)
 	if err != nil {
 		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return uuid.Nil, err
 	}
 	var userID uuid.UUID
-	row := stmt.QueryRow(request.ID, request.Password)
+	row := stmt.QueryRow(userId, request.Password)
 	if err := row.Scan(&userID); err != nil {
 		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return uuid.Nil, err
@@ -269,7 +279,7 @@ func (r userRepository) requestOTP(ctx context.Context, target string) (*OTPResp
 	if err != nil {
 		return nil, err
 	}
-	expirationDuration := time.Duration(90) * time.Second
+	expirationDuration := time.Duration(120) * time.Second
 
 	otpResponse := OTPResponse{
 		Target:              target,
@@ -289,7 +299,7 @@ func (r userRepository) getOTP(ctx context.Context, target string) (*UserPasswor
 	}
 
 	var passwordToken UserPasswordToken
-	err = tmpSmt.QueryRowContext(ctx, target).Scan(&passwordToken.ID, &passwordToken.Email, &passwordToken.PasswordResetToken, &passwordToken.PasswordResetAt)
+	err = tmpSmt.QueryRowContext(ctx, target).Scan(&passwordToken.ID, &passwordToken.Email, &passwordToken.PasswordResetToken, &passwordToken.PasswordResetAt, &passwordToken.Validated)
 
 	return &passwordToken, err
 }
@@ -312,7 +322,7 @@ func (r userRepository) saveOTP(ctx context.Context, request OTPResponse) error 
 			return err
 		}
 	case row != sql.ErrNoRows:
-		sqlQuery := `UPDATE user_password_token SET password_reset_token=$2, password_reset_at=$3 WHERE email = $1 RETURNING id`
+		sqlQuery := `UPDATE user_password_token SET password_reset_token=$2, password_reset_at=$3, validated=$4 WHERE email = $1 RETURNING id`
 
 		tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
 		if err != nil {
@@ -320,7 +330,7 @@ func (r userRepository) saveOTP(ctx context.Context, request OTPResponse) error 
 			return err
 		}
 
-		err = tmpSmt.QueryRowContext(ctx, request.Target, request.OTP, request.ExpireTimeInSeconds).Scan(&userPasswordTokenID)
+		err = tmpSmt.QueryRowContext(ctx, request.Target, request.OTP, request.ExpireTimeInSeconds, false).Scan(&userPasswordTokenID)
 		if err != nil {
 			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 			return err
@@ -341,6 +351,10 @@ func (r userRepository) verifyOTP(ctx context.Context, request *VerifyOTP) error
 	}
 
 	if time.Unix(passwordToken.PasswordResetAt, 0).Before(time.Now()) {
+		err = r.updateOTPValidation(ctx, userPasswordTokenID)
+		if err != nil {
+			return err
+		}
 		return errors.New("expired verification code")
 	}
 
@@ -348,7 +362,14 @@ func (r userRepository) verifyOTP(ctx context.Context, request *VerifyOTP) error
 		r.log.Error("msg", zap.String("error", "invalid verification code"))
 		return errors.New("invalid verification code")
 	}
+	err = r.updateOTPValidation(ctx, userPasswordTokenID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
+func (r userRepository) updateOTPValidation(ctx context.Context, tokenID uuid.UUID) error {
 	sqlQuery := `UPDATE user_password_token SET validated=$1 RETURNING id`
 	tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
@@ -356,10 +377,154 @@ func (r userRepository) verifyOTP(ctx context.Context, request *VerifyOTP) error
 		return err
 	}
 
-	err = tmpSmt.QueryRowContext(ctx, "true").Scan(&userPasswordTokenID)
+	err = tmpSmt.QueryRowContext(ctx, "true").Scan(&tokenID)
 	if err != nil {
 		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return err
 	}
+
 	return nil
+}
+
+func (r userRepository) getFavourites(ctx context.Context, userId uuid.UUID) (*Favourites, error) {
+	getQuery := `SELECT id, fav FROM favourites WHERE user_id = $1`
+
+	tmpSmt, err := r.db.PrepareContext(ctx, getQuery)
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getQuery))
+		return nil, err
+	}
+	var (
+		favouriteID uuid.UUID
+		savedFav    Favourite
+	)
+
+	err = tmpSmt.QueryRowContext(ctx, userId).Scan(&favouriteID, &savedFav)
+	favourite := &Favourites{
+		ID:     favouriteID,
+		UserID: userId,
+		Fav:    savedFav,
+	}
+
+	return favourite, err
+}
+
+func (r userRepository) GetFavourites(ctx context.Context, userId uuid.UUID) ([]*FavMessage, int, error) {
+	var messageIds []uuid.UUID
+	var as FavMessage
+
+	favourites, err := r.getFavourites(ctx, userId)
+	if err != nil {
+		switch {
+		case err == sql.ErrNoRows:
+			r.log.Info("error", zap.String("error", err.Error()))
+			return nil, 0, err
+		}
+	}
+	for _, fav := range favourites.Fav {
+		messageIds = append(messageIds, fav.MessageID)
+		as.Fav = fav.Fav
+	}
+
+	sqlQuery := `SELECT id, series_id, title, author, image_url, audio_url, description FROM audio_messages WHERE id = ANY($1)`
+
+	var favss []*FavMessage
+	getFavsStmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", sqlQuery),
+		)
+		return nil, 0, err
+	}
+	rows, err := getFavsStmt.QueryContext(ctx, messageIds)
+	defer rows.Close()
+	if err == sql.ErrNoRows {
+		return nil, 0, err
+	}
+	for rows.Next() {
+		as.ID = favourites.ID
+		as.UserID = favourites.UserID
+		if err := rows.Scan(
+			&as.MessageID,
+			&as.SeriesID,
+			&as.Title,
+			&as.Author,
+			&as.ImageUrl,
+			&as.AudioUrl,
+			&as.Description,
+		); err != nil {
+			r.log.Info("msg",
+				zap.String("error querying", ""),
+				zap.String("error", err.Error()),
+				zap.String("query", sqlQuery),
+			)
+			return nil, 0, err
+		}
+		var ty = as
+		favss = append(favss, &ty)
+	}
+	return favss, 0, nil
+}
+
+func (r userRepository) DeleteFavourite(ctx context.Context, messageId, userID uuid.UUID) (uuid.UUID, error) {
+	const sqlQuery = `UPDATE favourites SET fav = fav - Cast((SELECT position - 1 FROM favourites, jsonb_array_elements(fav) with ordinality arr(item_object, position) WHERE user_id=$1 and item_object->>'message_id' = $2) as int) WHERE user_id=$1;`
+
+	tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return uuid.Nil, err
+	}
+
+	err = tmpSmt.QueryRowContext(ctx, userID, messageId).Scan()
+	if err == sql.ErrNoRows {
+		return messageId, nil
+	}
+
+	return uuid.Nil, err
+}
+
+func (r userRepository) CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error) {
+	var favouriteID uuid.UUID
+
+	allFavs, err := r.getFavourites(ctx, favourite.UserID)
+	switch {
+	case err == sql.ErrNoRows:
+		sqlQuery := `INSERT INTO favourites (user_id, fav) SELECT $1, $2 WHERE NOT EXISTS (SELECT user_id FROM favourites WHERE user_id = $1) RETURNING id`
+		tmpSmt, err := r.db.Prepare(sqlQuery)
+		if err != nil {
+			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			return nil, err
+		}
+		favs, err := Value(favourite.Fav)
+		if err != nil {
+			r.log.Info("error", zap.String("marshal field", err.Error()))
+			return nil, err
+		}
+
+		err = tmpSmt.QueryRowContext(ctx, favourite.UserID, favs).Scan(&favouriteID)
+		if err != nil {
+			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			return nil, err
+		}
+		favourite.ID = favouriteID
+	case err != sql.ErrNoRows:
+		const sqlQuery = `UPDATE favourites SET fav = COALESCE(fav, '[]'::jsonb) || $2 ::jsonb WHERE user_id=$1;`
+
+		favs, err := Value(favourite.Fav)
+		if err != nil {
+			r.log.Info("error", zap.String("marshal field", err.Error()))
+			return nil, err
+		}
+		_, err = r.db.ExecContext(ctx, sqlQuery, favourite.UserID, favs)
+		if err != nil {
+			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			return nil, err
+		}
+		favourite.ID = allFavs.ID
+
+	}
+
+	return favourite, nil
 }
