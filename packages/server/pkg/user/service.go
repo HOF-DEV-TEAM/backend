@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var ErrFieldRequired = errors.New("field is required")
+
 type Service interface {
 	SignUp(ctx context.Context, user *SignUpUser) (*User, error)
 	CreateUser(ctx context.Context, user *User) (*User, error)
@@ -22,6 +24,7 @@ type Service interface {
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error)
 	ResetPassword(ctx context.Context, request ResetPasswordPayload) (uuid.UUID, error)
+	ChangePassword(ctx context.Context, request ChangePasswordPayload) (uuid.UUID, error)
 	CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error)
 	GetFavourites(ctx context.Context) (GetFavouritesResponse, error)
 	DeleteFavourite(ctx context.Context, favId string) (uuid.UUID, error)
@@ -252,7 +255,7 @@ func (svc *userService) ResetPassword(ctx context.Context, request ResetPassword
 	}
 
 	if request.Password != request.PasswordConfirm {
-		return uuid.Nil, http_helper.ErrInvalidAccount
+		return uuid.Nil, errors.New("compare user password error")
 	}
 
 	request.Password = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.Password))))
@@ -266,7 +269,7 @@ func (svc *userService) ResetPassword(ctx context.Context, request ResetPassword
 		return uuid.Nil, err
 	}
 
-	resp, err := svc.repo.ResetPassword(userId, ResetPasswordPayload{
+	resp, err := svc.repo.ResetPassword(ctx, userId, ResetPasswordPayload{
 		Email:           request.Email,
 		Password:        request.Password,
 		PasswordConfirm: request.PasswordConfirm,
@@ -276,10 +279,6 @@ func (svc *userService) ResetPassword(ctx context.Context, request ResetPassword
 	}
 	return resp, nil
 }
-
-var (
-	ErrFieldRequired = errors.New("field is required")
-)
 
 func (s *userService) validateFavouriteStruct(audioSeries *Favourites) error {
 	validate := validator.New()
@@ -384,6 +383,38 @@ func (s *userService) DeleteFavourite(ctx context.Context, messageId string) (uu
 	return result, nil
 }
 
-func (s *userService) ChangePassword() {
+func (s *userService) ChangePassword(ctx context.Context, request ChangePasswordPayload) (uuid.UUID, error) {
+	validate := validator.New()
+	err := validate.Struct(request)
+	if err != nil {
+		return uuid.Nil, err
+	}
 
+	if request.NewPassword != request.ConfirmNewPassword {
+		return uuid.Nil, errors.New("compare user password error")
+	}
+
+	request.OldPassword = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.OldPassword))))
+	request.NewPassword = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.NewPassword))))
+
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return uuid.Nil, http_helper.ErrInvalidAccount
+	}
+	userId, err := uuid.FromString(claims.JWTClaimsMain.LoggedInUserId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	resp, err := s.repo.ChangePassword(ctx, userId, ChangePasswordPayload{
+		Email:              request.Email,
+		OldPassword:        request.OldPassword,
+		NewPassword:        request.NewPassword,
+		ConfirmNewPassword: request.ConfirmNewPassword,
+	})
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return resp, nil
 }

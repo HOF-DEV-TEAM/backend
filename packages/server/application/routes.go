@@ -88,11 +88,13 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 	userRouter := chi.NewRouter()
 	favRouter := buildFavEndpoints(svc)
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
+	changePasswordHandler := user.ChangePasswordHandler(svc)
+
 	router.Route("/user", func(r chi.Router) {
 		r.Mount("/favourite", favRouter)
 		r.Mount("/", userRouter)
 		r.Post("/reset_password", resetPasswordHandler)
-
+		r.Post("/change_password", changePasswordHandler)
 	})
 }
 

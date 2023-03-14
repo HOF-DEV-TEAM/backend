@@ -122,6 +122,14 @@ type ResetPasswordPayload struct {
 	PasswordConfirm string `json:"password_confirm" validate:"min=6" binding:"required"`
 } //	@name	ResetPasswordPayload
 
+type ChangePasswordPayload struct {
+	// The ULID of ChangePasswordPayload
+	Email              string `json:"email" validate:"required,email"`
+	OldPassword        string `json:"old_password" binding:"required"`
+	NewPassword        string `json:"new_password" validate:"min=6" binding:"required"`
+	ConfirmNewPassword string `json:"confirm_new_password" validate:"min=6" binding:"required"`
+} //	@name	ChangePasswordPayload
+
 type Favourites struct {
 	ID     uuid.UUID `sql:"id"`
 	UserID uuid.UUID `sql:"user_id" validate:"required"`

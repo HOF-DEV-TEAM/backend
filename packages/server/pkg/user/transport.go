@@ -203,11 +203,11 @@ func SignInHandler(svc Service) http.HandlerFunc {
 //
 //	@Summary		User forgets their password
 //	@Description	User can request for a password change with the input payload
-//	@Tags			Sessions
+//	@Tags			Password
 //	@Accept			json
 //	@Produce		json
 //	@Param			ForgotPasswordPayload	body		ForgotPasswordPayload	true	"Forgot password"
-//	@Success		200						{object}	ForgotPasswordResponse
+//	@Success		200						{object}	OTPResponse
 //	@Router			/session/forgot_password [post]
 func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -227,16 +227,16 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 	}
 }
 
-// ResetPasswordHandler godoc
+// VerifyPasswordResetOTPHandler godoc
 //
-//	@Summary		Rest user password
-//	@Description	Creat new password with the input payload
-//	@Tags			Sessions
+//	@Summary		Verify password reset OTP
+//	@Description	The endpoint verifies the OTP input from the user
+//	@Tags			Password
 //	@Accept			json
 //	@Produce		json
-//	@Param			ResetPasswordPayload	body		ResetPasswordPayload	true	"Reset password"
-//	@Success		200						{object}	http_helper.DefaultResponse
-//	@Router			/session/reset_password/{password_token} [post]
+//	@Param			VerifyOTP	body		VerifyOTP	true	"Verify OTP"
+//	@Success		200						{object}	UserSession
+//	@Router			/session/verify_token [post]
 func VerifyPasswordResetOTPHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request VerifyOTP
@@ -260,14 +260,14 @@ func VerifyPasswordResetOTPHandler(svc Service) http.HandlerFunc {
 
 // ResetPasswordHandler godoc
 //
-//	@Summary		Rest user password
-//	@Description	Creat new password with the input payload
-//	@Tags			Sessions
+//	@Summary		Reset user password
+//	@Description	Create new password with the input payload
+//	@Tags			Password
 //	@Accept			json
 //	@Produce		json
 //	@Param			ResetPasswordPayload	body		ResetPasswordPayload	true	"Reset password"
 //	@Success		200						{object}	http_helper.DefaultResponse
-//	@Router			/session/reset_password/{password_token} [post]
+//	@Router			/user/reset_password [post]
 func ResetPasswordHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequest ResetPasswordPayload
@@ -277,6 +277,35 @@ func ResetPasswordHandler(svc Service) http.HandlerFunc {
 			return
 		}
 		_, err = svc.ResetPassword(r.Context(), resetPasswordRequest)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+
+		}
+
+		http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true}, http.StatusOK)
+	}
+}
+
+// ChangePasswordHandler godoc
+//
+//	@Summary		Change user password
+//	@Description	Create new password with the input payload
+//	@Tags			Password
+//	@Accept			json
+//	@Produce		json
+//	@Param			ChangePasswordPayload	body		ChangePasswordPayload	true	"Change password"
+//	@Success		200						{object}	http_helper.DefaultResponse
+//	@Router			/user/change_password [post]
+func ChangePasswordHandler(svc Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var changePasswordRequest ChangePasswordPayload
+		err := json.NewDecoder(r.Body).Decode(&changePasswordRequest)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		_, err = svc.ChangePassword(r.Context(), changePasswordRequest)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return

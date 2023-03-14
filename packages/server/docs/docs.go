@@ -118,8 +118,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "audio series id",
-                        "name": "fav_id",
+                        "description": "message id",
+                        "name": "message_id",
                         "in": "path",
                         "required": true
                     }
@@ -197,7 +197,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/favourite.GetFavouritesResponse"
+                            "$ref": "#/definitions/user.GetFavouritesResponse"
                         }
                     },
                     "400": {
@@ -219,7 +219,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Sessions"
+                    "Password"
                 ],
                 "summary": "User forgets their password",
                 "parameters": [
@@ -237,41 +237,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.ForgotPasswordResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/session/reset_password/{password_token}": {
-            "post": {
-                "description": "Creat new password with the input payload",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Sessions"
-                ],
-                "summary": "Rest user password",
-                "parameters": [
-                    {
-                        "description": "Reset password",
-                        "name": "ResetPasswordPayload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/user.ResetPasswordPayload"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.DefaultResponse"
+                            "$ref": "#/definitions/user.OTPResponse"
                         }
                     }
                 }
@@ -340,6 +306,40 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/user.UserJSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/verify_token": {
+            "post": {
+                "description": "The endpoint verifies the OTP input from the user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Password"
+                ],
+                "summary": "Verify password reset OTP",
+                "parameters": [
+                    {
+                        "description": "Verify OTP",
+                        "name": "VerifyOTP",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.VerifyOTP"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserSession"
                         }
                     }
                 }
@@ -420,9 +420,97 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/user/change_password": {
+            "post": {
+                "description": "Create new password with the input payload",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Password"
+                ],
+                "summary": "Change user password",
+                "parameters": [
+                    {
+                        "description": "Change password",
+                        "name": "ChangePasswordPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.ChangePasswordPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.DefaultResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/reset_password": {
+            "post": {
+                "description": "Create new password with the input payload",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Password"
+                ],
+                "summary": "Reset user password",
+                "parameters": [
+                    {
+                        "description": "Reset password",
+                        "name": "ResetPasswordPayload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.ResetPasswordPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http_helper.DefaultResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "FavBodyJSON": {
+            "type": "object",
+            "properties": {
+                "date_added": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "fav": {
+                    "type": "boolean"
+                },
+                "message_id": {
+                    "type": "string"
+                },
+                "series_id": {
+                    "type": "string"
+                }
+            }
+        },
         "FavMessageJSON": {
             "type": "object",
             "properties": {
@@ -461,22 +549,13 @@ const docTemplate = `{
         "FavouriteJSON": {
             "type": "object",
             "properties": {
-                "date_added": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
                 "fav": {
-                    "type": "boolean"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FavBodyJSON"
+                    }
                 },
                 "id": {
-                    "type": "string"
-                },
-                "message_id": {
-                    "type": "string"
-                },
-                "series_id": {
                     "type": "string"
                 },
                 "user_id": {
@@ -516,28 +595,6 @@ const docTemplate = `{
                 }
             }
         },
-        "favourite.GetFavouritesResponse": {
-            "type": "object",
-            "properties": {
-                "favourites": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/FavMessageJSON"
-                    }
-                },
-                "pagination": {
-                    "$ref": "#/definitions/favourite.PageResponse"
-                }
-            }
-        },
-        "favourite.PageResponse": {
-            "type": "object",
-            "properties": {
-                "totalResults": {
-                    "type": "integer"
-                }
-            }
-        },
         "http_helper.DefaultResponse": {
             "type": "object",
             "properties": {
@@ -558,6 +615,32 @@ const docTemplate = `{
                 }
             }
         },
+        "user.ChangePasswordPayload": {
+            "type": "object",
+            "required": [
+                "confirm_new_password",
+                "email",
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "confirm_new_password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "email": {
+                    "description": "The ULID of ChangePasswordPayload",
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "old_password": {
+                    "type": "string"
+                }
+            }
+        },
         "user.ForgotPasswordPayload": {
             "type": "object",
             "required": [
@@ -570,11 +653,17 @@ const docTemplate = `{
                 }
             }
         },
-        "user.ForgotPasswordResponse": {
+        "user.GetFavouritesResponse": {
             "type": "object",
             "properties": {
-                "url": {
-                    "type": "string"
+                "favourites": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FavMessageJSON"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/user.PageResponse"
                 }
             }
         },
@@ -586,6 +675,28 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string"
+                }
+            }
+        },
+        "user.OTPResponse": {
+            "type": "object",
+            "properties": {
+                "expireTimeInSeconds": {
+                    "type": "integer"
+                },
+                "otp": {
+                    "type": "string"
+                },
+                "target": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.PageResponse": {
+            "type": "object",
+            "properties": {
+                "totalResults": {
+                    "type": "integer"
                 }
             }
         },
@@ -674,6 +785,17 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/user.UserJSON"
+                }
+            }
+        },
+        "user.VerifyOTP": {
+            "type": "object",
+            "properties": {
+                "otp": {
+                    "type": "string"
+                },
+                "target": {
+                    "type": "string"
                 }
             }
         }

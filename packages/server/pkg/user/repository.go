@@ -20,7 +20,8 @@ type Repository interface {
 	Login(ctx context.Context, email, password string) (*User, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(request *VerifyOTP) (*User, error)
-	ResetPassword(userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error)
+	ResetPassword(ctx context.Context, userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error)
+	ChangePassword(ctx context.Context, userId uuid.UUID, request ChangePasswordPayload) (uuid.UUID, error)
 	UpdatePaystack(ctx context.Context, user *User) (uuid.UUID, error)
 	CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error)
 	GetFavourites(ctx context.Context, userId uuid.UUID) ([]*FavMessage, int, error)
@@ -216,7 +217,7 @@ func (r userRepository) ForgotPassword(request ForgotPasswordPayload) (*OTPRespo
 	return otpResponse, nil
 }
 
-func (r *userRepository) VerifyPasswordResetOTP(request *VerifyOTP) (*User, error) {
+func (r userRepository) VerifyPasswordResetOTP(request *VerifyOTP) (*User, error) {
 	ctx := context.Background()
 	user, err := r.getUser(ctx, "email", request.Target)
 	if err != nil {
@@ -229,22 +230,38 @@ func (r *userRepository) VerifyPasswordResetOTP(request *VerifyOTP) (*User, erro
 	return user, nil
 }
 
-func (r *userRepository) ResetPassword(userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error) {
+func (r userRepository) ResetPassword(ctx context.Context, userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error) {
 	user, err := r.GetById(context.Background(), userId.String())
 	if err != nil {
 		return uuid.Nil, err
 	}
-	if user.Email != request.Email {
+	return r.performPasswordChange(ctx, user, request.Email, request.Password)
+}
+
+func (r userRepository) ChangePassword(ctx context.Context, userId uuid.UUID, request ChangePasswordPayload) (uuid.UUID, error) {
+	user, err := r.GetById(context.Background(), userId.String())
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if user.Password != request.OldPassword {
+		return uuid.Nil, errors.New("incorrect old password")
+	}
+
+	return r.performPasswordChange(ctx, user, request.Email, request.NewPassword)
+}
+
+func (r userRepository) performPasswordChange(ctx context.Context, user *User, email, password string) (uuid.UUID, error) {
+	if user.Email != email {
 		return uuid.Nil, errors.New("invalid user")
 	}
 	sqlQuery := `UPDATE users SET password=$2 WHERE id = $1 RETURNING id`
-	stmt, err := r.db.Prepare(sqlQuery)
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
 		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return uuid.Nil, err
 	}
 	var userID uuid.UUID
-	row := stmt.QueryRow(userId, request.Password)
+	row := stmt.QueryRowContext(ctx, user.ID, password)
 	if err := row.Scan(&userID); err != nil {
 		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return uuid.Nil, err
