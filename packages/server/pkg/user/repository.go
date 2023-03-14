@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,9 +18,10 @@ type Repository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetById(ctx context.Context, id string) (*User, error)
 	Login(ctx context.Context, email, password string) (*User, error)
-	ForgotPassword(request ForgotPasswordPayload, passwordResetToken string) (*User, error)
-	VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error)
-	ResetPassword(request ResetPasswordPayload) (uuid.UUID, error)
+	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
+	VerifyPasswordResetOTP(request *VerifyOTP) (*User, error)
+	ResetPassword(ctx context.Context, userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error)
+	ChangePassword(ctx context.Context, userId uuid.UUID, request ChangePasswordPayload) (uuid.UUID, error)
 	UpdatePaystack(ctx context.Context, user *User) (uuid.UUID, error)
 	CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error)
 	GetFavourites(ctx context.Context, userId uuid.UUID) ([]*FavMessage, int, error)
@@ -32,10 +34,11 @@ type userRepository struct {
 	log          *zap.Logger
 	getEmailStmt *sql.Stmt
 	getIdStmt    *sql.Stmt
+	otpGenerator OtpGenerator
 }
 
 func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
-	return &userRepository{db: db, log: logger}
+	return &userRepository{db: db, log: logger, otpGenerator: NewOTPGenerator()}
 }
 
 func (r userRepository) Close() error {
@@ -200,93 +203,65 @@ func (r userRepository) Login(ctx context.Context, email, password string) (*Use
 	return existingUser, nil
 }
 
-func (r userRepository) ForgotPassword(request ForgotPasswordPayload, passwordResetToken string) (*User, error) {
+func (r userRepository) ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error) {
 	ctx := context.Background()
-	user, err := r.GetByEmail(ctx, request.Email)
+	otpResponse, err := r.requestOTP(ctx, request.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	err = r.GetUserPasswordToken(user, request.Email, passwordResetToken)
+	err = r.saveOTP(ctx, *otpResponse)
+	if err != nil {
+		return nil, err
+	}
+	return otpResponse, nil
+}
+
+func (r userRepository) VerifyPasswordResetOTP(request *VerifyOTP) (*User, error) {
+	ctx := context.Background()
+	user, err := r.getUser(ctx, "email", request.Target)
+	if err != nil {
+		return nil, err
+	}
+	err = r.verifyOTP(ctx, request)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (r userRepository) GetUserPasswordToken(user *User, email, passwordResetToken string) error {
-	userPasswordToken := UserPasswordToken{
-		Email:              user.Email,
-		PasswordResetToken: passwordResetToken,
-		PasswordResetAt:    time.Now().Add(time.Minute * 15).Unix(),
-	}
-	getQuery := `SELECT id FROM user_password_token WHERE email = $1`
-	tmpSmt, err := r.db.Prepare(getQuery)
+func (r userRepository) ResetPassword(ctx context.Context, userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error) {
+	user, err := r.GetById(context.Background(), userId.String())
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getQuery))
-		return err
+		return uuid.Nil, err
 	}
-
-	var userPasswordTokenID uuid.UUID
-	row := tmpSmt.QueryRow(email).Scan(&userPasswordTokenID)
-	switch {
-	case row == sql.ErrNoRows:
-		sqlQuery := `INSERT INTO user_password_token(email, password_reset_token, password_reset_at) VALUES ($1, $2, $3) RETURNING id`
-		tmpSmt, err := r.db.Prepare(sqlQuery)
-		if err != nil {
-			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return err
-		}
-
-		err = tmpSmt.QueryRow(userPasswordToken.Email, userPasswordToken.PasswordResetToken, userPasswordToken.PasswordResetAt).Scan(&userPasswordTokenID)
-		if err != nil {
-			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return err
-		}
-	case row != sql.ErrNoRows:
-		sqlQuery := `UPDATE user_password_token SET password_reset_token=$2, password_reset_at=$3 WHERE email = $1 RETURNING id`
-
-		tmpSmt, err := r.db.Prepare(sqlQuery)
-		if err != nil {
-			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return err
-		}
-
-		err = tmpSmt.QueryRow(userPasswordToken.Email, userPasswordToken.PasswordResetToken, userPasswordToken.PasswordResetAt).Scan(&userPasswordTokenID)
-		if err != nil {
-			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
-			return err
-		}
-	}
-	return nil
+	return r.performPasswordChange(ctx, user, request.Email, request.Password)
 }
 
-func (r *userRepository) VerifyPasswordToken(request ResetPasswordPayload, passwordTokenParam string) (string, error) {
-	currentTime := time.Now().Unix()
-	sqlQuery := `SELECT password_reset_token FROM user_password_token WHERE email = $1 AND password_reset_token=$2 AND password_reset_at >= $3`
-	stmt, err := r.db.Prepare(sqlQuery)
+func (r userRepository) ChangePassword(ctx context.Context, userId uuid.UUID, request ChangePasswordPayload) (uuid.UUID, error) {
+	user, err := r.GetById(context.Background(), userId.String())
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
-		return "", err
+		return uuid.Nil, err
 	}
-	var userPasswordToken UserPasswordToken
-	row := stmt.QueryRow(request.Email, passwordTokenParam, currentTime)
-	if err := row.Scan(&userPasswordToken.PasswordResetToken); err != nil {
-		return "", err
+	if user.Password != request.OldPassword {
+		return uuid.Nil, errors.New("incorrect old password")
 	}
 
-	return userPasswordToken.PasswordResetToken, nil
+	return r.performPasswordChange(ctx, user, request.Email, request.NewPassword)
 }
 
-func (r *userRepository) ResetPassword(request ResetPasswordPayload) (uuid.UUID, error) {
-	sqlQuery := `UPDATE users SET password_hash=$2 WHERE email = $1 RETURNING id`
-	stmt, err := r.db.Prepare(sqlQuery)
+func (r userRepository) performPasswordChange(ctx context.Context, user *User, email, password string) (uuid.UUID, error) {
+	if user.Email != email {
+		return uuid.Nil, errors.New("invalid user")
+	}
+	sqlQuery := `UPDATE users SET password=$2 WHERE id = $1 RETURNING id`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
 		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return uuid.Nil, err
 	}
 	var userID uuid.UUID
-	row := stmt.QueryRow(request.Email, request.Password)
+	row := stmt.QueryRowContext(ctx, user.ID, password)
 	if err := row.Scan(&userID); err != nil {
 		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return uuid.Nil, err
@@ -314,6 +289,118 @@ func (r *userRepository) UpdatePaystack(ctx context.Context, user *User) (uuid.U
 		return uuid.Nil, err
 	}
 	return userID, nil
+}
+
+func (r userRepository) requestOTP(ctx context.Context, target string) (*OTPResponse, error) {
+	_, err := r.GetByEmail(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+	expirationDuration := time.Duration(120) * time.Second
+
+	otpResponse := OTPResponse{
+		Target:              target,
+		OTP:                 r.otpGenerator.Generate(),
+		ExpireTimeInSeconds: time.Now().Add(expirationDuration).Unix(),
+	}
+
+	return &otpResponse, nil
+}
+
+func (r userRepository) getOTP(ctx context.Context, target string) (*UserPasswordToken, error) {
+	getQuery := `SELECT * FROM user_password_token WHERE email = $1`
+	tmpSmt, err := r.db.PrepareContext(ctx, getQuery)
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getQuery))
+		return nil, err
+	}
+
+	var passwordToken UserPasswordToken
+	err = tmpSmt.QueryRowContext(ctx, target).Scan(&passwordToken.ID, &passwordToken.Email, &passwordToken.PasswordResetToken, &passwordToken.PasswordResetAt, &passwordToken.Validated)
+
+	return &passwordToken, err
+}
+
+func (r userRepository) saveOTP(ctx context.Context, request OTPResponse) error {
+	_, row := r.getOTP(ctx, request.Target)
+	var userPasswordTokenID uuid.UUID
+	switch {
+	case row == sql.ErrNoRows:
+		sqlQuery := `INSERT INTO user_password_token(email, password_reset_token, password_reset_at) VALUES ($1, $2, $3) RETURNING id`
+		tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
+		if err != nil {
+			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			return err
+		}
+
+		err = tmpSmt.QueryRowContext(ctx, request.Target, request.OTP, request.ExpireTimeInSeconds).Scan(&userPasswordTokenID)
+		if err != nil {
+			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			return err
+		}
+	case row != sql.ErrNoRows:
+		sqlQuery := `UPDATE user_password_token SET password_reset_token=$2, password_reset_at=$3, validated=$4 WHERE email = $1 RETURNING id`
+
+		tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
+		if err != nil {
+			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			return err
+		}
+
+		err = tmpSmt.QueryRowContext(ctx, request.Target, request.OTP, request.ExpireTimeInSeconds, false).Scan(&userPasswordTokenID)
+		if err != nil {
+			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			return err
+		}
+	}
+	return nil
+}
+
+func (r userRepository) verifyOTP(ctx context.Context, request *VerifyOTP) error {
+	var userPasswordTokenID uuid.UUID
+	passwordToken, err := r.getOTP(ctx, request.Target)
+	if err != nil {
+		return err
+	}
+
+	if passwordToken.Validated {
+		return errors.New("already validated verification code")
+	}
+
+	if time.Unix(passwordToken.PasswordResetAt, 0).Before(time.Now()) {
+		err = r.updateOTPValidation(ctx, userPasswordTokenID)
+		if err != nil {
+			return err
+		}
+		return errors.New("expired verification code")
+	}
+
+	if passwordToken.PasswordResetToken != request.OTP {
+		r.log.Error("msg", zap.String("error", "invalid verification code"))
+		return errors.New("invalid verification code")
+	}
+	err = r.updateOTPValidation(ctx, userPasswordTokenID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r userRepository) updateOTPValidation(ctx context.Context, tokenID uuid.UUID) error {
+	sqlQuery := `UPDATE user_password_token SET validated=$1 RETURNING id`
+	tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return err
+	}
+
+	err = tmpSmt.QueryRowContext(ctx, "true").Scan(&tokenID)
+	if err != nil {
+		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return err
+	}
+
+	return nil
 }
 
 func (r userRepository) getFavourites(ctx context.Context, userId uuid.UUID) (*Favourites, error) {

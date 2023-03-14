@@ -87,9 +87,14 @@ func (app *application) buildRoutes() {
 func buildUserEndpoints(router chi.Router, svc user.Service) {
 	userRouter := chi.NewRouter()
 	favRouter := buildFavEndpoints(svc)
+	resetPasswordHandler := user.ResetPasswordHandler(svc)
+	changePasswordHandler := user.ChangePasswordHandler(svc)
+
 	router.Route("/user", func(r chi.Router) {
 		r.Mount("/favourite", favRouter)
 		r.Mount("/", userRouter)
+		r.Post("/reset_password", resetPasswordHandler)
+		r.Post("/change_password", changePasswordHandler)
 	})
 }
 
@@ -98,14 +103,14 @@ func buildSessionEndpoints(router chi.Router, svc user.Service) {
 
 	signInHandler := user.SignInHandler(svc)
 	signUpUserHandler := user.GetUserHandler(svc)
-	forgotPasswordHandler := user.ForgotPasswordHandler(svc)
-	resetPasswordHandler := user.ResetPasswordHandler(svc)
+	forgotResetPasswordHandler := user.ForgotPasswordHandler(svc)
+	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(svc)
 	// authenticateHandler := user.AuthenticateHandler(svc)
 
 	sessionsRouter.Post("/sign_in", signInHandler)
 	sessionsRouter.Post("/sign_up", signUpUserHandler)
-	sessionsRouter.Post("/forgot_password", forgotPasswordHandler)
-	sessionsRouter.Post("/reset_password/{token}", resetPasswordHandler)
+	sessionsRouter.Post("/forgot_password", forgotResetPasswordHandler)
+	sessionsRouter.Put("/verify_token", verifyResetPasswordOTPHandler)
 	// sessionsRouter.Post("/authenticate/{token}", resetPasswordHandler)
 
 	router.Mount("/session", sessionsRouter)

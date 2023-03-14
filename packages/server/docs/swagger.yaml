@@ -1,5 +1,18 @@
 basePath: /hof
 definitions:
+  FavBodyJSON:
+    properties:
+      date_added:
+        type: string
+      deleted_at:
+        type: string
+      fav:
+        type: boolean
+      message_id:
+        type: string
+      series_id:
+        type: string
+    type: object
   FavMessageJSON:
     properties:
       audio_url:
@@ -25,17 +38,11 @@ definitions:
     type: object
   FavouriteJSON:
     properties:
-      date_added:
-        type: string
-      deleted_at:
-        type: string
       fav:
-        type: boolean
+        items:
+          $ref: '#/definitions/FavBodyJSON'
+        type: array
       id:
-        type: string
-      message_id:
-        type: string
-      series_id:
         type: string
       user_id:
         type: string
@@ -61,20 +68,6 @@ definitions:
       title:
         type: string
     type: object
-  favourite.GetFavouritesResponse:
-    properties:
-      favourites:
-        items:
-          $ref: '#/definitions/FavMessageJSON'
-        type: array
-      pagination:
-        $ref: '#/definitions/favourite.PageResponse'
-    type: object
-  favourite.PageResponse:
-    properties:
-      totalResults:
-        type: integer
-    type: object
   http_helper.DefaultResponse:
     properties:
       body: {}
@@ -88,6 +81,25 @@ definitions:
       error:
         type: string
     type: object
+  user.ChangePasswordPayload:
+    properties:
+      confirm_new_password:
+        minLength: 6
+        type: string
+      email:
+        description: The ULID of ChangePasswordPayload
+        type: string
+      new_password:
+        minLength: 6
+        type: string
+      old_password:
+        type: string
+    required:
+    - confirm_new_password
+    - email
+    - new_password
+    - old_password
+    type: object
   user.ForgotPasswordPayload:
     properties:
       email:
@@ -96,10 +108,14 @@ definitions:
     required:
     - email
     type: object
-  user.ForgotPasswordResponse:
+  user.GetFavouritesResponse:
     properties:
-      url:
-        type: string
+      favourites:
+        items:
+          $ref: '#/definitions/FavMessageJSON'
+        type: array
+      pagination:
+        $ref: '#/definitions/user.PageResponse'
     type: object
   user.LoginRequestJSON:
     properties:
@@ -107,6 +123,20 @@ definitions:
         type: string
       password:
         type: string
+    type: object
+  user.OTPResponse:
+    properties:
+      expireTimeInSeconds:
+        type: integer
+      otp:
+        type: string
+      target:
+        type: string
+    type: object
+  user.PageResponse:
+    properties:
+      totalResults:
+        type: integer
     type: object
   user.ResetPasswordPayload:
     properties:
@@ -166,6 +196,13 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/user.UserJSON'
+    type: object
+  user.VerifyOTP:
+    properties:
+      otp:
+        type: string
+      target:
+        type: string
     type: object
 host: localhost:3000
 info:
@@ -240,9 +277,9 @@ paths:
       description: The endpoint takes nothing as the request body and deletes the
         favourite by ID
       parameters:
-      - description: audio series id
+      - description: message id
         in: path
-        name: fav_id
+        name: message_id
         required: true
         type: string
       produces:
@@ -296,7 +333,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/favourite.GetFavouritesResponse'
+            $ref: '#/definitions/user.GetFavouritesResponse'
         "400":
           description: Bad Request
           schema:
@@ -322,32 +359,10 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.ForgotPasswordResponse'
+            $ref: '#/definitions/user.OTPResponse'
       summary: User forgets their password
       tags:
-      - Sessions
-  /session/reset_password/{password_token}:
-    post:
-      consumes:
-      - application/json
-      description: Creat new password with the input payload
-      parameters:
-      - description: Reset password
-        in: body
-        name: ResetPasswordPayload
-        required: true
-        schema:
-          $ref: '#/definitions/user.ResetPasswordPayload'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/http_helper.DefaultResponse'
-      summary: Rest user password
-      tags:
-      - Sessions
+      - Password
   /session/sign_in:
     post:
       consumes:
@@ -392,6 +407,28 @@ paths:
       summary: Sign up a new user
       tags:
       - Sessions
+  /session/verify_token:
+    post:
+      consumes:
+      - application/json
+      description: The endpoint verifies the OTP input from the user
+      parameters:
+      - description: Verify OTP
+        in: body
+        name: VerifyOTP
+        required: true
+        schema:
+          $ref: '#/definitions/user.VerifyOTP'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserSession'
+      summary: Verify password reset OTP
+      tags:
+      - Password
   /update/{message_id}:
     put:
       consumes:
@@ -444,4 +481,48 @@ paths:
       summary: Update Audio Series by ID
       tags:
       - Audio Series
+  /user/change_password:
+    post:
+      consumes:
+      - application/json
+      description: Create new password with the input payload
+      parameters:
+      - description: Change password
+        in: body
+        name: ChangePasswordPayload
+        required: true
+        schema:
+          $ref: '#/definitions/user.ChangePasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http_helper.DefaultResponse'
+      summary: Change user password
+      tags:
+      - Password
+  /user/reset_password:
+    post:
+      consumes:
+      - application/json
+      description: Create new password with the input payload
+      parameters:
+      - description: Reset password
+        in: body
+        name: ResetPasswordPayload
+        required: true
+        schema:
+          $ref: '#/definitions/user.ResetPasswordPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http_helper.DefaultResponse'
+      summary: Reset user password
+      tags:
+      - Password
 swagger: "2.0"

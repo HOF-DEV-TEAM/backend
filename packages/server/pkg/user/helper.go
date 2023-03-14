@@ -5,6 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math/rand"
+	"time"
 )
 
 func EncodeString(s string) string {
@@ -19,6 +22,21 @@ func DecodeString(s string) (string, error) {
 	}
 
 	return string(data), nil
+}
+
+type OtpGenerator interface {
+	Generate() string
+}
+
+type otpGenerator struct{}
+
+func NewOTPGenerator() OtpGenerator {
+	rand.Seed(time.Now().UnixNano())
+	return &otpGenerator{}
+}
+
+func (*otpGenerator) Generate() string {
+	return fmt.Sprintf("%06d", rand.Intn(999999))
 }
 
 func remove(slice []FavBody, s int) []FavBody {

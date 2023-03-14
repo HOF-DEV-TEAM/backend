@@ -102,6 +102,7 @@ type UserPasswordToken struct {
 	Email              string `sql:"email" validate:"required,email"`
 	PasswordResetToken string `sql:"password_reset_token"`
 	PasswordResetAt    int64  `sql:"password_reset_at"`
+	Validated          bool   `sql:"validated"`
 }
 
 type ForgotPasswordPayload struct {
@@ -120,6 +121,14 @@ type ResetPasswordPayload struct {
 	Password        string `json:"password" validate:"min=6" binding:"required"`
 	PasswordConfirm string `json:"password_confirm" validate:"min=6" binding:"required"`
 } //	@name	ResetPasswordPayload
+
+type ChangePasswordPayload struct {
+	// The ULID of ChangePasswordPayload
+	Email              string `json:"email" validate:"required,email"`
+	OldPassword        string `json:"old_password" binding:"required"`
+	NewPassword        string `json:"new_password" validate:"min=6" binding:"required"`
+	ConfirmNewPassword string `json:"confirm_new_password" validate:"min=6" binding:"required"`
+} //	@name	ChangePasswordPayload
 
 type Favourites struct {
 	ID     uuid.UUID `sql:"id"`
@@ -146,4 +155,19 @@ type FavMessage struct {
 	ImageUrl    string    `json:"image_url"`
 	AudioUrl    string    `json:"audio_url"`
 	Description string    `json:"description"`
+}
+
+type OTPRequest struct {
+	Target string `json:"target"`
+}
+
+type OTPResponse struct {
+	Target              string `json:"target"`
+	OTP                 string `json:"otp"`
+	ExpireTimeInSeconds int64  `json:"expireTimeInSeconds"`
+}
+
+type VerifyOTP struct {
+	Target string `json:"target"`
+	OTP    string `json:"otp"`
 }

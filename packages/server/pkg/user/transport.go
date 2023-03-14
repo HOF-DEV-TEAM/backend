@@ -3,12 +3,12 @@ package user
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
 	"github.com/gofrs/uuid"
 	"net/http"
 	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
-	"github.com/go-chi/chi/v5"
 )
 
 type UserAndToken struct {
@@ -203,11 +203,11 @@ func SignInHandler(svc Service) http.HandlerFunc {
 //
 //	@Summary		User forgets their password
 //	@Description	User can request for a password change with the input payload
-//	@Tags			Sessions
+//	@Tags			Password
 //	@Accept			json
 //	@Produce		json
 //	@Param			ForgotPasswordPayload	body		ForgotPasswordPayload	true	"Forgot password"
-//	@Success		200						{object}	ForgotPasswordResponse
+//	@Success		200						{object}	OTPResponse
 //	@Router			/session/forgot_password [post]
 func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -217,26 +217,57 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		url, err := svc.ForgotPassword(request)
+		otpResponse, err := svc.ForgotPassword(request)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
 
-		http_helper.EncodeResult(w, url, http.StatusOK)
+		http_helper.EncodeResult(w, otpResponse, http.StatusOK)
+	}
+}
+
+// VerifyPasswordResetOTPHandler godoc
+//
+//	@Summary		Verify password reset OTP
+//	@Description	The endpoint verifies the OTP input from the user
+//	@Tags			Password
+//	@Accept			json
+//	@Produce		json
+//	@Param			VerifyOTP	body		VerifyOTP	true	"Verify OTP"
+//	@Success		200						{object}	UserSession
+//	@Router			/session/verify_token [post]
+func VerifyPasswordResetOTPHandler(svc Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request VerifyOTP
+		err := json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		result, err := svc.VerifyPasswordResetOTP(r.Context(), &request)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		payload := UserSession{
+			Token: result.Token,
+		}
+
+		http_helper.EncodeResult(w, payload, http.StatusOK)
 	}
 }
 
 // ResetPasswordHandler godoc
 //
-//	@Summary		Rest user password
-//	@Description	Creat new password with the input payload
-//	@Tags			Sessions
+//	@Summary		Reset user password
+//	@Description	Create new password with the input payload
+//	@Tags			Password
 //	@Accept			json
 //	@Produce		json
 //	@Param			ResetPasswordPayload	body		ResetPasswordPayload	true	"Reset password"
 //	@Success		200						{object}	http_helper.DefaultResponse
-//	@Router			/session/reset_password/{password_token} [post]
+//	@Router			/user/reset_password [post]
 func ResetPasswordHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequest ResetPasswordPayload
@@ -245,14 +276,36 @@ func ResetPasswordHandler(svc Service) http.HandlerFunc {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		passwordTokenParam := chi.URLParam(r, "token")
-		_, err = svc.VerifyPasswordToken(resetPasswordRequest, passwordTokenParam)
+		_, err = svc.ResetPassword(r.Context(), resetPasswordRequest)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+
+		}
+
+		http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true}, http.StatusOK)
+	}
+}
+
+// ChangePasswordHandler godoc
+//
+//	@Summary		Change user password
+//	@Description	Create new password with the input payload
+//	@Tags			Password
+//	@Accept			json
+//	@Produce		json
+//	@Param			ChangePasswordPayload	body		ChangePasswordPayload	true	"Change password"
+//	@Success		200						{object}	http_helper.DefaultResponse
+//	@Router			/user/change_password [post]
+func ChangePasswordHandler(svc Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var changePasswordRequest ChangePasswordPayload
+		err := json.NewDecoder(r.Body).Decode(&changePasswordRequest)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-
-		_, err = svc.ResetPassword(resetPasswordRequest)
+		_, err = svc.ChangePassword(r.Context(), changePasswordRequest)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
