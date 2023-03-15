@@ -286,12 +286,19 @@ type SubscriptionOffering struct {
 	DeletedAt              sql.NullString `sql:"deleted_at"`
 }
 
-type SubscriptionPlanOffering struct {
+
+type SubPlan struct {
 	//SubscriptionPlan
 	Type     TypeEnum `sql:"int"`
 	Freq     FreqEnum `sql:"freq"`
 	Fee      float64  `sql:"float64"`
 	PlanCode string   `sql:"code"`
+}
+
+
+type SubscriptionPlanOffering struct {
+	//SubscriptionPlan
+	SubPlan
 
 	//SubscriptionOffering
 	Name string `sql:"name" validate:"required"`
@@ -306,6 +313,7 @@ type SubscriptionPlanOffering struct {
 }
 
 type Subscription struct {
+	SubPlan
 	ID                 string         `sql:"id"`
 	Status             int            `sql:"status"`
 	UserID             string         `sql:"user_id" validate:"required"`

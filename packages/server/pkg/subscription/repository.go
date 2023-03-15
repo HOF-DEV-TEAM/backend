@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
 	"go.uber.org/zap"
 )
 
@@ -241,17 +242,26 @@ func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*Subscr
 }
 
 func (r subscriptionRepo) GetSubscription(ctx context.Context, userId, planId string) (*Subscription, error) {
+	sub := Subscription{
+		UserID: userId,
+		SubscriptionPlanID: planId,
+	}
+
+	whereQuery, _ := urlqueryhelper.SqlQueryHelper(true, false, sub)
+	
 	query := "SELECT " +
-		"id " +
-		"FROM subscriptions WHERE user_id = $1 AND subscription_plan_id = $2"
+		"* " +
+		"FROM subscriptions s WHERE sp.status = 1 AND " + whereQuery +
+		"LEFT JOIN subscription_plans sp " +
+		"ON sp.id = s.id;"
+
 	getSubStmt, err := r.db.PrepareContext(ctx, query)
 
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", query))
 		return nil, err
 	}
-
-	var sub Subscription
+	
 	row := getSubStmt.QueryRowContext(ctx, userId, planId)
 
 	err = row.Scan(&sub.ID)

@@ -35,7 +35,7 @@ type jwtClaims struct {
 
 func (v *JWTClaim) Sign(config *SecurityConfig) (string, error) {	
 	v.RegisteredClaims = jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * config.JWTExpiration)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 		IssuedAt: jwt.NewNumericDate(jwt.TimeFunc()),
 	}
 	
