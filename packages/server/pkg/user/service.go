@@ -331,7 +331,7 @@ func (s *userService) CreateFavourite(ctx context.Context, favourite *Favourites
 }
 
 func (s *userService) GetFavourites(ctx context.Context) (GetFavouritesResponse, error) {
-	result := GetFavouritesResponse{}
+	result := GetFavouritesResponse{Favourites: []*FavMessageJSON{}}
 
 	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
 	if !ok {
@@ -345,7 +345,7 @@ func (s *userService) GetFavourites(ctx context.Context) (GetFavouritesResponse,
 
 	fav, count, err := s.repo.GetFavourites(ctx, userId)
 	if err == sql.ErrNoRows {
-		return result, err
+		return result, nil
 	}
 
 	result.Favourites = []*FavMessageJSON{}

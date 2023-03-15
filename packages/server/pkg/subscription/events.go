@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"fmt"
 
 	"bitbucket.org/hofng/hofApp/pkg/user"
 	"go.uber.org/zap"
@@ -34,7 +35,10 @@ func NewSubEvent(userRepo user.Repository, subRepo Repository, logger *zap.Logge
 }
 
 func (se *subEvent) HandleEvent(ctx context.Context, event *SubscriptionEvent) {
-	switch event.Event {
+
+	se.logger.Info("msg", zap.String(string(event.Event), fmt.Sprintf("%+v", event.Data)))
+
+	switch event.Event {		
 	case SubscriptionCreate:
 		sub := event.Data.ToSubscription()
 		subPlanFromDB, err := se.subRepo.GetPlan(ctx, event.Data.Plan.PlanCode)
