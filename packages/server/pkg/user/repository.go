@@ -443,7 +443,7 @@ func (r userRepository) GetFavourites(ctx context.Context, userId uuid.UUID) ([]
 		as.Fav = fav.Fav
 	}
 
-	sqlQuery := `SELECT id, series_id, title, author, image_url, audio_url, description FROM audio_messages WHERE id = ANY($1)`
+	sqlQuery := `SELECT id, title, author, image_url, audio_url, description FROM audio_messages WHERE id = ANY($1)`
 
 	var favss []*FavMessage
 	getFavsStmt, err := r.db.PrepareContext(ctx, sqlQuery)
@@ -465,7 +465,6 @@ func (r userRepository) GetFavourites(ctx context.Context, userId uuid.UUID) ([]
 		as.UserID = favourites.UserID
 		if err := rows.Scan(
 			&as.MessageID,
-			&as.SeriesID,
 			&as.Title,
 			&as.Author,
 			&as.ImageUrl,
