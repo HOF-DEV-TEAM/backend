@@ -43,6 +43,16 @@ func (v *JWTClaim) Sign(config *SecurityConfig) (string, error) {
 	return token.SignedString([]byte(config.JWTSecret))
 }
 
+//TODO: validate approach for this longer lived token - ideally this should come from DB
+func (v *JWTClaim) CreateRefreshToken(config *SecurityConfig) (string, error) {	
+	v.RegisteredClaims = jwt.RegisteredClaims{		
+		IssuedAt: jwt.NewNumericDate(jwt.TimeFunc()),
+	}
+	
+	token := jwt.NewWithClaims((jwt.SigningMethodHS256), v)		
+	return token.SignedString([]byte(config.JWTSecret))
+}
+
 
 func TokenFromCookie(r *http.Request) string {
 	cookie, err := r.Cookie("jwt")

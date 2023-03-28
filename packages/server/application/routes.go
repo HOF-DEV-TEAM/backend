@@ -11,6 +11,7 @@ import (
 	_ "bitbucket.org/hofng/hofApp/docs"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/pkg/audio_message"
+	"bitbucket.org/hofng/hofApp/pkg/auth"
 	"bitbucket.org/hofng/hofApp/pkg/subscription"
 	"bitbucket.org/hofng/hofApp/pkg/subscription/paystack"
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
@@ -24,8 +25,8 @@ func (app *application) buildRoutes() {
 	userRepo := user.NewRepository(app.db, app.logger)
 	userService := user.NewService(userRepo, app.logger, &app.config.Security)
 
+	//Subscription
 	subscritpionRepo := subscription.NewRepository(app.db, app.logger)
-
 	subProvider := paystack.NewPaystackService(
 		paystack.NewPayStackHttpClient(
 			&app.config.PaystackConfig,
@@ -36,8 +37,12 @@ func (app *application) buildRoutes() {
 		subscritpionRepo,
 		&app.config.Security,
 	)
-
 	subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security, userRepo)
+	
+	authService := auth.NewService(userRepo, subscriptionSvc, app.logger, &app.config.Security)
+
+
+
 	// TODO - group routing better
 	//setup routes
 
@@ -74,7 +79,7 @@ func (app *application) buildRoutes() {
 
 	//unprotected routes
 	app.router.Group(func(r chi.Router) {
-		buildSessionEndpoints(r, userService)
+		buildSessionEndpoints(r, authService, userService)
 		//webhook
 
 		subEvent := subscription.NewSubEvent(userRepo, subscritpionRepo, app.logger)
@@ -98,15 +103,16 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 	})
 }
 
-func buildSessionEndpoints(router chi.Router, svc user.Service) {
+func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user.Service) {
 	sessionsRouter := chi.NewRouter()
 
-	signInHandler := user.SignInHandler(svc)
-	signUpUserHandler := user.GetUserHandler(svc)
-	forgotResetPasswordHandler := user.ForgotPasswordHandler(svc)
-	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(svc)
-	// authenticateHandler := user.AuthenticateHandler(svc)
+	signInHandler := auth.SignInHandler(authSvc)
+	signUpUserHandler := user.GetUserHandler(userSvc)
+	forgotResetPasswordHandler := user.ForgotPasswordHandler(userSvc)
+	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(userSvc)
+	authenticateHandler := auth.AuthenticateHandler(authSvc)
 
+	sessionsRouter.Post("/authenticate", authenticateHandler)
 	sessionsRouter.Post("/sign_in", signInHandler)
 	sessionsRouter.Post("/sign_up", signUpUserHandler)
 	sessionsRouter.Post("/forgot_password", forgotResetPasswordHandler)
@@ -160,17 +166,14 @@ func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
 func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	subRouter := chi.NewRouter()
 
-	createSubscriptionHandler := subscription.CreateSubscriptionHandler(svc)
 	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
 	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
 	getSubscriptionPlanOfferings := subscription.GetSubscriptionPlanOfferingsHandler(svc)
 	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
 	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
 
-	subRouter.Post("/", createSubscriptionHandler)
-	// subRouter.Get("/", createSubscriptionHandler)
 	subRouter.Post("/plan", createSubscriptionPlanHandler)
-	subRouter.Get("/verify/{ref_id}", verifySubscriptionHandler)
+	subRouter.Post("/verify", verifySubscriptionHandler)
 
 	subRouter.Post("/offering", createSubscriptionOfferingHandler)
 	subRouter.Get("/plan/offering", getSubscriptionPlanOfferings)

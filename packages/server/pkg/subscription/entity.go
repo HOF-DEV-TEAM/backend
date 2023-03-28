@@ -286,15 +286,14 @@ type SubscriptionOffering struct {
 	DeletedAt              sql.NullString `sql:"deleted_at"`
 }
 
-
 type SubPlan struct {
 	//SubscriptionPlan
 	Type     TypeEnum `sql:"int"`
 	Freq     FreqEnum `sql:"freq"`
 	Fee      float64  `sql:"float64"`
 	PlanCode string   `sql:"code"`
+	Currency string   `sql:"currency"`
 }
-
 
 type SubscriptionPlanOffering struct {
 	//SubscriptionPlan
@@ -313,7 +312,6 @@ type SubscriptionPlanOffering struct {
 }
 
 type Subscription struct {
-	SubPlan
 	ID                 string         `sql:"id"`
 	Status             int            `sql:"status"`
 	UserID             string         `sql:"user_id" validate:"required"`
@@ -322,4 +320,5 @@ type Subscription struct {
 	DateAdded          sql.NullString `sql:"date_added"`
 	LastUpdated        sql.NullString `sql:"last_updated"`
 	DeletedAt          sql.NullString `sql:"deleted_at"`
+	SubPlan
 }

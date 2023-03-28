@@ -13,7 +13,8 @@ type Repository interface {
 	CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error)
 	CreateSubscriptionPlan(ctx context.Context, plan *SubscriptionPlan) (*SubscriptionPlan, error)
 	GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error)
-	GetSubscription(ctx context.Context, userId, planId string) (*Subscription, error)
+	GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
+	GetSubscriptionByPlanId(ctx context.Context, planId string) (*Subscription, error)
 	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOffering) (string, error)
@@ -241,19 +242,30 @@ func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*Subscr
 	return &plan, nil
 }
 
-func (r subscriptionRepo) GetSubscription(ctx context.Context, userId, planId string) (*Subscription, error) {
-	sub := Subscription{
-		UserID: userId,
-		SubscriptionPlanID: planId,
-	}
+func (r subscriptionRepo) GetSubscriptionByPlanId(ctx context.Context, planId string) (*Subscription, error) {
+	sub := &Subscription{SubscriptionPlanID: planId}
+	return r.GetSubscription(ctx,sub)
+}
 
-	whereQuery, _ := urlqueryhelper.SqlQueryHelper(true, false, sub)
-	
-	query := "SELECT " +
-		"* " +
-		"FROM subscriptions s WHERE sp.status = 1 AND " + whereQuery +
+func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error) {
+	whereQuery, _ := urlqueryhelper.SqlQueryHelper(true, false, *sub)
+	query := "SELECT " +		
+		"s.id, " +
+        "s.status, " +
+        "s.user_id, " +        
+		"s.subscription_plan_id, " + 
+        // "s.next_payment_date, " +
+        "sp.type, " +
+        "sp.freq, " +
+        "sp.fee, " +
+		"sp.currency, " + 
+        "sp.code " +
+		"FROM subscriptions s " +
 		"LEFT JOIN subscription_plans sp " +
-		"ON sp.id = s.id;"
+		"ON sp.id = s.subscription_plan_id " +
+		"WHERE s.status = 1" + whereQuery + 
+		" LIMIT 1;"
+
 
 	getSubStmt, err := r.db.PrepareContext(ctx, query)
 
@@ -262,11 +274,22 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, userId, planId st
 		return nil, err
 	}
 	
-	row := getSubStmt.QueryRowContext(ctx, userId, planId)
+	row := getSubStmt.QueryRowContext(ctx)
 
-	err = row.Scan(&sub.ID)
+	err = row.Scan(
+		&sub.ID,
+		&sub.Status,
+		&sub.UserID,
+		&sub.SubscriptionPlanID,
+		// &sub.NextPaymentDate,
+		&sub.Type,
+		&sub.Freq,
+		&sub.Fee,
+		&sub.Currency,
+		&sub.PlanCode,
+	)
 
-	if err == sql.ErrNoRows {
+	if err == sql.ErrNoRows {		
 		return nil, err
 	}
 
@@ -279,11 +302,11 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, userId, planId st
 		return nil, err
 	}
 
-	return &sub, nil
+	return sub, nil
 }
 
 func (r subscriptionRepo) GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error) {
-	query := "SELECT sp.id, sp.code, sp.fee, sp.freq, COALESCE(sp.type, 0), so.name FROM subscription_plan_offerings s " +
+	query := "SELECT sp.id, sp.code, sp.fee, sp.currency, sp.freq, COALESCE(sp.type, 0), so.name FROM subscription_plan_offerings s " +
 		"LEFT JOIN subscription_plans sp " +
 		"ON sp.id = s.subscription_plan_id " +
 		"LEFT JOIN subscription_offerings so " +
@@ -314,6 +337,7 @@ func (r subscriptionRepo) GetSubscriptionPlanOfferings(ctx context.Context) ([]*
 			&sub.SubscriptionPlanID,
 			&sub.PlanCode,
 			&sub.Fee,
+			&sub.Currency,
 			&sub.Freq,
 			&sub.Type,
 			&sub.Name,

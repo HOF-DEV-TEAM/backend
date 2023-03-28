@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
-	"github.com/go-chi/chi/v5"
 )
 
 type SubscriptionRequest struct {
@@ -17,6 +16,10 @@ type SubscriptionRequest struct {
 	Plan     string `json:"plan,omitempty"`
 }
 
+type VerifySubRequest struct {
+	PlanId string `json:"plan_id"`
+	RefId  string `json:"ref_id"`
+}
 type SubscriptionPlanRequest struct {
 	Type TypeEnum `json:"type,string,omitempty"`
 	Name string   `json:"name,omitempty"`
@@ -38,11 +41,12 @@ type SubscriptionPlanOfferingRequest struct {
 }
 
 type SubscriptionPlanKey struct {
-	ID   string   `json:"id"`
-	Type TypeEnum `json:"type"`
-	Freq FreqEnum `json:"freq"`
-	Fee  float64  `json:"fee"`
-	Code string   `json:"code"`
+	ID       string   `json:"id"`
+	Type     TypeEnum `json:"type"`
+	Freq     FreqEnum `json:"freq"`
+	Fee      float64  `json:"fee"`
+	Code     string   `json:"code"`
+	Currency string   `json:"currency"`
 }
 
 type PlanOfferingResponse struct {
@@ -63,7 +67,7 @@ type PlanResponseData struct {
 	Name         string   `json:"name"`
 	Interval     FreqEnum `json:"interval,string,omit_empty"`
 	Currency     string   `json:"currency"`
-	PlanCode     string   `json:"plan_code"`
+	PlanCode     string   `json:"code"`
 	Amount       float64  `json:"amount"`
 	SendInvoices bool     `json:"send_invoices"`
 	SendSms      bool     `json:"send_sms"`
@@ -95,6 +99,66 @@ type SubscriptionResponseData struct {
 	SubscriptionCode string               `json:"subscription_code"`
 	//to verify transaction status //success or failure
 	Status string `json:"status"`
+}
+
+type SubscriptionJSON struct {
+	ID                 string   `json:"id"`
+	Status             bool     `json:"status"`
+	UserID             string   `json:"user_id"`
+	SubscriptionPlanID string   `json:"subscription_plan_id"`
+	NextPaymentDate    string   `json:"next_payment_date"`
+	Type               TypeEnum `json:"type"`
+	Freq               FreqEnum `json:"freq"`
+	Fee                float64  `json:"fee"`
+	Currency           string   `json:"currency"`
+	PlanCode           string   `json:"plan_code"`
+}
+
+func (sub *Subscription) ToJSON() *SubscriptionJSON {
+	return &SubscriptionJSON{
+		ID:                 sub.ID,
+		Status:             sub.Status == 1,
+		UserID:             sub.UserID,
+		NextPaymentDate:    sub.NextPaymentDate.String,
+		SubscriptionPlanID: sub.SubscriptionPlanID,
+		Type:               sub.Type,
+		Freq:               sub.Freq,
+		Fee:                sub.Fee,
+		PlanCode:           sub.PlanCode,
+		Currency:           sub.Currency,
+	}
+}
+
+type SubscriptionPlanJSON struct {
+	ID                     string     `json:"id"`
+	Name                   string     `json:"name"`
+	Type                   TypeEnum   `json:"int"`
+	Freq                   FreqEnum   `json:"freq"`
+	Fee                    float64    `json:"float64"`
+	Status                 StatusEnum `json:"status"`
+	Currency               string     `json:"currency"`
+	Code                   string     `json:"code"`
+	DateAdded              string     `json:"date_added"`
+	LastUpdated            string     `json:"last_updated"`
+	PlanId                 string     `json:"plan_id"`
+	SubscritpionProviderID string     `json:"subscription_provider_id"`
+}
+
+func (sub *SubscriptionPlan) ToJSON() *SubscriptionPlanJSON {
+	return &SubscriptionPlanJSON{
+		ID:                     sub.ID,
+		Name:                   sub.Name,
+		Type:                   sub.Type,
+		Freq:                   sub.Freq,
+		Fee:                    sub.Fee,
+		Status:                 sub.Status,
+		Currency:               sub.Currency,
+		Code:                   sub.Code,
+		PlanId:                 sub.PlanId.String,
+		DateAdded:              sub.DateAdded.String,
+		LastUpdated:            sub.LastUpdated.String,
+		SubscritpionProviderID: sub.SubscritpionProviderID.String,
+	}
 }
 
 type SubscriptionResponse struct {
@@ -140,30 +204,6 @@ func parseDateTime(dateString string) sql.NullString {
 	return sql.NullString{}
 }
 
-func CreateSubscriptionHandler(svc SubscriptionService) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(createSubscriptionHandler, svc)
-}
-
-func createSubscriptionHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
-	var subReq SubscriptionRequest
-	err := json.NewDecoder(r.Body).Decode(&subReq)
-
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, wr)
-		return
-	}
-
-	sub, err := svc.(SubscriptionService).CreateSubscription(r.Context(), &subReq)
-
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, wr)
-		return
-	}
-
-	http_helper.EncodeResult(wr, sub, http.StatusOK)
-
-}
-
 func CreateSubscriptionPlanHandler(svc SubscriptionService) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(createSubscriptionPlanHandler, svc)
 
@@ -186,8 +226,7 @@ func createSubscriptionPlanHandler(wr http.ResponseWriter, r *http.Request, svc 
 		return
 	}
 
-	http_helper.EncodeResult(wr, payload, http.StatusOK)
-
+	http_helper.EncodeResult(wr, payload.ToJSON(), http.StatusOK)
 }
 
 func CreateSubscriptionOfferingHandler(svc SubscriptionService) http.HandlerFunc {
@@ -230,11 +269,12 @@ func getSubscriptionPlanOfferingsHandler(wr http.ResponseWriter, r *http.Request
 
 	for _, plan := range result {
 		key := SubscriptionPlanKey{
-			ID:   plan.SubscriptionPlanID.String,
-			Type: plan.Type,
-			Code: plan.PlanCode,
-			Freq: plan.Freq,
-			Fee:  plan.Fee,
+			ID:       plan.SubscriptionPlanID.String,
+			Type:     plan.Type,
+			Code:     plan.PlanCode,
+			Freq:     plan.Freq,
+			Fee:      plan.Fee,
+			Currency: plan.Currency,
 		}
 		planOfferings[key] = append(planOfferings[key], plan.Name)
 	}
@@ -288,24 +328,25 @@ func VerifySubscriptionHandler(svc SubscriptionService) http.HandlerFunc {
 }
 
 func verifySubscriptionHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
-	subRef := chi.URLParam(r, "ref_id")
+	var subReq VerifySubRequest
+	err := json.NewDecoder(r.Body).Decode(&subReq)
+
 	s := svc.(Service)
 	ctx := r.Context()
-	_, err := s.VerifySubscription(ctx, subRef)
+	_, err = s.VerifySubscription(ctx, subReq)
 
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, wr)
 		return
 	}
 
-	result, err := s.GetSession(ctx)
-
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, wr)
-		return
+	payload := struct {
+		Msg string `json:"msg"`
+	}{
+		Msg: "Verification Succesful",
 	}
 
-	http_helper.EncodeResult(wr, result, http.StatusOK)
+	http_helper.EncodeResult(wr, http_helper.DefaultResponse{Body: payload, Code: 200, Success: true}, http.StatusOK)
 }
 
 func CreateSubscriptionHookHandler(event Event) http.HandlerFunc {
