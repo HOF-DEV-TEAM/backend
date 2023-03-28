@@ -32,54 +32,6 @@ func (pc *paystackService) updatePaystack(ctx context.Context, userId, paystackC
 	})
 }
 
-func (pc *paystackService) CreateSubscription(ctx context.Context, subReq *subscription.SubscriptionRequest) (*subscription.Subscription, error) {
-	claims, ok := ctx.Value(pc.config.JWTClaimsContextKey).(*security.JWTClaim)
-
-	if !ok {
-		return nil, http_helper.ErrUnauthorized
-	}
-	//check if user is subscribed to the same plan - return  plan if true
-	user, err := pc.userRepo.GetById(ctx, claims.JWTClaimsMain.LoggedInUserId)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var paystackCustomerCode string
-
-	if !user.PaystackCustomerCode.Valid {
-		customer := PaystackCustomer{
-			Email:     user.Email,
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Phone:     user.Mobile.String,
-		}
-
-		paystackUser, err := pc.payStackClient.CreateCustomer(ctx, &customer)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = pc.updatePaystack(ctx, user.ID, fmt.Sprintf("%d", paystackUser.Data.ID), paystackCustomerCode)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	subReq.Customer = user.PaystackCustomerCode.String
-	//get active plan - if there's none create one?
-	sub, err := pc.payStackClient.CreateSubscription(ctx, subReq)
-	if err != nil {
-		return nil, err
-	}
-
-	userSub := sub.Data.ToSubscription()
-
-	userSub.UserID = user.ID
-	return &userSub, err
-}
-
 func (pc *paystackService) CreateSubscriptionPlan(ctx context.Context, subscritpionPlan *subscription.SubscriptionPlanRequest) (*subscription.SubscriptionPlan, error) {
 	result, err := pc.payStackClient.CreateSubscriptionPlan(ctx, subscritpionPlan)
 
@@ -91,8 +43,8 @@ func (pc *paystackService) CreateSubscriptionPlan(ctx context.Context, subscritp
 	return &sub, err
 }
 
-func (pc *paystackService) VerifySubscription(ctx context.Context, subRef string) (*subscription.Subscription, error) {
-	subResponse, err := pc.payStackClient.VerifySubscription(ctx, subRef)
+func (pc *paystackService) VerifySubscription(ctx context.Context, subReq subscription.VerifySubRequest) (*subscription.Subscription, error) {
+	subResponse, err := pc.payStackClient.VerifySubscription(ctx, subReq.RefId)
 
 	if err != nil {
 		return nil, err
@@ -120,6 +72,7 @@ func (pc *paystackService) VerifySubscription(ctx context.Context, subRef string
 		}
 
 		sub := subResponse.Data.ToSubscription()
+		
 		return &sub, nil
 	}
 
@@ -142,4 +95,12 @@ func (pc *paystackService) GetSubscriptionPlanOfferings(ctx context.Context) ([]
 
 func (pc *paystackService) CreateSubscriptionPlanOffering(ctx context.Context, _ *subscription.SubscriptionPlanOfferingRequest) (string, error) {
 	return "", nil
+}
+
+func (pc *paystackService) GetSubscription(ctx context.Context, _ string) (*subscription.Subscription, error) {
+	return nil, nil
+}
+
+func (pc *paystackService) CreateSubscription(ctx context.Context, _ *subscription.Subscription) (*subscription.Subscription, error) {
+	return nil, nil
 }

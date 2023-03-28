@@ -5,19 +5,19 @@ import (
 	"database/sql"
 	"time"
 
-	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
 	"bitbucket.org/hofng/hofApp/pkg/user"
 )
 
 type SubscriptionService interface {
-	CreateSubscription(ctx context.Context, subReq *SubscriptionRequest) (*Subscription, error)
+	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
 	CancelSubscription(ctx context.Context)
 	ChangeSubscription(ctx context.Context)
+	GetSubscription(ctx context.Context, userId string) (*Subscription, error)
 	CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOfferingRequest) (string, error)
-	VerifySubscription(ctx context.Context, subRef string) (*Subscription, error)
+	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
 	MakePayment(ctx context.Context)
 }
 
@@ -38,38 +38,19 @@ func NewService(subProvider SubscriptionService, repo Repository, config *securi
 	return &subscriptionSvc{subProvider: subProvider, repo: repo, userRepo: userRepo, config: config}
 }
 
-func (ss *subscriptionSvc) CreateSubscription(ctx context.Context, subReq *SubscriptionRequest) (*Subscription, error) {
-	claims, ok := ctx.Value(ss.config.JWTClaimsContextKey).(*security.JWTClaim)
+func (ss *subscriptionSvc) CreateSubscription(ctx context.Context, subReq *Subscription) (*Subscription, error) {
 
-	if !ok {
-		return nil, http_helper.ErrInvalidAccount
-	}
+	sub, err := ss.repo.GetSubscriptionByPlanId(ctx, subReq.SubscriptionPlanID)
 
-	//check if user is subscribed to the same plan - return  plan if true
-	plan, err := ss.repo.GetPlan(ctx, subReq.Plan)
-
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
-
-	sub, err := ss.repo.GetSubscription(ctx, claims.JWTClaimsMain.LoggedInUserId, plan.ID)
-
-	//user is already subscribed to plan
+	
 	if sub != nil {
 		return sub, nil
 	}
 
-	if err == sql.ErrNoRows {
-		payStackSub, err := ss.subProvider.CreateSubscription(ctx, subReq)
-
-		if err != nil {
-			return nil, err
-		}
-		payStackSub.SubscriptionPlanID = plan.ID
-		return ss.repo.CreateSubscription(ctx, payStackSub)
-	}
-
-	return nil, err
+	return ss.repo.CreateSubscription(ctx, subReq)
 }
 
 func (ss *subscriptionSvc) CancelSubscription(ctx context.Context) {
@@ -108,8 +89,28 @@ func (ss *subscriptionSvc) GetSubscriptionPlanOfferings(ctx context.Context) ([]
 	return ss.repo.GetSubscriptionPlanOfferings(ctx)
 }
 
-func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subRef string) (*Subscription, error) {
-	return ss.subProvider.VerifySubscription(ctx, subRef)
+func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error) {
+	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return nil, nil
+	}
+	
+	sub, err := ss.subProvider.VerifySubscription(ctx, subReq)
+
+	if err != nil {
+		return nil, err
+	}
+
+	sub.UserID = claims.JWTClaimsMain.LoggedInUserId
+		
+
+	if err != nil {
+		return nil, err
+	}
+
+	sub.SubscriptionPlanID = subReq.PlanId
+	sub.Status = 1
+	return ss.CreateSubscription(ctx, sub)
 }
 
 func (ss *subscriptionSvc) CreateSubscriptionPlanOffering(ctx context.Context, subReq *SubscriptionPlanOfferingRequest) (string, error) {
@@ -149,5 +150,20 @@ func (ss *subscriptionSvc) GetSession(ctx context.Context) (*user.UserSession, e
 		return nil, err
 	}
 
-	return &user.UserSession{User: user.NewJSONUser(u), Token: updatedJWTToken}, nil
+	return &user.UserSession{User: u.ToJSON(), Token: updatedJWTToken}, nil
+}
+
+
+func (ss *subscriptionSvc) GetSubscription(ctx context.Context, userId string) (*Subscription, error) {
+	sub :=  &Subscription{
+		UserID: userId,
+	}
+
+	_, err := ss.repo.GetSubscription(ctx, sub)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return sub, err
 }

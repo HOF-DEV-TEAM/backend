@@ -115,7 +115,7 @@ func (u *SignUpUserRequestJSON) ToSignUpUser() *SignUpUser {
 	return result
 }
 
-func NewJSONUser(u *User) *UserJSON {
+func (u *User) ToJSON() *UserJSON {
 	return &UserJSON{
 		ID:         u.ID,
 		Email:      u.Email,
@@ -158,45 +158,9 @@ func getUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	payload := NewJSONUser(result)
+	payload := result.ToJSON()
 
 	http_helper.EncodeResult(w, payload, http.StatusOK)
-}
-
-// SignInHandler godoc
-//
-//	@Summary		Create a new session
-//	@Description	Authenticates a user and returns a session
-//	@Tags			Sessions
-//	@Accept			json
-//	@Produce		json
-//	@Param			LoginRequestJSON	body		LoginRequestJSON	true	"Sign in user"
-//	@Success		200					{object}	UserSession
-//	@Router			/session/sign_in [post]
-func SignInHandler(svc Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req LoginRequestJSON
-		err := json.NewDecoder(r.Body).Decode(&req)
-
-		if err != nil {
-			http_helper.EncodeJSONError(r.Context(), err, w)
-			return
-		}
-
-		result, err := svc.Login(r.Context(), req.Email, req.Password)
-
-		if err != nil {
-			http_helper.EncodeJSONError(r.Context(), err, w)
-			return
-		}
-
-		payload := UserSession{
-			User:  NewJSONUser(result.User),
-			Token: result.Token,
-		}
-
-		http_helper.EncodeResult(w, payload, http.StatusOK)
-	}
 }
 
 // ForgotPasswordHandler godoc

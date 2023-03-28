@@ -2,10 +2,11 @@ package urlqueryhelper
 
 import (
 	"errors"
-	"github.com/gofrs/uuid"
 	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/gofrs/uuid"
 )
 
 func Bind(structValue interface{}, r *http.Request) error {
@@ -44,36 +45,41 @@ func SqlQueryHelper(where, set bool, structValue interface{}) (string, string) {
 		value := values.Field(i)
 		goTag := fieldProperties.Tag.Get("sql")
 		goType := fieldProperties.Type.Kind()
+
+		var val string
+
 		switch goType {
 		case reflect.String:
 			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
-				val := goTag + "=" + "'" + value.Interface().(string) + "'"
-				whereQuery, setQuery = getIndex(where, set, i, fieldNumbers, whereQuery, setQuery, val)
+				val = value.Interface().(string)				
 			}
 
 		case reflect.Int:
 			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
-				val := goTag + "=" + "'" + string(rune(value.Interface().(int))) + "'"
-				whereQuery, setQuery = getIndex(where, set, i, fieldNumbers, whereQuery, setQuery, val)
+				val = string(rune(value.Interface().(int)))
 			}
 
 		case reflect.Float64:
 			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
-				val := goTag + "=" + "'" + string(rune(value.Interface().(float64))) + "'"
-				whereQuery, setQuery = getIndex(where, set, i, fieldNumbers, whereQuery, setQuery, val)
+				val = string(rune(value.Interface().(float64)))
 			}
 
 		case reflect.Array:
 			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
 				if v, ok := value.Interface().(uuid.UUID); ok {
-					val := goTag + "=" + "'" + v.String() + "'"
-					whereQuery, setQuery = getIndex(where, set, i, fieldNumbers, whereQuery, setQuery, val)
+					val = v.String()
 				}
 			}
 		}
+
+		if val != "" {
+			whereString := goTag + "=" + "'" + val + "'"
+			whereQuery, setQuery = getIndex(where, set, i, fieldNumbers, whereQuery, setQuery, whereString)
+			setQuery = strings.TrimSuffix(setQuery, ", ")
+			whereQuery = strings.TrimSuffix(whereQuery, " ")
+		}
+	
 	}
-	setQuery = strings.TrimSuffix(setQuery, ", ")
-	whereQuery = strings.TrimSuffix(whereQuery, " ")
 	return whereQuery, setQuery
 }
 

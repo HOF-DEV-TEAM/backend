@@ -198,6 +198,7 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 	if err != nil {
 		return nil, err
 	}
+	
 	return &UserAndToken{User: result, Token: updatedJWTToken}, nil
 }
 
