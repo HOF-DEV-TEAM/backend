@@ -199,7 +199,6 @@ func (svc *audioMessageService) GetAudioMessageByID(ctx context.Context, message
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("messageId:", messageId)
 	audioMessage, err := svc.repo.GetAudioMessageByID(ctx, id)
 	if err != nil {
 		return nil, err

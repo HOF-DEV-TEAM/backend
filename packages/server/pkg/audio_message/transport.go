@@ -20,7 +20,7 @@ type AudioMessageJSON struct {
 	Description  string `json:"description"`
 	DateAdded    string `json:"date_added,omitempty"`
 	LastUpdated  string `json:"last_updated,omitempty"`
-	DateReleased string `sql:"date_released"`
+	DateReleased string `json:"date_released"`
 } //	@name	AudioMessageJSON
 
 type AudioSeriesJSON struct {
@@ -31,7 +31,7 @@ type AudioSeriesJSON struct {
 	Description  string `json:"description"`
 	DateAdded    string `json:"date_added,omitempty"`
 	LastUpdated  string `json:"last_updated,omitempty"`
-	DateReleased string `sql:"date_released"`
+	DateReleased string `json:"date_released"`
 } //	@name	AudioSeriesJSON
 
 type PageResponse struct {
@@ -50,16 +50,18 @@ type GetAudiosMessagesResponse struct {
 
 func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 	result := &AudioMessage{
-		Title:        am.Title,
-		Author:       am.Author,
-		ImageUrl:     am.ImageUrl,
-		AudioUrl:     am.AudioUrl,
-		Description:  am.Description,
-		DateReleased: sql.NullString{Valid: true, String: am.DateReleased},
+		Title:       am.Title,
+		Author:      am.Author,
+		ImageUrl:    am.ImageUrl,
+		AudioUrl:    am.AudioUrl,
+		Description: am.Description,
 	}
 
 	if am.SeriesID != "" {
 		result.SeriesID = sql.NullString{Valid: true, String: am.SeriesID}
+	}
+	if am.DateReleased != "" {
+		result.DateReleased = sql.NullString{Valid: true, String: am.DateReleased}
 	}
 
 	return result
@@ -67,12 +69,15 @@ func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 
 func (audioSeries *AudioSeriesJSON) ToAudioSeries() *AudioSeries {
 	result := &AudioSeries{
-		Title:        audioSeries.Title,
-		Author:       audioSeries.Author,
-		ImageUrl:     audioSeries.ImageUrl,
-		Description:  audioSeries.Description,
-		DateReleased: sql.NullString{Valid: true, String: audioSeries.DateReleased},
+		Title:       audioSeries.Title,
+		Author:      audioSeries.Author,
+		ImageUrl:    audioSeries.ImageUrl,
+		Description: audioSeries.Description,
 	}
+	if audioSeries.DateReleased != "" {
+		result.DateReleased = sql.NullString{Valid: true, String: audioSeries.DateReleased}
+	}
+
 	return result
 }
 
