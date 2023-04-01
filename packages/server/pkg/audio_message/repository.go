@@ -59,7 +59,7 @@ func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMes
 		"description," +
 		"date_added," +
 		"last_updated," +
-		"series_id" +
+		"series_id," +
 		"date_released" +
 		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) " +
 		"RETURNING id"
@@ -117,7 +117,7 @@ func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeri
 		"image_url," +
 		"description," +
 		"date_added," +
-		"last_updated" +
+		"last_updated," +
 		"date_released" +
 		") VALUES ($1, $2, $3, $4, $5, $6, $7) " +
 		"RETURNING id"
@@ -200,6 +200,7 @@ func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSer
 			&as.DateAdded,
 			&as.LastUpdated,
 			&as.DeletedAt,
+			&as.DateReleased,
 		); err != nil {
 			r.log.Info("msg",
 				zap.String("error querying", ""),
@@ -259,6 +260,7 @@ func (r audioMessageRepository) getAudioMessages(ctx context.Context, query stri
 			&as.LastUpdated,
 			&as.SeriesID,
 			&as.DeletedAt,
+			&as.DateReleased,
 		); err != nil {
 			r.log.Info("msg",
 				zap.String("error querying", ""),
@@ -323,6 +325,7 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 		&audioMessage.LastUpdated,
 		&audioMessage.SeriesID,
 		&audioMessage.DeletedAt,
+		&audioMessage.DateReleased,
 	)
 	if err != nil {
 		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
@@ -350,6 +353,7 @@ func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId
 		&audioSeries.DateAdded,
 		&audioSeries.LastUpdated,
 		&audioSeries.DeletedAt,
+		&audioSeries.DateReleased,
 	)
 	if err != nil {
 		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
