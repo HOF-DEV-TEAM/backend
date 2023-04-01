@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/gofrs/uuid"
 	"strings"
+	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
 	"github.com/go-playground/validator/v10"
@@ -28,6 +29,7 @@ type Service interface {
 	CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error)
 	GetFavourites(ctx context.Context) (GetFavouritesResponse, error)
 	DeleteFavourite(ctx context.Context, favId string) (uuid.UUID, error)
+	UpdateUserProfile(ctx context.Context, user *User) (uuid.UUID, error)
 }
 
 type userService struct {
@@ -198,7 +200,7 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &UserAndToken{User: result, Token: updatedJWTToken}, nil
 }
 
@@ -418,4 +420,36 @@ func (s *userService) ChangePassword(ctx context.Context, request ChangePassword
 	}
 
 	return resp, nil
+}
+
+func (s *userService) UpdateUserProfile(ctx context.Context, user *User) (uuid.UUID, error) {
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return uuid.Nil, http_helper.ErrInvalidAccount
+	}
+
+	userId, err := uuid.FromString(claims.JWTClaimsMain.LoggedInUserId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	user.LastUpdated = sql.NullString{
+		Valid:  true,
+		String: time.Now().Format(time.RFC3339),
+	}
+	updateUser := UpdateUser{
+		UserName:    user.UserName,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Mobile:      user.Mobile.String,
+		Address:     user.Address,
+		Gender:      user.Gender,
+		LastUpdated: user.LastUpdated.String,
+	}
+	result, err := s.repo.UpdateUserProfile(ctx, userId, &updateUser)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return result, nil
 }

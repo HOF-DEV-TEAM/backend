@@ -83,6 +83,8 @@ type User struct {
 	IsVerified           IsVerifiedEnum `sql:"is_verified"`
 	PaystackCustomerCode sql.NullString `sql:"paystack_customer_code"`
 	PaystackCustomerId   sql.NullString `sql:"paystack_customer_id"`
+	DateAdded            sql.NullString `sql:"date_added"`
+	LastUpdated          sql.NullString `sql:"last_updated"`
 }
 
 type LoginUser struct {
@@ -170,4 +172,14 @@ type OTPResponse struct {
 type VerifyOTP struct {
 	Target string `json:"target"`
 	OTP    string `json:"otp"`
+}
+
+type UpdateUser struct {
+	UserName    string `sql:"username"`
+	FirstName   string `sql:"first_name" validate:"required"`
+	LastName    string `sql:"last_name" validate:"required"`
+	Mobile      string `sql:"mobile"`
+	Address     string `sql:"address"`
+	Gender      string `sql:"gender"`
+	LastUpdated string `sql:"last_updated"`
 }

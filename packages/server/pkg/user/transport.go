@@ -449,3 +449,23 @@ func deleteFavouritesHandler(w http.ResponseWriter, r *http.Request, svc interfa
 	}
 	http_helper.EncodeResult(w, result, http.StatusOK)
 }
+
+func UpdateUserProfileHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(updateUserProfileHandler, svc)
+}
+func updateUserProfileHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	var userJSON UserJSON
+	err := json.NewDecoder(r.Body).Decode(&userJSON)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+	user := userJSON.ToUser()
+	result, err := svc.(Service).UpdateUserProfile(r.Context(), user)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
