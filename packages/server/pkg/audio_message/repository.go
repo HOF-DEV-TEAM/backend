@@ -28,10 +28,11 @@ type audioMessageRepository struct {
 	log          *zap.Logger
 	getEmailStmt *sql.Stmt
 	getIdStmt    *sql.Stmt
+	queryHandler urlqueryhelper.QueryHelper
 }
 
 func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
-	return &audioMessageRepository{db: db, log: logger}
+	return &audioMessageRepository{db: db, log: logger, queryHandler: urlqueryhelper.NewQueryHelper()}
 }
 
 func (r audioMessageRepository) Close() error {
@@ -49,7 +50,7 @@ func (r audioMessageRepository) Close() error {
 	return nil
 }
 
-func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {	
+func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {
 	const SQL = "INSERT INTO audio_messages (" +
 		"title," +
 		"author," +
@@ -59,7 +60,8 @@ func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMes
 		"date_added," +
 		"last_updated," +
 		"series_id" +
-		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) " +
+		"date_released" +
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) " +
 		"RETURNING id"
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -89,6 +91,7 @@ func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMes
 		audioMessage.DateAdded,
 		audioMessage.LastUpdated,
 		audioMessage.SeriesID,
+		audioMessage.DateReleased,
 	).Scan(&createdAudioMessageId)
 
 	if err != nil {
@@ -115,7 +118,8 @@ func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeri
 		"description," +
 		"date_added," +
 		"last_updated" +
-		") VALUES ($1, $2, $3, $4, $5, $6) " +
+		"date_released" +
+		") VALUES ($1, $2, $3, $4, $5, $6, $7) " +
 		"RETURNING id"
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -143,6 +147,7 @@ func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeri
 		audioSeries.Description,
 		audioSeries.DateAdded,
 		audioSeries.LastUpdated,
+		audioSeries.DateReleased,
 	).Scan(&createdAudioSeriesId)
 
 	if err != nil {
@@ -360,8 +365,8 @@ func (r audioMessageRepository) UpdateAudioMessagesByID(ctx context.Context, mes
 	}{
 		Id: messageId,
 	}
-	whereQuery, _ := urlqueryhelper.SqlQueryHelper(true, false, id)
-	_, setQuery := urlqueryhelper.SqlQueryHelper(false, true, message)
+	whereQuery := r.queryHandler.WhereQueryHelper(id)
+	setQuery := r.queryHandler.SetQueryHelper(message)
 	sqlQuery := `UPDATE audio_messages SET ` + setQuery + " WHERE " + whereQuery + " RETURNING id"
 	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&messageId)
 	if err != nil {
@@ -377,8 +382,9 @@ func (r audioMessageRepository) UpdateAudioSeriesByID(ctx context.Context, serie
 	}{
 		Id: seriesId,
 	}
-	whereQuery, _ := urlqueryhelper.SqlQueryHelper(true, false, id)
-	_, setQuery := urlqueryhelper.SqlQueryHelper(false, true, series)
+	whereQuery := r.queryHandler.WhereQueryHelper(id)
+	setQuery := r.queryHandler.SetQueryHelper(series)
+
 	sqlQuery := `UPDATE audio_series SET ` + setQuery + " WHERE " + whereQuery + " RETURNING id"
 	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&seriesId)
 	if err != nil {

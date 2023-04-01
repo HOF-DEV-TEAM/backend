@@ -33,13 +33,27 @@ func Bind(structValue interface{}, r *http.Request) error {
 	return nil
 }
 
-func SqlQueryHelper(where, set bool, structValue interface{}) (string, string) {
+type QueryHelper interface {
+	SetQueryHelper(structValue interface{}) string
+	WhereQueryHelper(structValue interface{}) string
+}
+
+type queryHandler struct {
+}
+
+var _ QueryHelper = queryHandler{}
+
+func NewQueryHelper() QueryHelper {
+	return queryHandler{}
+}
+
+func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 	fields := reflect.TypeOf(structValue)
 
 	values := reflect.ValueOf(structValue)
 
 	fieldNumbers := values.NumField()
-	var whereQuery, setQuery string
+	var setQuery string
 	for i := 0; i < fieldNumbers; i++ {
 		fieldProperties := fields.Field(i)
 		value := values.Field(i)
@@ -51,7 +65,7 @@ func SqlQueryHelper(where, set bool, structValue interface{}) (string, string) {
 		switch goType {
 		case reflect.String:
 			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
-				val = value.Interface().(string)				
+				val = value.Interface().(string)
 			}
 
 		case reflect.Int:
@@ -73,40 +87,88 @@ func SqlQueryHelper(where, set bool, structValue interface{}) (string, string) {
 		}
 
 		if val != "" {
-			whereString := goTag + "=" + "'" + val + "'"
-			whereQuery, setQuery = getIndex(where, set, i, fieldNumbers, whereQuery, setQuery, whereString)
-			setQuery = strings.TrimSuffix(setQuery, ", ")
-			whereQuery = strings.TrimSuffix(whereQuery, " ")
+			queryString := goTag + "=" + "'" + val + "'"
+
+			setQuery = setQueryIndex(i, fieldNumbers, setQuery, queryString)
 		}
-	
+
 	}
-	return whereQuery, setQuery
+	setQuery = strings.TrimSuffix(setQuery, ", ")
+	return setQuery
 }
 
-func getIndex(where, set bool, i, fieldNumbers int, whereQuery, setQuery string, val string) (string, string) {
-	switch i {
-	case 0:
-		if where {
-			whereQuery += val
+func (handler queryHandler) WhereQueryHelper(structValue interface{}) string {
+	fields := reflect.TypeOf(structValue)
+
+	values := reflect.ValueOf(structValue)
+
+	fieldNumbers := values.NumField()
+	var whereQuery string
+	for i := 0; i < fieldNumbers; i++ {
+		fieldProperties := fields.Field(i)
+		value := values.Field(i)
+		goTag := fieldProperties.Tag.Get("sql")
+		goType := fieldProperties.Type.Kind()
+
+		var val string
+
+		switch goType {
+		case reflect.String:
+			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
+				val = value.Interface().(string)
+			}
+
+		case reflect.Int:
+			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
+				val = string(rune(value.Interface().(int)))
+			}
+
+		case reflect.Float64:
+			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
+				val = string(rune(value.Interface().(float64)))
+			}
+
+		case reflect.Array:
+			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
+				if v, ok := value.Interface().(uuid.UUID); ok {
+					val = v.String()
+				}
+			}
 		}
-		if set {
-			setQuery += val + ", "
-		}
-	case fieldNumbers - 1:
-		if where {
-			whereQuery += " AND " + val
-		}
-		if set {
-			setQuery += val
-		}
-	default:
-		if where {
-			whereQuery += " AND " + val + " "
-		}
-		if set {
-			setQuery += val + ", "
+
+		if val != "" {
+			queryString := goTag + "=" + "'" + val + "'"
+			whereQuery = whereQueryIndex(i, fieldNumbers, whereQuery, queryString)
+
 		}
 	}
+	whereQuery = strings.TrimSuffix(whereQuery, " ")
+	return whereQuery
+}
 
-	return whereQuery, setQuery
+func setQueryIndex(i, fieldNumbers int, setQuery string, val string) string {
+	switch i {
+	case 0:
+		setQuery += val + ","
+	case fieldNumbers - 1:
+		setQuery += val
+	default:
+		setQuery += val + ", "
+	}
+
+	return setQuery
+}
+
+func whereQueryIndex(i, fieldNumbers int, goTag string, val string) string {
+	var whereQuery string
+	switch i {
+	case 0:
+		whereQuery += val
+	case fieldNumbers - 1:
+		whereQuery += " AND " + val
+	default:
+		whereQuery += " AND " + val + " "
+	}
+
+	return whereQuery
 }

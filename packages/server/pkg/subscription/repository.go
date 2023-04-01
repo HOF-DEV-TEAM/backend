@@ -22,13 +22,14 @@ type Repository interface {
 }
 
 type subscriptionRepo struct {
-	db          *sql.DB
-	getPlanStmt *sql.Stmt
-	log         *zap.Logger
+	db           *sql.DB
+	getPlanStmt  *sql.Stmt
+	log          *zap.Logger
+	queryHandler urlqueryhelper.QueryHelper
 }
 
 func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
-	return &subscriptionRepo{db: db, log: logger}
+	return &subscriptionRepo{db: db, log: logger, queryHandler: urlqueryhelper.NewQueryHelper()}
 }
 
 func (r subscriptionRepo) Close() error {
@@ -244,28 +245,27 @@ func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*Subscr
 
 func (r subscriptionRepo) GetSubscriptionByPlanId(ctx context.Context, planId string) (*Subscription, error) {
 	sub := &Subscription{SubscriptionPlanID: planId}
-	return r.GetSubscription(ctx,sub)
+	return r.GetSubscription(ctx, sub)
 }
 
 func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error) {
-	whereQuery, _ := urlqueryhelper.SqlQueryHelper(true, false, *sub)
-	query := "SELECT " +		
+	whereQuery := r.queryHandler.WhereQueryHelper(*sub)
+	query := "SELECT " +
 		"s.id, " +
-        "s.status, " +
-        "s.user_id, " +        
-		"s.subscription_plan_id, " + 
-        // "s.next_payment_date, " +
-        "sp.type, " +
-        "sp.freq, " +
-        "sp.fee, " +
-		"sp.currency, " + 
-        "sp.code " +
+		"s.status, " +
+		"s.user_id, " +
+		"s.subscription_plan_id, " +
+		// "s.next_payment_date, " +
+		"sp.type, " +
+		"sp.freq, " +
+		"sp.fee, " +
+		"sp.currency, " +
+		"sp.code " +
 		"FROM subscriptions s " +
 		"LEFT JOIN subscription_plans sp " +
 		"ON sp.id = s.subscription_plan_id " +
-		"WHERE s.status = 1" + whereQuery + 
+		"WHERE s.status = 1" + whereQuery +
 		" LIMIT 1;"
-
 
 	getSubStmt, err := r.db.PrepareContext(ctx, query)
 
@@ -273,7 +273,7 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", query))
 		return nil, err
 	}
-	
+
 	row := getSubStmt.QueryRowContext(ctx)
 
 	err = row.Scan(
@@ -289,7 +289,7 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 		&sub.PlanCode,
 	)
 
-	if err == sql.ErrNoRows {		
+	if err == sql.ErrNoRows {
 		return nil, err
 	}
 

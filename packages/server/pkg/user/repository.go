@@ -1,6 +1,7 @@
 package user
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
 	"context"
 	"database/sql"
 	"errors"
@@ -26,6 +27,7 @@ type Repository interface {
 	CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error)
 	GetFavourites(ctx context.Context, userId uuid.UUID) ([]*FavMessage, int, error)
 	DeleteFavourite(ctx context.Context, messageId, userId uuid.UUID) (uuid.UUID, error)
+	UpdateUserProfile(ctx context.Context, userId uuid.UUID, user *UpdateUser) (uuid.UUID, error)
 	Close() error
 }
 
@@ -35,10 +37,11 @@ type userRepository struct {
 	getEmailStmt *sql.Stmt
 	getIdStmt    *sql.Stmt
 	otpGenerator OtpGenerator
+	queryHandler urlqueryhelper.QueryHelper
 }
 
 func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
-	return &userRepository{db: db, log: logger, otpGenerator: NewOTPGenerator()}
+	return &userRepository{db: db, log: logger, otpGenerator: NewOTPGenerator(), queryHandler: urlqueryhelper.NewQueryHelper()}
 }
 
 func (r userRepository) Close() error {
@@ -543,4 +546,23 @@ func (r userRepository) CreateFavourite(ctx context.Context, favourite *Favourit
 	}
 
 	return favourite, nil
+}
+
+func (r userRepository) UpdateUserProfile(ctx context.Context, userId uuid.UUID, user *UpdateUser) (uuid.UUID, error) {
+	id := struct {
+		Id uuid.UUID `sql:"id"`
+	}{
+		Id: userId,
+	}
+
+	whereQuery := r.queryHandler.WhereQueryHelper(id)
+	setQuery := r.queryHandler.SetQueryHelper(*user)
+	sqlQuery := `UPDATE users SET ` + setQuery + " WHERE " + whereQuery + " RETURNING id"
+	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&userId)
+	if err != nil {
+		r.log.Error("UpdateUserProfile", zap.String("error scanning row", err.Error()))
+		return uuid.Nil, err
+	}
+
+	return userId, nil
 }

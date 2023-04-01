@@ -38,10 +38,8 @@ func (app *application) buildRoutes() {
 		&app.config.Security,
 	)
 	subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security, userRepo)
-	
+
 	authService := auth.NewService(userRepo, subscriptionSvc, app.logger, &app.config.Security)
-
-
 
 	// TODO - group routing better
 	//setup routes
@@ -91,6 +89,8 @@ func (app *application) buildRoutes() {
 
 func buildUserEndpoints(router chi.Router, svc user.Service) {
 	userRouter := chi.NewRouter()
+	updateFavouriteHandler := user.UpdateUserProfileHandler(svc)
+
 	favRouter := buildFavEndpoints(svc)
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
 	changePasswordHandler := user.ChangePasswordHandler(svc)
@@ -100,6 +100,7 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 		r.Mount("/", userRouter)
 		r.Post("/reset_password", resetPasswordHandler)
 		r.Post("/change_password", changePasswordHandler)
+		r.Post("/update", updateFavouriteHandler)
 	})
 }
 

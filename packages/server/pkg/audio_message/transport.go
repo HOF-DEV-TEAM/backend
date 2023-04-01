@@ -11,25 +11,27 @@ import (
 )
 
 type AudioMessageJSON struct {
-	ID          string `json:"id,omitempty"`
-	Title       string `json:"title"`
-	Author      string `json:"author"`
-	ImageUrl    string `json:"image_url"`
-	AudioUrl    string `json:"audio_url,omitempty"`
-	SeriesID    string `json:"series_id"`
-	Description string `json:"description"`
-	DateAdded   string `json:"date_added,omitempty"`
-	LastUpdated string `json:"last_updated,omitempty"`
+	ID           string `json:"id,omitempty"`
+	Title        string `json:"title"`
+	Author       string `json:"author"`
+	ImageUrl     string `json:"image_url"`
+	AudioUrl     string `json:"audio_url,omitempty"`
+	SeriesID     string `json:"series_id"`
+	Description  string `json:"description"`
+	DateAdded    string `json:"date_added,omitempty"`
+	LastUpdated  string `json:"last_updated,omitempty"`
+	DateReleased string `sql:"date_released"`
 } //	@name	AudioMessageJSON
 
 type AudioSeriesJSON struct {
-	ID          string `json:"id,omitempty"` //	@Param	series_id
-	Title       string `json:"title"`
-	Author      string `json:"author"`
-	ImageUrl    string `json:"image_url"`
-	Description string `json:"description"`
-	DateAdded   string `json:"date_added,omitempty"`
-	LastUpdated string `json:"last_updated,omitempty"`
+	ID           string `json:"id,omitempty"` //	@Param	series_id
+	Title        string `json:"title"`
+	Author       string `json:"author"`
+	ImageUrl     string `json:"image_url"`
+	Description  string `json:"description"`
+	DateAdded    string `json:"date_added,omitempty"`
+	LastUpdated  string `json:"last_updated,omitempty"`
+	DateReleased string `sql:"date_released"`
 } //	@name	AudioSeriesJSON
 
 type PageResponse struct {
@@ -48,11 +50,12 @@ type GetAudiosMessagesResponse struct {
 
 func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 	result := &AudioMessage{
-		Title:       am.Title,
-		Author:      am.Author,
-		ImageUrl:    am.ImageUrl,
-		AudioUrl:    am.AudioUrl,
-		Description: am.Description,
+		Title:        am.Title,
+		Author:       am.Author,
+		ImageUrl:     am.ImageUrl,
+		AudioUrl:     am.AudioUrl,
+		Description:  am.Description,
+		DateReleased: sql.NullString{Valid: true, String: am.DateReleased},
 	}
 
 	if am.SeriesID != "" {
@@ -64,33 +67,36 @@ func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 
 func (audioSeries *AudioSeriesJSON) ToAudioSeries() *AudioSeries {
 	result := &AudioSeries{
-		Title:       audioSeries.Title,
-		Author:      audioSeries.Author,
-		ImageUrl:    audioSeries.ImageUrl,
-		Description: audioSeries.Description,
+		Title:        audioSeries.Title,
+		Author:       audioSeries.Author,
+		ImageUrl:     audioSeries.ImageUrl,
+		Description:  audioSeries.Description,
+		DateReleased: sql.NullString{Valid: true, String: audioSeries.DateReleased},
 	}
 	return result
 }
 
 func NewJSONAudioMessage(audioMessage *AudioMessage) *AudioMessageJSON {
 	return &AudioMessageJSON{
-		ID:          audioMessage.ID,
-		Title:       audioMessage.Title,
-		Author:      audioMessage.Author,
-		ImageUrl:    audioMessage.ImageUrl,
-		AudioUrl:    audioMessage.AudioUrl,
-		SeriesID:    audioMessage.SeriesID.String,
-		Description: audioMessage.Description,
+		ID:           audioMessage.ID,
+		Title:        audioMessage.Title,
+		Author:       audioMessage.Author,
+		ImageUrl:     audioMessage.ImageUrl,
+		AudioUrl:     audioMessage.AudioUrl,
+		SeriesID:     audioMessage.SeriesID.String,
+		Description:  audioMessage.Description,
+		DateReleased: audioMessage.DateReleased.String,
 	}
 }
 
 func NewJSONAudioSeries(audioSeries *AudioSeries) *AudioSeriesJSON {
 	return &AudioSeriesJSON{
-		ID:          audioSeries.ID,
-		Title:       audioSeries.Title,
-		Author:      audioSeries.Author,
-		ImageUrl:    audioSeries.ImageUrl,
-		Description: audioSeries.Description,
+		ID:           audioSeries.ID,
+		Title:        audioSeries.Title,
+		Author:       audioSeries.Author,
+		ImageUrl:     audioSeries.ImageUrl,
+		Description:  audioSeries.Description,
+		DateReleased: audioSeries.DateReleased.String,
 	}
 }
 
