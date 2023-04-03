@@ -263,9 +263,9 @@ func (e TypeEnum) Value() (driver.Value, error) {
 type SubscriptionPlan struct {
 	ID                     string         `sql:"id"`
 	Name                   string         `sql:"name" validate:"required"`
-	Type                   TypeEnum       `sql:"int"`
+	Type                   TypeEnum       `sql:"type"`
 	Freq                   FreqEnum       `sql:"freq"`
-	Fee                    float64        `sql:"float64"`
+	Fee                    float64        `sql:"fee"`
 	Status                 StatusEnum     `sql:"status"`
 	Currency               string         `sql:"currency"`
 	Code                   string         `sql:"code"`
@@ -288,9 +288,9 @@ type SubscriptionOffering struct {
 
 type SubPlan struct {
 	//SubscriptionPlan
-	Type     TypeEnum `sql:"int"`
+	Type     TypeEnum `sql:"type"`
 	Freq     FreqEnum `sql:"freq"`
-	Fee      float64  `sql:"float64"`
+	Fee      float64  `sql:"fee"`
 	PlanCode string   `sql:"code"`
 	Currency string   `sql:"currency"`
 }

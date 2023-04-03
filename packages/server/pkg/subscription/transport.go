@@ -67,7 +67,7 @@ type PlanResponseData struct {
 	Name         string   `json:"name"`
 	Interval     FreqEnum `json:"interval,string,omit_empty"`
 	Currency     string   `json:"currency"`
-	PlanCode     string   `json:"code"`
+	PlanCode     string   `json:"plan_code"`
 	Amount       float64  `json:"amount"`
 	SendInvoices bool     `json:"send_invoices"`
 	SendSms      bool     `json:"send_sms"`
@@ -132,9 +132,9 @@ func (sub *Subscription) ToJSON() *SubscriptionJSON {
 type SubscriptionPlanJSON struct {
 	ID                     string     `json:"id"`
 	Name                   string     `json:"name"`
-	Type                   TypeEnum   `json:"int"`
+	Type                   TypeEnum   `json:"type"`
 	Freq                   FreqEnum   `json:"freq"`
-	Fee                    float64    `json:"float64"`
+	Fee                    float64    `json:"fee"`
 	Status                 StatusEnum `json:"status"`
 	Currency               string     `json:"currency"`
 	Code                   string     `json:"code"`
