@@ -5,6 +5,7 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
 )
@@ -20,6 +21,9 @@ type Repository interface {
 	UpdateAudioSeriesByID(ctx context.Context, series AudioSeries, seriesId uuid.UUID) (uuid.UUID, error)
 	DeleteAudioMessagesByID(ctx context.Context, messageId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error)
 	DeleteAudioSeriesByID(ctx context.Context, seriesId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error)
+	HomePageDirectory(ctx context.Context) (*Homepage, error)
+	CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
+	UpdateMeditationByID(ctx context.Context, status string, meditationID string, deletedAt sql.NullString) (*string, error)
 	Close() error
 }
 
@@ -118,8 +122,9 @@ func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeri
 		"description," +
 		"date_added," +
 		"last_updated," +
-		"date_released" +
-		") VALUES ($1, $2, $3, $4, $5, $6, $7) " +
+		"date_released," +
+		"of_the_month" +
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) " +
 		"RETURNING id"
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -148,6 +153,7 @@ func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeri
 		audioSeries.DateAdded,
 		audioSeries.LastUpdated,
 		audioSeries.DateReleased,
+		audioSeries.OfTheMonth,
 	).Scan(&createdAudioSeriesId)
 
 	if err != nil {
@@ -201,6 +207,7 @@ func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSer
 			&as.LastUpdated,
 			&as.DeletedAt,
 			&as.DateReleased,
+			&as.OfTheMonth,
 		); err != nil {
 			r.log.Info("msg",
 				zap.String("error querying", ""),
@@ -236,7 +243,7 @@ func (r audioMessageRepository) getAudioMessages(ctx context.Context, query stri
 	}
 
 	if err != nil {
-		r.log.Info("msg",
+		r.log.Error("msg",
 			zap.String("error querying", ""),
 			zap.String("error", err.Error()),
 			zap.String("query", query),
@@ -262,7 +269,7 @@ func (r audioMessageRepository) getAudioMessages(ctx context.Context, query stri
 			&as.DeletedAt,
 			&as.DateReleased,
 		); err != nil {
-			r.log.Info("msg",
+			r.log.Error("msg",
 				zap.String("error querying", ""),
 				zap.String("error", err.Error()),
 				zap.String("query", query),
@@ -310,7 +317,7 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 	sqlQuery := `SELECT * FROM audio_messages WHERE id=$1 AND deleted_at IS NULL`
 	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return nil, err
 	}
 	var audioMessage AudioMessage
@@ -328,7 +335,7 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 		&audioMessage.DateReleased,
 	)
 	if err != nil {
-		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		r.log.Error("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return nil, http_helper.ErrNotFound
 
 	}
@@ -340,7 +347,7 @@ func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId
 
 	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return nil, err
 	}
 	var audioSeries AudioSeries
@@ -354,9 +361,10 @@ func (r audioMessageRepository) GetAudioSeriesByID(ctx context.Context, seriesId
 		&audioSeries.LastUpdated,
 		&audioSeries.DeletedAt,
 		&audioSeries.DateReleased,
+		&audioSeries.OfTheMonth,
 	)
 	if err != nil {
-		r.log.Info("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		r.log.Error("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return nil, http_helper.ErrNotFound
 
 	}
@@ -428,4 +436,155 @@ func (r audioMessageRepository) DeleteAudioSeriesByID(ctx context.Context, serie
 		return uuid.Nil, err
 	}
 	return seriesId, nil
+}
+
+func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepage, error) {
+
+	const (
+		meditationSQL = `SELECT * FROM meditation WHERE deleted_at IS NULL`
+		seriesSQL     = `SELECT * FROM audio_series WHERE deleted_at IS NULL AND of_the_month=true`
+	)
+
+	var (
+		as          AudioSeries
+		audioSeries []*AudioSeries
+		med         Meditation
+		meditation  []*Meditation
+	)
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		r.log.Info("msg", zap.String("error beginning transaction", ""), zap.String("error", err.Error()), zap.String("query", seriesSQL))
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	getAudioSeriesStmt, err := tx.PrepareContext(ctx, seriesSQL)
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", seriesSQL),
+		)
+		return nil, err
+	}
+
+	rows, err := getAudioSeriesStmt.QueryContext(ctx)
+	defer rows.Close()
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+	for rows.Next() {
+		if err := rows.Scan(
+			&as.ID,
+			&as.Title,
+			&as.Author,
+			&as.Description,
+			&as.ImageUrl,
+			&as.DateAdded,
+			&as.LastUpdated,
+			&as.DeletedAt,
+			&as.DateReleased,
+			&as.OfTheMonth,
+		); err != nil {
+			r.log.Info("msg",
+				zap.String("error querying", ""),
+				zap.String("error", err.Error()),
+				zap.String("query", seriesSQL),
+			)
+			return nil, err
+		}
+
+		audioSeries = append(audioSeries, &as)
+	}
+
+	getMeditationStmt, err := tx.PrepareContext(ctx, meditationSQL)
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", meditationSQL),
+		)
+		return nil, err
+	}
+
+	rows, err = getMeditationStmt.QueryContext(ctx)
+	defer rows.Close()
+	switch err {
+	case sql.ErrNoRows:
+		r.log.Info("No meditation")
+		return &Homepage{AudioSeries: audioSeries, Meditation: meditation}, err
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(
+			&med.ID,
+			&med.Name,
+			&med.Image,
+			&med.Status,
+			&med.DateAdded,
+			&med.DeletedAt,
+		); err != nil {
+			r.log.Info("msg",
+				zap.String("error querying", ""),
+				zap.String("error", err.Error()),
+				zap.String("query", meditationSQL),
+			)
+			return nil, err
+		}
+
+		meditation = append(meditation, &med)
+	}
+
+	return &Homepage{
+		AudioSeries: audioSeries,
+		Meditation:  meditation,
+	}, nil
+}
+
+func (r audioMessageRepository) CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error) {
+	sqlStr := "INSERT INTO meditation (name, image_url, status, date_added) VALUES "
+	var vals []interface{}
+
+	for i, row := range meditation {
+		p1 := i * 4
+
+		sqlStr += fmt.Sprintf("($%d,$%d,$%d,$%d),", p1+1, p1+2, p1+3, p1+4)
+		vals = append(vals, row.Name, row.Image, row.Status, row.DateAdded)
+	}
+	//trim the last ,
+	sqlStr = sqlStr[0 : len(sqlStr)-1]
+
+	stmt, err := r.db.PrepareContext(ctx, sqlStr)
+	if err != nil {
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlStr))
+		return nil, err
+	}
+
+	result, err := stmt.ExecContext(ctx, vals...)
+	if err != nil {
+		return nil, err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	return &MeditationResponse{AffectedRows: affected}, nil
+}
+
+func (r audioMessageRepository) UpdateMeditationByID(ctx context.Context, status string, meditationID string, deletedAt sql.NullString) (*string, error) {
+	var medID string
+	sqlQuery := `UPDATE meditation SET status=$2, deleted_at=$3 WHERE id=$1 RETURNING id`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("UpdateMeditationByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+
+		return nil, err
+	}
+	row := stmt.QueryRowContext(ctx, meditationID, status, deletedAt)
+	if err := row.Scan(&medID); err != nil {
+		r.log.Error("UpdateMeditationByID", zap.String("error scanning row", err.Error()))
+		return nil, err
+	}
+	return &medID, nil
 }

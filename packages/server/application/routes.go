@@ -131,12 +131,16 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	getAudioMessageByIDHandler := audio_message.GetAudioMessageByIDHandler(svc)
 	updateAudioMesageByIDHandler := audio_message.UpdateAudioMessagesByIDHandler(svc)
 	deleteAudioMesageByIDHandler := audio_message.DeleteAudioMessagesByIDHandler(svc)
+	createMeditationHandler := audio_message.CreateMeditationHandler(svc)
+	updateMeditationByIDHandler := audio_message.UpdateMeditationByIDHandler(svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
 	audioMessageRouter.Get("/id/message/{message_id}", getAudioMessageByIDHandler)
 	audioMessageRouter.Put("/update/{message_id}", updateAudioMesageByIDHandler)
 	audioMessageRouter.Delete("/delete/{message_id}", deleteAudioMesageByIDHandler)
+	audioMessageRouter.Post("/meditation", createMeditationHandler)
+	audioMessageRouter.Put("/meditation/{meditation_id}", updateMeditationByIDHandler)
 
 	router.Mount("/audio_message", audioMessageRouter)
 }
@@ -149,12 +153,14 @@ func buildAudioSeriesEndpoints(router chi.Router, svc audio_message.Service) {
 	getAudioSeriesByIDHandler := audio_message.GetAudioSeriesByIDHandler(svc)
 	updateAudioSeriesByIDHandler := audio_message.UpdateAudioSeriesByIDHandler(svc)
 	deleteAudioSeriesByIDHandler := audio_message.DeleteAudioSeriesByIDHandler(svc)
+	homepageHandler := audio_message.HomePageDirectoryHandler(svc)
 
 	audioSeriesRouter.Post("/", createAudioSeriesHandler)
 	audioSeriesRouter.Get("/", getAudioSeriesHandler)
 	audioSeriesRouter.Get("/id/series/{series_id}", getAudioSeriesByIDHandler)
 	audioSeriesRouter.Put("/update/{series_id}", updateAudioSeriesByIDHandler)
 	audioSeriesRouter.Delete("/delete/{series_id}", deleteAudioSeriesByIDHandler)
+	audioSeriesRouter.Get("/home", homepageHandler)
 
 	router.Mount("/audio_series", audioSeriesRouter)
 }

@@ -28,6 +28,9 @@ type Service interface {
 	UpdateAudioSeriesByID(ctx context.Context, series AudioSeries, seriesId string) (uuid.UUID, error)
 	DeleteAudioMessagesByID(ctx context.Context, messageId string) (uuid.UUID, error)
 	DeleteAudioSeriesByID(ctx context.Context, seriesId string) (uuid.UUID, error)
+	HomePageDirectory(ctx context.Context) (*Homepage, error)
+	CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
+	UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error)
 }
 
 type FilterType string
@@ -285,6 +288,52 @@ func (svc *audioMessageService) DeleteAudioSeriesByID(ctx context.Context, serie
 	result, err := svc.repo.DeleteAudioSeriesByID(ctx, id, deletedAt)
 	if err != nil {
 		return uuid.Nil, err
+	}
+
+	return result, nil
+}
+
+func (svc *audioMessageService) HomePageDirectory(ctx context.Context) (*Homepage, error) {
+	homePage, err := svc.repo.HomePageDirectory(ctx)
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	return homePage, nil
+
+}
+
+func (svc *audioMessageService) CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error) {
+	var med []*Meditation
+	for _, m := range meditation {
+		m.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.RFC3339)}
+		med = append(med, m)
+	}
+
+	result, err := svc.repo.CreateMeditation(ctx, med)
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	if err != nil {
+		svc.log.Error("msg",
+			zap.String("method", "CreateMeditation"),
+			zap.String("error", err.Error()),
+		)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (svc *audioMessageService) UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error) {
+	deletedAt := sql.NullString{
+		String: time.Now().Format(time.RFC3339),
+	}
+	result, err := svc.repo.UpdateMeditationByID(ctx, status, meditationID, deletedAt)
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil

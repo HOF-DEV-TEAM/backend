@@ -32,7 +32,22 @@ type AudioSeriesJSON struct {
 	DateAdded    string `json:"date_added,omitempty"`
 	LastUpdated  string `json:"last_updated,omitempty"`
 	DateReleased string `json:"date_released"`
+	OfTheMonth   *bool  `json:"of_the_month,omitempty"`
 } //	@name	AudioSeriesJSON
+
+type MeditationJSON struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Image     string `json:"image"`
+	Status    string `json:"status"`
+	DateAdded string `json:"date_added"`
+	DeletedAt string `json:"deleted_at"`
+}
+
+type HomepageJSON struct {
+	AudioSeries []*AudioSeriesJSON `json:"audio_series"`
+	Meditation  []*MeditationJSON  `json:"meditation"`
+}
 
 type PageResponse struct {
 	TotalResults int32 `json:"totalResults"`
@@ -73,12 +88,102 @@ func (audioSeries *AudioSeriesJSON) ToAudioSeries() *AudioSeries {
 		Author:      audioSeries.Author,
 		ImageUrl:    audioSeries.ImageUrl,
 		Description: audioSeries.Description,
+		OfTheMonth:  audioSeries.OfTheMonth,
 	}
 	if audioSeries.DateReleased != "" {
 		result.DateReleased = sql.NullString{Valid: true, String: audioSeries.DateReleased}
 	}
 
 	return result
+}
+
+func ToMeditations(meditations []*MeditationJSON) []*Meditation {
+	var results []*Meditation
+	for _, meditation := range meditations {
+		result := Meditation{
+			Name:   meditation.Name,
+			Image:  meditation.Image,
+			Status: meditation.Status,
+		}
+		if meditation.DateAdded != "" {
+			result.DateAdded = sql.NullString{
+				Valid:  true,
+				String: meditation.DateAdded,
+			}
+		}
+
+		results = append(results, &result)
+	}
+
+	return results
+}
+
+func (meditation *MeditationJSON) ToMeditation() *Meditation {
+	result := &Meditation{
+		Name:   meditation.Name,
+		Image:  meditation.Image,
+		Status: meditation.Status,
+	}
+	return result
+}
+
+func (homepage *HomepageJSON) ToHomePage() *Homepage {
+	var (
+		audioSeries    AudioSeries
+		meditation     Meditation
+		audioSeriesAll []*AudioSeries
+		meditations    []*Meditation
+	)
+
+	for _, series := range homepage.AudioSeries {
+		audioSeries = AudioSeries{
+			ID:          series.ID,
+			Title:       series.Title,
+			Author:      series.Author,
+			ImageUrl:    series.ImageUrl,
+			Description: series.Description,
+			OfTheMonth:  series.OfTheMonth,
+		}
+
+		if series.DateAdded != "" {
+			audioSeries.DateAdded = sql.NullString{
+				Valid:  true,
+				String: series.DateAdded,
+			}
+		}
+		if series.DateReleased != "" {
+			audioSeries.DateReleased = sql.NullString{
+				Valid:  true,
+				String: series.DateReleased,
+			}
+		}
+
+		audioSeriesAll = append(audioSeriesAll, &audioSeries)
+	}
+
+	for _, m := range homepage.Meditation {
+		meditation = Meditation{
+			ID:     m.ID,
+			Name:   m.Name,
+			Image:  m.Image,
+			Status: m.Status,
+		}
+		if m.DateAdded != "" {
+			meditation.DateAdded = sql.NullString{
+				Valid:  true,
+				String: m.DateAdded,
+			}
+		}
+
+		meditations = append(meditations, &meditation)
+	}
+
+	result := Homepage{
+		AudioSeries: audioSeriesAll,
+		Meditation:  meditations,
+	}
+
+	return &result
 }
 
 func NewJSONAudioMessage(audioMessage *AudioMessage) *AudioMessageJSON {
@@ -102,6 +207,60 @@ func NewJSONAudioSeries(audioSeries *AudioSeries) *AudioSeriesJSON {
 		ImageUrl:     audioSeries.ImageUrl,
 		Description:  audioSeries.Description,
 		DateReleased: audioSeries.DateReleased.String,
+		OfTheMonth:   audioSeries.OfTheMonth,
+	}
+}
+
+func NewJSONMeditation(m *Meditation) *MeditationJSON {
+	result := MeditationJSON{
+		ID:        m.ID,
+		Name:      m.Name,
+		Image:     m.Image,
+		Status:    m.Status,
+		DateAdded: m.DateAdded.String,
+	}
+
+	return &result
+}
+
+func NewJSONHomePage(homepage *Homepage) *HomepageJSON {
+	var (
+		audioSeries     AudioSeriesJSON
+		meditation      MeditationJSON
+		audioSeriesJSON []*AudioSeriesJSON
+		meditationJSON  []*MeditationJSON
+	)
+
+	for _, series := range homepage.AudioSeries {
+		audioSeries = AudioSeriesJSON{
+			ID:           series.ID,
+			Title:        series.Title,
+			Author:       series.Author,
+			ImageUrl:     series.ImageUrl,
+			Description:  series.Description,
+			DateReleased: series.DateReleased.String,
+			DateAdded:    series.DateAdded.String,
+			OfTheMonth:   series.OfTheMonth,
+		}
+
+		audioSeriesJSON = append(audioSeriesJSON, &audioSeries)
+	}
+
+	for _, m := range homepage.Meditation {
+		meditation = MeditationJSON{
+			ID:        m.ID,
+			Name:      m.Name,
+			Image:     m.Image,
+			Status:    m.Status,
+			DateAdded: m.DateAdded.String,
+		}
+
+		meditationJSON = append(meditationJSON, &meditation)
+	}
+
+	return &HomepageJSON{
+		AudioSeries: audioSeriesJSON,
+		Meditation:  meditationJSON,
 	}
 }
 
@@ -420,5 +579,66 @@ func deleteAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc in
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func HomePageDirectoryHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(homePageDirectoryHandler, svc)
+}
+
+func homePageDirectoryHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	result, err := svc.(Service).HomePageDirectory(r.Context())
+
+	home := NewJSONHomePage(result)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+	http_helper.EncodeResult(w, home, http.StatusOK)
+
+}
+
+func CreateMeditationHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(createMeditationHandler, svc)
+}
+
+func createMeditationHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	var meditation []*MeditationJSON
+	err := json.NewDecoder(r.Body).Decode(&meditation)
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	result, err := svc.(Service).CreateMeditation(r.Context(), ToMeditations(meditation))
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func UpdateMeditationByIDHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(updateMeditationByIDHandler, svc)
+}
+
+func updateMeditationByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	medParam := chi.URLParam(r, "meditation_id")
+	var meditationJSON MeditationJSON
+	err := json.NewDecoder(r.Body).Decode(&meditationJSON)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+	med := meditationJSON.ToMeditation()
+	result, err := svc.(Service).UpdateMeditationByID(r.Context(), med.Status, medParam)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
 	http_helper.EncodeResult(w, result, http.StatusOK)
 }
