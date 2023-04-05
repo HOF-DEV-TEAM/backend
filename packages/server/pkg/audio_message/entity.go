@@ -26,4 +26,22 @@ type AudioSeries struct {
 	Description  string         `sql:"description"`
 	DeletedAt    sql.NullString `sql:"deleted_at"`
 	DateReleased sql.NullString `sql:"date_released"`
+	OfTheMonth   *bool          `sql:"of_the_month"`
+}
+
+type Meditation struct {
+	ID        string         `sql:"id"`
+	Name      string         `sql:"name"`
+	Image     string         `sql:"image"`
+	Status    string         `sql:"status"`
+	DateAdded sql.NullString `sql:"date_added"`
+	DeletedAt sql.NullString `sql:"deleted_at"`
+}
+
+type MeditationResponse struct {
+	AffectedRows int64 `json:"affected_row" sql:"affected_row"`
+}
+type Homepage struct {
+	AudioSeries []*AudioSeries `sql:"audio_series"`
+	Meditation  []*Meditation  `sql:"meditation"`
 }

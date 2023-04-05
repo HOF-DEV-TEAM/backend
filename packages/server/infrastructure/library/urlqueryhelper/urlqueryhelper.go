@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/gofrs/uuid"
@@ -61,7 +62,6 @@ func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 		goType := fieldProperties.Type.Kind()
 
 		var val string
-
 		switch goType {
 		case reflect.String:
 			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
@@ -84,6 +84,12 @@ func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 					val = v.String()
 				}
 			}
+		case reflect.Ptr:
+			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
+				boolValue := value.Interface().(*bool)
+				val = strconv.FormatBool(*boolValue)
+			}
+
 		}
 
 		if val != "" {
