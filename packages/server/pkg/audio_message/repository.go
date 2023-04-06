@@ -444,13 +444,6 @@ func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepag
 		seriesSQL     = `SELECT * FROM audio_series WHERE deleted_at IS NULL AND of_the_month=true`
 	)
 
-	//var (
-	//	//as          AudioSeries
-	//	//audioSeries []*AudioSeries
-	//	med        Meditation
-	//	meditation []*Meditation
-	//)
-
 	var audioSeries []*AudioSeries
 	getAudioSeriesStmt, err := r.db.PrepareContext(ctx, seriesSQL)
 	if err != nil {
@@ -502,7 +495,7 @@ func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepag
 		r.log.Info("msg",
 			zap.String("error querying", ""),
 			zap.String("error", err.Error()),
-			zap.String("query", seriesSQL),
+			zap.String("query", meditationSQL),
 		)
 		return nil, err
 	}
@@ -529,7 +522,7 @@ func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepag
 			r.log.Info("msg",
 				zap.String("error querying", ""),
 				zap.String("error", err.Error()),
-				zap.String("query", seriesSQL),
+				zap.String("query", meditationSQL),
 			)
 			return nil, err
 		}
