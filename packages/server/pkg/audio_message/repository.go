@@ -5,6 +5,7 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
@@ -541,6 +542,9 @@ func (r audioMessageRepository) CreateMeditation(ctx context.Context, meditation
 	sqlStr := "INSERT INTO meditation (name, image_url, status, date_added) VALUES "
 	var vals []interface{}
 
+	if len(meditation) > 10 {
+		return nil, errors.New("insertion cannot be greater than 10")
+	}
 	for i, row := range meditation {
 		p1 := i * 4
 
