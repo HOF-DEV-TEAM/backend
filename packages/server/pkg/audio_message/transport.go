@@ -225,13 +225,12 @@ func NewJSONMeditation(m *Meditation) *MeditationJSON {
 
 func NewJSONHomePage(homepage *Homepage) *HomepageJSON {
 	var (
-		audioSeries     AudioSeriesJSON
-		meditation      MeditationJSON
 		audioSeriesJSON []*AudioSeriesJSON
 		meditationJSON  []*MeditationJSON
 	)
 
 	for _, series := range homepage.AudioSeries {
+		var audioSeries AudioSeriesJSON
 		audioSeries = AudioSeriesJSON{
 			ID:           series.ID,
 			Title:        series.Title,
@@ -247,6 +246,8 @@ func NewJSONHomePage(homepage *Homepage) *HomepageJSON {
 	}
 
 	for _, m := range homepage.Meditation {
+		var meditation MeditationJSON
+
 		meditation = MeditationJSON{
 			ID:        m.ID,
 			Name:      m.Name,

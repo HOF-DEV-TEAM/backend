@@ -219,7 +219,6 @@ func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSer
 
 		audioSeries = append(audioSeries, &as)
 	}
-
 	return audioSeries, 0, nil
 }
 
@@ -445,21 +444,15 @@ func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepag
 		seriesSQL     = `SELECT * FROM audio_series WHERE deleted_at IS NULL AND of_the_month=true`
 	)
 
-	var (
-		as          AudioSeries
-		audioSeries []*AudioSeries
-		med         Meditation
-		meditation  []*Meditation
-	)
+	//var (
+	//	//as          AudioSeries
+	//	//audioSeries []*AudioSeries
+	//	med        Meditation
+	//	meditation []*Meditation
+	//)
 
-	tx, err := r.db.BeginTx(ctx, nil)
-	if err != nil {
-		r.log.Info("msg", zap.String("error beginning transaction", ""), zap.String("error", err.Error()), zap.String("query", seriesSQL))
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	getAudioSeriesStmt, err := tx.PrepareContext(ctx, seriesSQL)
+	var audioSeries []*AudioSeries
+	getAudioSeriesStmt, err := r.db.PrepareContext(ctx, seriesSQL)
 	if err != nil {
 		r.log.Info("msg",
 			zap.String("error querying", ""),
@@ -470,11 +463,16 @@ func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepag
 	}
 
 	rows, err := getAudioSeriesStmt.QueryContext(ctx)
+
 	defer rows.Close()
+
 	if err == sql.ErrNoRows {
 		return nil, err
 	}
+
 	for rows.Next() {
+		var as AudioSeries
+
 		if err := rows.Scan(
 			&as.ID,
 			&as.Title,
@@ -498,48 +496,52 @@ func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepag
 		audioSeries = append(audioSeries, &as)
 	}
 
-	getMeditationStmt, err := tx.PrepareContext(ctx, meditationSQL)
+	var meditation []*Meditation
+	getMeditationStmt, err := r.db.PrepareContext(ctx, meditationSQL)
 	if err != nil {
 		r.log.Info("msg",
 			zap.String("error querying", ""),
 			zap.String("error", err.Error()),
-			zap.String("query", meditationSQL),
+			zap.String("query", seriesSQL),
 		)
 		return nil, err
 	}
 
 	rows, err = getMeditationStmt.QueryContext(ctx)
+
 	defer rows.Close()
-	switch err {
-	case sql.ErrNoRows:
-		r.log.Info("No meditation")
-		return &Homepage{AudioSeries: audioSeries, Meditation: meditation}, err
+
+	if err == sql.ErrNoRows {
+		return nil, err
 	}
 
 	for rows.Next() {
+		var as Meditation
+
 		if err := rows.Scan(
-			&med.ID,
-			&med.Name,
-			&med.Image,
-			&med.Status,
-			&med.DateAdded,
-			&med.DeletedAt,
+			&as.ID,
+			&as.Name,
+			&as.Image,
+			&as.Status,
+			&as.DateAdded,
+			&as.DeletedAt,
 		); err != nil {
 			r.log.Info("msg",
 				zap.String("error querying", ""),
 				zap.String("error", err.Error()),
-				zap.String("query", meditationSQL),
+				zap.String("query", seriesSQL),
 			)
 			return nil, err
 		}
 
-		meditation = append(meditation, &med)
+		meditation = append(meditation, &as)
 	}
 
-	return &Homepage{
+	home := Homepage{
 		AudioSeries: audioSeries,
 		Meditation:  meditation,
-	}, nil
+	}
+	return &home, nil
 }
 
 func (r audioMessageRepository) CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error) {
