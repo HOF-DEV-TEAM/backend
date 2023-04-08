@@ -271,6 +271,8 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 
 	getSubStmt, err := r.db.PrepareContext(ctx, query)
 
+	r.log.Info("msg",  zap.String("query", query))
+	
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", query))
 		return nil, err
