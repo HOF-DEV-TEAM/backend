@@ -15,7 +15,7 @@ type Repository interface {
 	CreateSubscriptionPlan(ctx context.Context, plan *SubscriptionPlan) (*SubscriptionPlan, error)
 	GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error)
 	GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
-	GetSubscriptionByPlanId(ctx context.Context, planId string) (*Subscription, error)
+	GetSubscriptionByUserAndPlanId(ctx context.Context, userId, planId string) (*Subscription, error)
 	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOffering) (string, error)
@@ -245,8 +245,8 @@ func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*Subscr
 	return &plan, nil
 }
 
-func (r subscriptionRepo) GetSubscriptionByPlanId(ctx context.Context, planId string) (*Subscription, error) {
-	sub := &Subscription{SubscriptionPlanID: planId}
+func (r subscriptionRepo) GetSubscriptionByUserAndPlanId(ctx context.Context, userId, planId string) (*Subscription, error) {
+	sub := &Subscription{SubscriptionPlanID: planId, UserID: userId}
 	return r.GetSubscription(ctx, sub)
 }
 
