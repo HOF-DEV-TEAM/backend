@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
@@ -196,6 +197,7 @@ func (r *subscriptionRepo) CreateSubscription(ctx context.Context, sub *Subscrip
 	}
 
 	sub.ID = subsriptionId
+	r.log.Info("msg", zap.String("subscription created successfully", ""), zap.String("sub", fmt.Sprintf("%+v", sub)))
 	return sub, nil
 }
 

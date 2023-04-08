@@ -39,9 +39,8 @@ func NewService(subProvider SubscriptionService, repo Repository, config *securi
 }
 
 func (ss *subscriptionSvc) CreateSubscription(ctx context.Context, subReq *Subscription) (*Subscription, error) {
-
+	
 	sub, err := ss.repo.GetSubscriptionByPlanId(ctx, subReq.SubscriptionPlanID)
-
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -49,7 +48,6 @@ func (ss *subscriptionSvc) CreateSubscription(ctx context.Context, subReq *Subsc
 	if sub != nil {
 		return sub, nil
 	}
-
 	return ss.repo.CreateSubscription(ctx, subReq)
 }
 
