@@ -2,6 +2,7 @@ package urlqueryhelper
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -93,7 +94,7 @@ func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 		}
 
 		if val != "" {
-			queryString := goTag + "=" + "'" + val + "'"
+			queryString := fmt.Sprintf("%s='%s'", goTag, val)
 
 			setQuery = setQueryIndex(i, fieldNumbers, setQuery, queryString)
 		}
@@ -143,8 +144,8 @@ func (handler queryHandler) WhereQueryHelper(structValue interface{}) string {
 		}
 
 		if val != "" {
-			queryString := goTag + "=" + "'" + val + "'"
-			whereQuery = whereQueryIndex(i, fieldNumbers, whereQuery, queryString)
+			queryString := fmt.Sprintf("%s='%s'", goTag, val)
+			whereQuery += whereQueryIndex(i, fieldNumbers, whereQuery, queryString)
 
 		}
 	}
