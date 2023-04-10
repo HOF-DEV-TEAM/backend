@@ -1,7 +1,7 @@
 package uploader
 
 import (
-	"bytes"	
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -14,19 +14,15 @@ func UploadFile(svc Service) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(uploadFile, svc)
 }
 
-func uploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	//TODO: Enhanced Logging
-	fmt.Println("File Upload Endpoint Hit")
+func parseFile(r *http.Request) (*FileHandler, error) {
+	r.ParseMultipartForm(10 << 20)
 
-    r.ParseMultipartForm(10 << 20)
-
-    file, handler, err := r.FormFile("image_file")
+    file, handler, err := r.FormFile("resource_file")
 	
     if err != nil {
-        fmt.Println("Error Retrieving the File")
-        fmt.Println(err)
-		http_helper.EncodeJSONError(r.Context(), err, w)
-        return
+        log.Print("Error Retrieving the File")
+		
+        return nil, err
     }
 	defer file.Close()
 
@@ -37,16 +33,32 @@ func uploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
 
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, file); err != nil {		
-		http_helper.EncodeJSONError(r.Context(), err, w)
+		return nil, err
 	}
 
-	fileHandler := FileHandler{
+	return  &FileHandler{
 		FileName: handler.Filename, 
 		FileSize: handler.Size,
 		File: buf.Bytes(),
+	}, nil 
+}
+
+func uploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	bucketKey := r.FormValue("bucket_key")
+
+	if bucketKey != "" {
+		bucketKey += "/"
 	}
 
-	result, err := svc.(Service).UploadFile(r.Context(), fileHandler)
+	//TODO: Enhanced Logging
+	fileHandler, err := parseFile(r)
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	result, err := svc.(Service).UploadFile(r.Context(), fileHandler, bucketKey)
 
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
