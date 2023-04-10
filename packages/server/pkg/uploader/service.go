@@ -16,7 +16,7 @@ type FileHandler struct {
 }
 
 type Service interface {
-	UploadFile(ctx context.Context, fileHandler FileHandler) (string, error)
+	UploadFile(ctx context.Context, fileHandler *FileHandler, bucketKey string) (string, error)
 }
 
 
@@ -32,8 +32,8 @@ func NewService(awsClient *AWSClient) Service {
 }
 
 
-func(uploadSvc *uploadService) UploadFile(ctx context.Context, fileHandler FileHandler) (string, error) {
-	output, err := uploadSvc.awsClient.Upload(ctx, fileHandler)
+func(uploadSvc *uploadService) UploadFile(ctx context.Context, fileHandler *FileHandler, bucketKey string) (string, error) {
+	output, err := uploadSvc.awsClient.Upload(ctx, fileHandler, bucketKey)
 
 	if err != nil {
 		return "", err
@@ -41,3 +41,4 @@ func(uploadSvc *uploadService) UploadFile(ctx context.Context, fileHandler FileH
 
 	return output.Location, nil
 } 
+

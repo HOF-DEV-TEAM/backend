@@ -3,6 +3,7 @@ package uploader
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
 	"github.com/aws/aws-sdk-go/aws"
@@ -35,10 +36,10 @@ func(awsClient *AWSClient) ConnectAWS () {
 }
 
 
-func(awsClient *AWSClient) Upload (ctx context.Context, fileHandler FileHandler) (*s3manager.UploadOutput, error)  {
+func(awsClient *AWSClient) Upload (ctx context.Context, fileHandler *FileHandler, bucketKey string) (*s3manager.UploadOutput, error)  {
 	input := &s3manager.UploadInput{
-        Bucket:      aws.String(awsClient.Config.AwsConfiguration.Bucket), // bucket's name
-        Key:         aws.String(fileHandler.FileName),        // files destination location
+        Bucket:      aws.String(string(awsClient.Config.AwsConfiguration.Bucket)), // bucket's name 
+        Key:         aws.String(fmt.Sprintf("%s%s", bucketKey, fileHandler.FileName)),        // files destination location
         Body:        bytes.NewReader(fileHandler.File),                   // content of the file
         ContentType: aws.String(fileHandler.ContentType),                 // content type
     }
