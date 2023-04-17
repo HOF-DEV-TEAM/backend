@@ -89,18 +89,23 @@ func (app *application) buildRoutes() {
 
 func buildUserEndpoints(router chi.Router, svc user.Service) {
 	userRouter := chi.NewRouter()
-	updateFavouriteHandler := user.UpdateUserProfileHandler(svc)
+	updateUserProfileHandler := user.UpdateUserProfileHandler(svc)
 
 	favRouter := buildFavEndpoints(svc)
+	deviceRouter := buildDeviceEndpoints(svc)
+	appVersionRouter := buildAppVersionEndpoints(svc)
+
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
 	changePasswordHandler := user.ChangePasswordHandler(svc)
 
 	router.Route("/user", func(r chi.Router) {
 		r.Mount("/favourite", favRouter)
+		r.Mount("/devices", deviceRouter)
+		r.Mount("/app_version", appVersionRouter)
 		r.Mount("/", userRouter)
 		r.Post("/reset_password", resetPasswordHandler)
 		r.Post("/change_password", changePasswordHandler)
-		r.Post("/update", updateFavouriteHandler)
+		r.Post("/update", updateUserProfileHandler)
 	})
 }
 
@@ -200,4 +205,31 @@ func buildFavEndpoints(svc user.Service) http.Handler {
 	favRouter.Delete("/delete/{message_id}", deleteFavouriteHandler)
 
 	return favRouter
+}
+
+func buildDeviceEndpoints(svc user.Service) http.Handler {
+	deviceRouter := chi.NewRouter()
+	buildDevicesHandler := user.BuildDeviceHandler(svc)
+	getAllDevicesHandler := user.GetDevicesHandler(svc)
+	deleteDeviceHandler := user.DeleteDeviceHandler(svc)
+	updateDeviceHandler := user.UpdateDeviceHandler(svc)
+
+	deviceRouter.Post("/", buildDevicesHandler)
+	deviceRouter.Get("/all", getAllDevicesHandler)
+	deviceRouter.Delete("/delete/{identifier}", deleteDeviceHandler)
+	deviceRouter.Patch("/update/{identifier}/{status}", updateDeviceHandler)
+
+	return deviceRouter
+
+}
+
+func buildAppVersionEndpoints(svc user.Service) http.Handler {
+	appVersionRouter := chi.NewRouter()
+	updateAppVersionHandler := user.UpdateAppVersion(svc)
+	getAppVersionHandler := user.GetAppVersion(svc)
+
+	appVersionRouter.Put("/admin/update", updateAppVersionHandler)
+	appVersionRouter.Get("/version/{version_id}", getAppVersionHandler)
+
+	return appVersionRouter
 }

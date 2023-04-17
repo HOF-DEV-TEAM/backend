@@ -24,17 +24,19 @@ type UserSession struct {
 type AddressJSON string
 
 type UserJSON struct {
-	ID          string         `json:"id"`
-	Username    string         `json:"username"`
-	Password    string         `json:"password,omitempty"`
-	Email       string         `json:"email"`
-	FirstName   string         `json:"first_name"`
-	LastName    string         `json:"last_name"`
-	Address     string         `json:"address,omitempty"`
-	Mobile      string         `json:"mobile,omitempty"`
-	Gender      string         `json:"gender,omitempty"`
-	IsVerified  IsVerifiedEnum `json:"is_verified"`
-	NewJWTToken string         `json:"newToken,omitempty"`
+	ID               string         `json:"id"`
+	Username         string         `json:"username"`
+	Password         string         `json:"password,omitempty"`
+	Email            string         `json:"email"`
+	FirstName        string         `json:"first_name"`
+	LastName         string         `json:"last_name"`
+	Address          string         `json:"address,omitempty"`
+	Mobile           string         `json:"mobile,omitempty"`
+	Gender           string         `json:"gender,omitempty"`
+	IsVerified       IsVerifiedEnum `json:"is_verified"`
+	Devices          []Devices      `json:"devices,omitempty"`
+	LatestAppVersion VersionManager `json:"latest_app_version"`
+	NewJWTToken      string         `json:"newToken,omitempty"`
 } //	@name	UserJSON
 
 type LoginRequestJSON struct {
@@ -43,10 +45,11 @@ type LoginRequestJSON struct {
 } //	@name	LoginRequestJSON
 
 type SignUpUserRequestJSON struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	Password  string    `json:"password"`
+	Devices   []Devices `json:"devices"`
 } //	@name	SignUpUserRequestJSON
 
 type FavouriteJSON struct {
@@ -96,6 +99,7 @@ func (u *UserJSON) ToUser() *User {
 		Address:    u.Address,
 		Gender:     u.Gender,
 		IsVerified: u.IsVerified,
+		Devices:    u.Devices,
 	}
 
 	if u.Mobile != "" {
@@ -110,6 +114,7 @@ func (u *SignUpUserRequestJSON) ToSignUpUser() *SignUpUser {
 		Password:  u.Password,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
+		Devices:   u.Devices,
 	}
 
 	return result
@@ -117,15 +122,17 @@ func (u *SignUpUserRequestJSON) ToSignUpUser() *SignUpUser {
 
 func (u *User) ToJSON() *UserJSON {
 	return &UserJSON{
-		ID:         u.ID,
-		Email:      u.Email,
-		FirstName:  u.FirstName,
-		LastName:   u.LastName,
-		Address:    u.Address,
-		Mobile:     u.Mobile.String,
-		Gender:     u.Gender,
-		Username:   u.UserName,
-		IsVerified: u.IsVerified,
+		ID:               u.ID,
+		Email:            u.Email,
+		FirstName:        u.FirstName,
+		LastName:         u.LastName,
+		Address:          u.Address,
+		Mobile:           u.Mobile.String,
+		Gender:           u.Gender,
+		Username:         u.UserName,
+		IsVerified:       u.IsVerified,
+		LatestAppVersion: u.LatestAppVersion,
+		//Devices:    u.Devices,
 	}
 }
 
@@ -462,6 +469,100 @@ func updateUserProfileHandler(w http.ResponseWriter, r *http.Request, svc interf
 	}
 	user := userJSON.ToUser()
 	result, err := svc.(Service).UpdateUserProfile(r.Context(), user)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func BuildDeviceHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(buildDeviceHandler, svc)
+}
+func buildDeviceHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	var devices DeviceManager
+	err := json.NewDecoder(r.Body).Decode(&devices)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+	result, err := svc.(Service).BuildDevice(r.Context(), &devices)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func GetDevicesHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getDevicesHandler, svc)
+}
+func getDevicesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	result, err := svc.(Service).GetDevices(r.Context())
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func DeleteDeviceHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(deleteDeviceHandler, svc)
+}
+func deleteDeviceHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	identifier := chi.URLParam(r, "identifier")
+	result, err := svc.(Service).DeleteDevice(r.Context(), identifier)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func UpdateDeviceHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(updateDeviceHandler, svc)
+}
+func updateDeviceHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	identifier := chi.URLParam(r, "identifier")
+	status := chi.URLParam(r, "status")
+	result, err := svc.(Service).UpdateDevice(r.Context(), status, identifier)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func UpdateAppVersion(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(updateAppVersion, svc)
+}
+func updateAppVersion(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	var appVersion VersionManager
+	err := json.NewDecoder(r.Body).Decode(&appVersion)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+	result, err := svc.(Service).UpdateAppVersion(r.Context(), appVersion)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func GetAppVersion(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getAppVersion, svc)
+}
+func getAppVersion(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	versionIDParam := chi.URLParam(r, "version_id")
+	result, err := svc.(Service).GetAppVersion(r.Context(), versionIDParam)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return

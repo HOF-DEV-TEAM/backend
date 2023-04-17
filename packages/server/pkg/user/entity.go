@@ -14,6 +14,7 @@ const (
 	PhoneVerified         = IsVerifiedEnum(1)
 	EmailVerified         = IsVerifiedEnum(2)
 	EmailAndPhoneVerified = IsVerifiedEnum(3)
+	appVersionID          = "60accd02-d627-4ea6-ab01-b6ff0ce86753"
 )
 
 func (e IsVerifiedEnum) String() string {
@@ -83,6 +84,8 @@ type User struct {
 	IsVerified           IsVerifiedEnum `sql:"is_verified"`
 	PaystackCustomerCode sql.NullString `sql:"paystack_customer_code"`
 	PaystackCustomerId   sql.NullString `sql:"paystack_customer_id"`
+	Devices              []Devices      `sql:"devices"`
+	LatestAppVersion     VersionManager `sql:"latest_app_version"`
 	DateAdded            sql.NullString `sql:"date_added"`
 	LastUpdated          sql.NullString `sql:"last_updated"`
 }
@@ -93,10 +96,11 @@ type LoginUser struct {
 }
 
 type SignUpUser struct {
-	FirstName string `validate:"required"`
-	LastName  string `validate:"required"`
-	Email     string `validate:"required,email"`
-	Password  string `validate:"required"`
+	FirstName string    `validate:"required"`
+	LastName  string    `validate:"required"`
+	Email     string    `validate:"required,email"`
+	Password  string    `validate:"required"`
+	Devices   []Devices `sql:"devices" validate:"required"`
 }
 
 type UserPasswordToken struct {
@@ -182,4 +186,39 @@ type UpdateUser struct {
 	Address     string `sql:"address"`
 	Gender      string `sql:"gender"`
 	LastUpdated string `sql:"last_updated"`
+}
+
+type DeviceManager struct {
+	ID      uuid.UUID `sql:"id" json:"id"`
+	UserID  string    `sql:"user_id" json:"user_id"`
+	Devices []Devices `sql:"devices" json:"devices"`
+}
+
+type Devices struct {
+	ID          uuid.UUID      `sql:"id" json:"id"`
+	Who         string         `sql:"who" json:"who"`
+	Identifier  string         `sql:"identifier" json:"identifier,omitempty"`
+	Os          string         `sql:"os" json:"os,omitempty"`
+	Brand       string         `sql:"brand" json:"brand,omitempty"`
+	Version     string         `sql:"version" json:"version"`
+	Status      DeviceStatus   `sql:"status" json:"status,omitempty"`
+	DateAdded   sql.NullString `sql:"date_added"`
+	LastUpdated sql.NullString `sql:"last_updated"`
+}
+
+// DeviceStatus enum type
+type DeviceStatus string
+
+// TODO use enum
+const (
+	ACTIVE_DEVICE_STATUS   DeviceStatus = "ACTIVE"
+	INACTIVE_DEVICE_STATUS DeviceStatus = "INACTIVE"
+)
+
+type VersionManager struct {
+	ID          string         `sql:"id" json:"id"`
+	Version     string         `sql:"version" json:"version"`
+	Force       *bool          `sql:"force" json:"force"`
+	DateAdded   sql.NullString `sql:"date_added" json:"date_added"`
+	LastUpdated sql.NullString `sql:"last_updated" json:"last_updated"`
 }
