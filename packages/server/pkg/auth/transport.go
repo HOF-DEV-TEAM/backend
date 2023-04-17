@@ -15,8 +15,9 @@ type AuthenticateRequest struct {
 }
 
 type LoginUser struct {
-	Email    string `validate:"required,email"`
-	Password string `validate:"required"`
+	Email            string `validate:"required,email"`
+	Password         string `validate:"required"`
+	DeviceIdentifier string `validate:"required"`
 }
 
 type UserSession struct {
@@ -27,8 +28,9 @@ type UserSession struct {
 } //	@name	UserSession
 
 type LoginRequestJSON struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	DeviceIdentifier string `json:"device_identifier"`
 } //	@name	LoginRequestJSON
 
 // SignInHandler godoc
@@ -51,7 +53,7 @@ func SignInHandler(svc Service) http.HandlerFunc {
 			return
 		}
 
-		result, err := svc.Login(r.Context(), req.Email, req.Password)
+		result, err := svc.Login(r.Context(), req.Email, req.Password, req.DeviceIdentifier)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
@@ -61,7 +63,6 @@ func SignInHandler(svc Service) http.HandlerFunc {
 		http_helper.EncodeResult(w, result, http.StatusOK)
 	}
 }
-
 
 func AuthenticateHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +76,7 @@ func AuthenticateHandler(svc Service) http.HandlerFunc {
 		var req AuthenticateRequest
 
 		err = json.NewDecoder(r.Body).Decode(&req)
-		
+
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return

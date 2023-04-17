@@ -1,6 +1,7 @@
 package user
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"context"
 	"crypto/md5"
@@ -21,7 +22,7 @@ var ErrFieldRequired = errors.New("field is required")
 type Service interface {
 	SignUp(ctx context.Context, user *SignUpUser) (*User, error)
 	CreateUser(ctx context.Context, user *User) (*User, error)
-	Login(ctx context.Context, email, password string) (*UserAndToken, error)
+	Login(ctx context.Context, email, password, deviceIdentifier string) (*UserAndToken, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error)
 	ResetPassword(ctx context.Context, request ResetPasswordPayload) (uuid.UUID, error)
@@ -30,16 +31,23 @@ type Service interface {
 	GetFavourites(ctx context.Context) (GetFavouritesResponse, error)
 	DeleteFavourite(ctx context.Context, favId string) (uuid.UUID, error)
 	UpdateUserProfile(ctx context.Context, user *User) (uuid.UUID, error)
+	BuildDevice(ctx context.Context, input *DeviceManager) (*DeviceManager, error)
+	GetDevices(ctx context.Context) (*DeviceManager, error)
+	DeleteDevice(ctx context.Context, identifier string) (string, error)
+	UpdateDevice(ctx context.Context, status, identifier string) (*DeviceManager, error)
+	UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error)
+	GetAppVersion(ctx context.Context, versionID string) (*VersionManager, error)
 }
 
 type userService struct {
-	repo   Repository
-	log    *zap.Logger
-	config *security.SecurityConfig
+	repo        Repository
+	log         *zap.Logger
+	config      *security.SecurityConfig
+	idGenerator library.IDGenerator
 }
 
 func NewService(repo Repository, log *zap.Logger, config *security.SecurityConfig) Service {
-	return &userService{log: log, repo: repo, config: config}
+	return &userService{log: log, repo: repo, config: config, idGenerator: library.NewIDGenerator()}
 }
 
 func (s *userService) validateStruct(v interface{}) error {
@@ -54,9 +62,9 @@ func (s *userService) validateSignUpStruct(user *SignUpUser) error {
 	return validate.Struct(user)
 }
 
-func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, error) {
+func (s *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, error) {
 
-	err := svc.validateSignUpStruct(user)
+	err := s.validateSignUpStruct(user)
 
 	if err != nil {
 		tErr, ok := err.(validator.ValidationErrors)
@@ -70,13 +78,13 @@ func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, er
 			case "Email":
 				return nil, http_helper.ErrEmailRequired
 			default:
-				svc.log.Info("untyped validation error", zap.String("field", e.StructField()))
+				s.log.Info("untyped validation error", zap.String("field", e.StructField()))
 			}
 		}
 		return nil, err
 	}
 
-	_, err = svc.repo.GetByEmail(ctx, user.Email)
+	_, err = s.repo.GetByEmail(ctx, user.Email)
 	if err == nil {
 		// user exists
 		return nil, http_helper.ErrUserExists
@@ -85,13 +93,14 @@ func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, er
 	// leading and trailing whitespaces
 	password := fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(user.Password))))
 
-	result, err := svc.repo.Create(
+	result, err := s.repo.Create(
 		ctx,
 		&User{
 			Email:     user.Email,
 			Password:  password,
 			FirstName: user.FirstName,
 			LastName:  user.LastName,
+			Devices:   user.Devices,
 		})
 
 	if err == sql.ErrNoRows {
@@ -99,7 +108,7 @@ func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, er
 	}
 
 	if err != nil {
-		svc.log.Error("msg",
+		s.log.Error("msg",
 			zap.String("method", "Create"),
 			zap.String("error", err.Error()),
 		)
@@ -109,9 +118,9 @@ func (svc *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, er
 	return result, nil
 }
 
-func (svc *userService) CreateUser(ctx context.Context, user *User) (*User, error) {
+func (s *userService) CreateUser(ctx context.Context, user *User) (*User, error) {
 
-	err := svc.validateStruct(user)
+	err := s.validateStruct(user)
 
 	if err != nil {
 		tErr, ok := err.(validator.ValidationErrors)
@@ -125,13 +134,13 @@ func (svc *userService) CreateUser(ctx context.Context, user *User) (*User, erro
 			case "Email":
 				return nil, http_helper.ErrEmailRequired
 			default:
-				svc.log.Info("untyped validation error", zap.String("field", e.StructField()))
+				s.log.Info("untyped validation error", zap.String("field", e.StructField()))
 			}
 		}
 		return nil, err
 	}
 
-	_, err = svc.repo.GetByEmail(ctx, user.Email)
+	_, err = s.repo.GetByEmail(ctx, user.Email)
 	if err == nil {
 		// user exists
 		return nil, http_helper.ErrUserExists
@@ -140,14 +149,14 @@ func (svc *userService) CreateUser(ctx context.Context, user *User) (*User, erro
 	// leading and trailing whitespaces
 	user.Password = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(user.Password))))
 
-	result, err := svc.repo.Create(ctx, user)
+	result, err := s.repo.Create(ctx, user)
 
 	if err == sql.ErrNoRows {
 		return nil, err
 	}
 
 	if err != nil {
-		svc.log.Error("msg",
+		s.log.Error("msg",
 			zap.String("method", "Create"),
 			zap.String("error", err.Error()),
 		)
@@ -157,7 +166,7 @@ func (svc *userService) CreateUser(ctx context.Context, user *User) (*User, erro
 	return result, nil
 }
 
-func (svc *userService) Login(ctx context.Context, email, password string) (*UserAndToken, error) {
+func (s *userService) Login(ctx context.Context, email, password, deviceIdentifier string) (*UserAndToken, error) {
 	err := validator.New().Struct(LoginUser{
 		Email:    email,
 		Password: password,
@@ -171,14 +180,14 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 	// md5 hash prior to sending it to repository
 	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(password)))
 
-	result, err := svc.repo.Login(ctx, email, hashedPassword)
+	result, err := s.repo.Login(ctx, email, hashedPassword, deviceIdentifier)
 
 	if err == http_helper.ErrUserPwd {
 		return nil, err
 	}
 
 	if err != nil {
-		svc.log.Error("msg",
+		s.log.Error("msg",
 			zap.String("method", "Login"),
 			zap.String("error", err.Error()),
 		)
@@ -186,16 +195,16 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 	}
 
 	// recover claims from JWT
-	claims, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
 
 	if !ok {
-		svc.log.Info("msg",
+		s.log.Info("msg",
 			zap.String("JWTError", "broken"),
-			zap.String(svc.config.JWTContextKey, ""),
+			zap.String(s.config.JWTContextKey, ""),
 		)
 	}
 
-	updatedJWTToken, err := claims.PutUserIDAndSign(svc.config, result.ID)
+	updatedJWTToken, err := claims.PutUserIDAndSign(s.config, result.ID)
 
 	if err != nil {
 		return nil, err
@@ -204,13 +213,13 @@ func (svc *userService) Login(ctx context.Context, email, password string) (*Use
 	return &UserAndToken{User: result, Token: updatedJWTToken}, nil
 }
 
-func (svc *userService) ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error) {
+func (s *userService) ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error) {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
 
 	}
-	otpResponse, err := svc.repo.ForgotPassword(request)
+	otpResponse, err := s.repo.ForgotPassword(request)
 	if err != nil {
 		return nil, err
 	}
@@ -221,27 +230,27 @@ func (svc *userService) ForgotPassword(request ForgotPasswordPayload) (*OTPRespo
 	return otpResponse, nil
 }
 
-func (svc *userService) VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error) {
+func (s *userService) VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error) {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
 
 	}
-	user, err := svc.repo.VerifyPasswordResetOTP(request)
+	user, err := s.repo.VerifyPasswordResetOTP(request)
 	if err != nil {
 		return nil, err
 	}
 
 	// recover claims from JWT
-	c, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim)
+	c, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
 	if !ok {
-		svc.log.Info("msg",
+		s.log.Info("msg",
 			zap.String("JWTError", "broken"),
-			zap.String(svc.config.JWTContextKey, ""),
+			zap.String(s.config.JWTContextKey, ""),
 		)
 	}
 
-	updatedJWTToken, err := c.PutUserIDAndSign(svc.config, user.ID)
+	updatedJWTToken, err := c.PutUserIDAndSign(s.config, user.ID)
 
 	if err != nil {
 		return nil, err
@@ -250,7 +259,7 @@ func (svc *userService) VerifyPasswordResetOTP(ctx context.Context, request *Ver
 	return &UserAndToken{Token: updatedJWTToken}, nil
 }
 
-func (svc *userService) ResetPassword(ctx context.Context, request ResetPasswordPayload) (uuid.UUID, error) {
+func (s *userService) ResetPassword(ctx context.Context, request ResetPasswordPayload) (uuid.UUID, error) {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
@@ -263,7 +272,7 @@ func (svc *userService) ResetPassword(ctx context.Context, request ResetPassword
 
 	request.Password = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.Password))))
 
-	claims, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
 	if !ok {
 		return uuid.Nil, http_helper.ErrInvalidAccount
 	}
@@ -272,7 +281,7 @@ func (svc *userService) ResetPassword(ctx context.Context, request ResetPassword
 		return uuid.Nil, err
 	}
 
-	resp, err := svc.repo.ResetPassword(ctx, userId, ResetPasswordPayload{
+	resp, err := s.repo.ResetPassword(ctx, userId, ResetPasswordPayload{
 		Email:           request.Email,
 		Password:        request.Password,
 		PasswordConfirm: request.PasswordConfirm,
@@ -452,4 +461,84 @@ func (s *userService) UpdateUserProfile(ctx context.Context, user *User) (uuid.U
 	}
 
 	return result, nil
+}
+
+func (s *userService) BuildDevice(ctx context.Context, input *DeviceManager) (*DeviceManager, error) {
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return nil, http_helper.ErrInvalidAccount
+	}
+
+	deviceManager, err := s.repo.BuildDevice(ctx, input, claims.JWTClaimsMain.LoggedInUserId)
+	if err != nil {
+		return nil, err
+	}
+
+	return deviceManager, nil
+}
+
+func (s *userService) GetDevices(ctx context.Context) (*DeviceManager, error) {
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return nil, http_helper.ErrInvalidAccount
+	}
+
+	devices, err := s.repo.GetDevices(ctx, claims.JWTClaimsMain.LoggedInUserId)
+	if err != nil {
+		return nil, err
+	}
+	return devices, nil
+}
+
+func (s *userService) DeleteDevice(ctx context.Context, identifier string) (string, error) {
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return "", http_helper.ErrInvalidAccount
+	}
+
+	deletedDevice, err := s.repo.DeleteDevice(ctx, identifier, claims.JWTClaimsMain.LoggedInUserId)
+	if err != nil {
+		return "", err
+	}
+
+	return deletedDevice, nil
+}
+
+func (s *userService) UpdateDevice(ctx context.Context, status, identifier string) (*DeviceManager, error) {
+	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	if !ok {
+		return nil, http_helper.ErrInvalidAccount
+	}
+
+	updatedDevice, err := s.repo.UpdateDevice(ctx, claims.JWTClaimsMain.LoggedInUserId, status, identifier)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedDevice, nil
+}
+
+func (s *userService) UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error) {
+	version.LastUpdated = sql.NullString{Valid: true, String: time.Now().Format(time.DateTime)}
+	result, err := s.repo.UpdateAppVersion(ctx, version)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return result, nil
+}
+
+func (s *userService) GetAppVersion(ctx context.Context, versionID string) (*VersionManager, error) {
+	id, err := uuid.FromString(versionID)
+	if err != nil {
+		return nil, err
+	}
+
+	appVersion, err := s.repo.GetAppVersion(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return appVersion, nil
+
 }

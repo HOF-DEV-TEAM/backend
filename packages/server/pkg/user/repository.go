@@ -1,6 +1,7 @@
 package user
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
 	"context"
 	"database/sql"
@@ -18,7 +19,7 @@ type Repository interface {
 	Create(ctx context.Context, user *User) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetById(ctx context.Context, id string) (*User, error)
-	Login(ctx context.Context, email, password string) (*User, error)
+	Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(request *VerifyOTP) (*User, error)
 	ResetPassword(ctx context.Context, userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error)
@@ -28,6 +29,12 @@ type Repository interface {
 	GetFavourites(ctx context.Context, userId uuid.UUID) ([]*FavMessage, int, error)
 	DeleteFavourite(ctx context.Context, messageId, userId uuid.UUID) (uuid.UUID, error)
 	UpdateUserProfile(ctx context.Context, userId uuid.UUID, user *UpdateUser) (uuid.UUID, error)
+	BuildDevice(ctx context.Context, input *DeviceManager, createdUserId string) (*DeviceManager, error)
+	GetDevices(ctx context.Context, userId string) (*DeviceManager, error)
+	DeleteDevice(ctx context.Context, identifier, userID string) (string, error)
+	UpdateDevice(ctx context.Context, userId, status, identifier string) (*DeviceManager, error)
+	UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error)
+	GetAppVersion(ctx context.Context, versionID uuid.UUID) (*VersionManager, error)
 	Close() error
 }
 
@@ -38,10 +45,11 @@ type userRepository struct {
 	getIdStmt    *sql.Stmt
 	otpGenerator OtpGenerator
 	queryHandler urlqueryhelper.QueryHelper
+	idGenerator  library.IDGenerator
 }
 
 func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
-	return &userRepository{db: db, log: logger, otpGenerator: NewOTPGenerator(), queryHandler: urlqueryhelper.NewQueryHelper()}
+	return &userRepository{db: db, log: logger, otpGenerator: NewOTPGenerator(), queryHandler: urlqueryhelper.NewQueryHelper(), idGenerator: library.NewIDGenerator()}
 }
 
 func (r userRepository) Close() error {
@@ -105,19 +113,32 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 		user.PasswordHash,
 		user.IsVerified,
 	).Scan(&createdUserId)
-
 	if err != nil {
-		r.log.Info("error", zap.String("error", err.Error()), zap.String("query", SQL))
+		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", SQL))
 		return nil, err
 	}
 
 	err = tx.Commit()
-
 	if err != nil {
 		return nil, err
 	}
 
+	_, err = r.BuildDevice(ctx, &DeviceManager{Devices: user.Devices}, createdUserId)
+	if err != nil {
+		return nil, err
+	}
+
+	appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
+	if err != nil {
+		return nil, err
+	}
+	appVersion, err := r.GetAppVersion(ctx, appVersionId)
+	if err != nil {
+		return nil, err
+	}
 	user.ID = createdUserId
+	user.LatestAppVersion = *appVersion
+
 	return user, nil
 }
 
@@ -188,7 +209,7 @@ func (r userRepository) GetById(ctx context.Context, id string) (*User, error) {
 	return r.getUser(ctx, "id", id)
 }
 
-func (r userRepository) Login(ctx context.Context, email, password string) (*User, error) {
+func (r userRepository) Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error) {
 	existingUser, err := r.GetByEmail(ctx, email)
 
 	if err == sql.ErrNoRows {
@@ -202,7 +223,18 @@ func (r userRepository) Login(ctx context.Context, email, password string) (*Use
 	if password != existingUser.Password {
 		return nil, http_helper.ErrUserPwd
 	}
+	_, err = r.GetCurrentDevice(ctx, existingUser.ID, deviceIdentifier)
+	if err != nil {
+		return nil, err
+	}
 
+	appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
+	if err != nil {
+		return nil, err
+	}
+	appVersion, err := r.GetAppVersion(ctx, appVersionId)
+
+	existingUser.LatestAppVersion = *appVersion
 	return existingUser, nil
 }
 
@@ -411,15 +443,19 @@ func (r userRepository) getFavourites(ctx context.Context, userId uuid.UUID) (*F
 
 	tmpSmt, err := r.db.PrepareContext(ctx, getQuery)
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getQuery))
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getQuery))
 		return nil, err
 	}
 	var (
 		favouriteID uuid.UUID
-		savedFav    Favourite
+		savedFav    ScanFavourite
 	)
 
 	err = tmpSmt.QueryRowContext(ctx, userId).Scan(&favouriteID, &savedFav)
+	if err != nil {
+		r.log.Error("QueryRowContext get favourites", zap.String("getFavourites", err.Error()), zap.String("query", getQuery))
+		return nil, err
+	}
 	favourite := &Favourites{
 		ID:     favouriteID,
 		UserID: userId,
@@ -451,7 +487,7 @@ func (r userRepository) GetFavourites(ctx context.Context, userId uuid.UUID) ([]
 	var favss []*FavMessage
 	getFavsStmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
-		r.log.Info("msg",
+		r.log.Error("msg",
 			zap.String("error querying", ""),
 			zap.String("error", err.Error()),
 			zap.String("query", sqlQuery),
@@ -474,7 +510,7 @@ func (r userRepository) GetFavourites(ctx context.Context, userId uuid.UUID) ([]
 			&as.AudioUrl,
 			&as.Description,
 		); err != nil {
-			r.log.Info("msg",
+			r.log.Error("msg",
 				zap.String("error querying", ""),
 				zap.String("error", err.Error()),
 				zap.String("query", sqlQuery),
@@ -492,7 +528,7 @@ func (r userRepository) DeleteFavourite(ctx context.Context, messageId, userID u
 
 	tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return uuid.Nil, err
 	}
 
@@ -516,29 +552,29 @@ func (r userRepository) CreateFavourite(ctx context.Context, favourite *Favourit
 			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 			return nil, err
 		}
-		favs, err := Value(favourite.Fav)
+		favs, err := SaveFavouritesJSONBValue(favourite.Fav)
 		if err != nil {
-			r.log.Info("error", zap.String("marshal field", err.Error()))
+			r.log.Error("error", zap.String("marshal field", err.Error()))
 			return nil, err
 		}
 
 		err = tmpSmt.QueryRowContext(ctx, favourite.UserID, favs).Scan(&favouriteID)
 		if err != nil {
-			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 			return nil, err
 		}
 		favourite.ID = favouriteID
 	case err != sql.ErrNoRows:
 		const sqlQuery = `UPDATE favourites SET fav = COALESCE(fav, '[]'::jsonb) || $2 ::jsonb WHERE user_id=$1;`
 
-		favs, err := Value(favourite.Fav)
+		favs, err := SaveFavouritesJSONBValue(favourite.Fav)
 		if err != nil {
-			r.log.Info("error", zap.String("marshal field", err.Error()))
+			r.log.Error("error", zap.String("marshal field", err.Error()))
 			return nil, err
 		}
 		_, err = r.db.ExecContext(ctx, sqlQuery, favourite.UserID, favs)
 		if err != nil {
-			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
 			return nil, err
 		}
 		favourite.ID = allFavs.ID
@@ -565,4 +601,214 @@ func (r userRepository) UpdateUserProfile(ctx context.Context, userId uuid.UUID,
 	}
 
 	return userId, nil
+}
+
+func (r userRepository) GetDevices(ctx context.Context, userId string) (*DeviceManager, error) {
+	getQuery := `SELECT id, user_id, devices FROM devices WHERE user_id = $1`
+
+	tmpSmt, err := r.db.PrepareContext(ctx, getQuery)
+	if err != nil {
+		r.log.Error("PrepareContext get devices", zap.String("getDevices", err.Error()), zap.String("query", getQuery))
+		return nil, err
+	}
+
+	var (
+		devices      DeviceManager
+		savedDevices ScanDevices
+	)
+
+	err = tmpSmt.QueryRowContext(ctx, userId).Scan(&devices.ID, &devices.UserID, &savedDevices)
+	if err != nil {
+		r.log.Error("QueryRowContext get devices", zap.String("getDevices", err.Error()), zap.String("query", getQuery))
+		return nil, err
+	}
+	devices.Devices = savedDevices
+	return &devices, err
+}
+
+func (r userRepository) BuildDevice(ctx context.Context, input *DeviceManager, createdUserId string) (*DeviceManager, error) {
+	var devices []Devices
+	for _, device := range input.Devices {
+		deviceID, err := r.idGenerator.IDGenerate()
+		if err != nil {
+			return nil, err
+		}
+
+		device.ID = deviceID
+		device.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.DateTime)}
+		devices = append(devices, device)
+	}
+
+	deviceManager := DeviceManager{
+		UserID:  createdUserId,
+		Devices: devices,
+	}
+
+	allDevices, err := r.GetDevices(ctx, createdUserId)
+	switch {
+	case err == sql.ErrNoRows:
+		sqlQuery := `INSERT INTO devices (user_id, devices) SELECT $1, $2 WHERE NOT EXISTS (SELECT user_id FROM devices WHERE user_id = $1) RETURNING id`
+		tmpSmt, err := r.db.Prepare(sqlQuery)
+		if err != nil {
+			r.log.Error("PrepareContext build devices", zap.String("buildDevice", err.Error()), zap.String("query", sqlQuery))
+			return nil, err
+		}
+		devs, err := SaveDevicesJSONBValue(deviceManager.Devices)
+		if err != nil {
+			r.log.Info("error", zap.String("marshal field", err.Error()))
+			return nil, err
+		}
+
+		err = tmpSmt.QueryRowContext(ctx, deviceManager.UserID, devs).Scan(&deviceManager.ID)
+		if err != nil {
+			r.log.Error("QueryRowContext build devices", zap.String("buildDevices", err.Error()), zap.String("query", sqlQuery))
+			return nil, err
+		}
+
+	case err != sql.ErrNoRows:
+		const sqlQuery = `UPDATE devices SET devices = COALESCE(devices, '[]'::jsonb) || $2 ::jsonb WHERE user_id=$1;`
+
+		devs, err := SaveDevicesJSONBValue(deviceManager.Devices)
+		if err != nil {
+			r.log.Info("error", zap.String("marshal field", err.Error()))
+			return nil, err
+		}
+		_, err = r.db.ExecContext(ctx, sqlQuery, deviceManager.UserID, devs)
+		if err != nil {
+			r.log.Info("error", zap.String("error", err.Error()), zap.String("query", sqlQuery))
+			return nil, err
+		}
+		deviceManager.ID = allDevices.ID
+
+	}
+
+	return &deviceManager, nil
+}
+
+func (r userRepository) DeleteDevice(ctx context.Context, identifier, userID string) (string, error) {
+	const sqlQuery = `UPDATE devices SET devices = devices - Cast((SELECT position - 1 FROM devices, jsonb_array_elements(devices) with ordinality arr(item_object, position) WHERE user_id=$1 and item_object->>'identifier' = $2) as int) WHERE user_id=$1;`
+
+	tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("PrepareContext Delete Device", zap.String("DeleteDevice", err.Error()), zap.String("query", sqlQuery))
+		return "", err
+	}
+	err = tmpSmt.QueryRowContext(ctx, userID, identifier).Scan()
+	if err == sql.ErrNoRows {
+		return identifier, nil
+	}
+
+	return "", err
+}
+
+func (r userRepository) GetCurrentDevice(ctx context.Context, userId, identifier string) (*DeviceManager, error) {
+	getQuery := `SELECT id, user_id, arr.item_object FROM devices,jsonb_array_elements(devices) with ordinality arr(item_object, position) WHERE user_id=$1 and item_object->>'identifier'=$2`
+
+	tmpSmt, err := r.db.PrepareContext(ctx, getQuery)
+	if err != nil {
+		r.log.Error("PrepareContext get devices", zap.String("getDevices", err.Error()), zap.String("query", getQuery))
+		return nil, err
+	}
+
+	var (
+		deviceID    string
+		userID      string
+		devices     DeviceManager
+		savedDevice ScanDevice
+	)
+
+	err = tmpSmt.QueryRowContext(ctx, userId, identifier).Scan(&deviceID, &userID, &savedDevice)
+	switch {
+	case err == sql.ErrNoRows:
+		r.log.Error("QueryRowContext get current device", zap.String("getCurrentDevice", err.Error()), zap.String("query", getQuery), zap.String("msg: ", "device does not exist"))
+		return nil, errors.New("new device? device does not exist")
+	}
+
+	devices.Devices = append(devices.Devices, Devices{
+		ID:          savedDevice.ID,
+		Who:         savedDevice.Who,
+		Identifier:  savedDevice.Identifier,
+		Os:          savedDevice.Os,
+		Brand:       savedDevice.Brand,
+		Version:     savedDevice.Version,
+		Status:      savedDevice.Status,
+		DateAdded:   savedDevice.DateAdded,
+		LastUpdated: savedDevice.LastUpdated,
+	})
+	return &devices, err
+}
+
+func (r userRepository) UpdateDevice(ctx context.Context, userId, status, identifier string) (*DeviceManager, error) {
+	sqlQuery := `UPDATE devices SET devices = 
+    (
+		SELECT jsonb_agg(
+			CASE
+			  WHEN elem->>'identifier' = $2 THEN
+				jsonb_set(elem, '{status}', $3)
+			  ELSE
+				elem
+			END
+		)
+		FROM devices, LATERAL jsonb_array_elements(devices) AS arr(elem)
+		WHERE user_id = $1
+	)
+	WHERE user_id = $1;`
+
+	tmpSmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("PrepareContext Update Device", zap.String("UpdateDevice", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return nil, err
+	}
+
+	s := fmt.Sprintf("\"%s\"", status)
+	err = tmpSmt.QueryRowContext(ctx, userId, identifier, s).Scan()
+	if err == sql.ErrNoRows {
+		return &DeviceManager{UserID: userId}, nil
+	}
+
+	return nil, nil
+}
+
+func (r userRepository) UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error) {
+	id := struct {
+		Id string `sql:"id"`
+	}{
+		Id: version.ID,
+	}
+	whereQuery := r.queryHandler.WhereQueryHelper(id)
+	setQuery := r.queryHandler.SetQueryHelper(version)
+
+	sqlQuery := `UPDATE app_version SET ` + setQuery + " WHERE " + whereQuery + " RETURNING id"
+	var versionID uuid.UUID
+	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&versionID)
+	if err != nil {
+		r.log.Error("QueryRowContext Update App Version", zap.String("UpdateAppVersion", err.Error()))
+		return uuid.Nil, err
+	}
+	return versionID, nil
+
+}
+
+func (r userRepository) GetAppVersion(ctx context.Context, versionID uuid.UUID) (*VersionManager, error) {
+	sqlQuery := `SELECT * FROM app_version WHERE id=$1`
+
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("PrepareContext Get App Version", zap.String("GetAppVersion", err.Error()), zap.String("query", sqlQuery))
+		return nil, err
+	}
+	var version VersionManager
+	err = stmt.QueryRowContext(ctx, versionID).Scan(
+		&version.ID,
+		&version.Version,
+		&version.Force,
+		&version.DateAdded,
+		&version.LastUpdated,
+	)
+	if err != nil {
+		r.log.Error("QueryRowContext Get App Version", zap.String("GetAppVersion", err.Error()), zap.String("query", sqlQuery))
+		return nil, http_helper.ErrNotFound
+
+	}
+	return &version, nil
 }
