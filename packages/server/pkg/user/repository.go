@@ -19,7 +19,7 @@ type Repository interface {
 	Create(ctx context.Context, user *User) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetById(ctx context.Context, id string) (*User, error)
-	Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error)
+	Login(ctx context.Context, email, password string) (*User, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(request *VerifyOTP) (*User, error)
 	ResetPassword(ctx context.Context, userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error)
@@ -209,7 +209,7 @@ func (r userRepository) GetById(ctx context.Context, id string) (*User, error) {
 	return r.getUser(ctx, "id", id)
 }
 
-func (r userRepository) Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error) {
+func (r userRepository) Login(ctx context.Context, email, password string) (*User, error) {
 	existingUser, err := r.GetByEmail(ctx, email)
 
 	if err == sql.ErrNoRows {

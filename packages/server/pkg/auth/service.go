@@ -16,7 +16,7 @@ import (
 )
 
 type Service interface {
-	Login(ctx context.Context, email, password, deviceIdentifier string) (*UserSession, error)
+	Login(ctx context.Context, email, password string) (*UserSession, error)
 	Authenticate(ctx context.Context, token, refreshToken string) (*UserSession, error)
 }
 
@@ -109,11 +109,10 @@ func (svc *authService) Authenticate(ctx context.Context, authToken, refeshToken
 	return svc.createSession(ctx, user)
 }
 
-func (svc *authService) Login(ctx context.Context, email, password, deviceIdentifier string) (*UserSession, error) {
+func (svc *authService) Login(ctx context.Context, email, password string) (*UserSession, error) {
 	err := validator.New().Struct(LoginUser{
-		Email:            email,
-		Password:         password,
-		DeviceIdentifier: deviceIdentifier,
+		Email:    email,
+		Password: password,
 	})
 
 	// If either Email or Password field is empty
@@ -124,7 +123,7 @@ func (svc *authService) Login(ctx context.Context, email, password, deviceIdenti
 	// md5 hash prior to sending it to repository
 	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(password)))
 
-	result, err := svc.userRepo.Login(ctx, email, hashedPassword, deviceIdentifier)
+	result, err := svc.userRepo.Login(ctx, email, hashedPassword)
 
 	if err == http_helper.ErrUserPwd {
 		return nil, err
