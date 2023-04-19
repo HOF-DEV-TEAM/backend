@@ -727,6 +727,8 @@ func (r userRepository) GetCurrentDevice(ctx context.Context, userId, identifier
 	case err == sql.ErrNoRows:
 		r.log.Error("QueryRowContext get current device", zap.String("getCurrentDevice", err.Error()), zap.String("query", getQuery), zap.String("msg: ", "device does not exist"))
 		return nil, errors.New("new device? device does not exist")
+	case err != sql.ErrNoRows:
+		return nil, err
 	}
 
 	devices.Devices = append(devices.Devices, Devices{
