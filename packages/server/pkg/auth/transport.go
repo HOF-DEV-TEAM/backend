@@ -53,7 +53,7 @@ func SignInHandler(svc Service) http.HandlerFunc {
 			return
 		}
 
-		result, err := svc.Login(r.Context(), req.Email, req.Password, req.DeviceIdentifier)
+		result, err := svc.Login(r.Context(), req.Email, req.Password)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
