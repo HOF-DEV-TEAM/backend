@@ -223,10 +223,10 @@ func (r userRepository) Login(ctx context.Context, email, password, deviceIdenti
 	if password != existingUser.Password {
 		return nil, http_helper.ErrUserPwd
 	}
-	_, err = r.GetCurrentDevice(ctx, existingUser.ID, deviceIdentifier)
-	if err != nil {
-		return nil, err
-	}
+	//_, err = r.GetCurrentDevice(ctx, existingUser.ID, deviceIdentifier)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
 	if err != nil {
