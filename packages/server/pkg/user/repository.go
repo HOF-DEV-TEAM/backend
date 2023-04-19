@@ -123,10 +123,10 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 		return nil, err
 	}
 
-	_, err = r.BuildDevice(ctx, &DeviceManager{Devices: user.Devices}, user.Email)
-	if err != nil {
-		return nil, err
-	}
+	//_, err = r.BuildDevice(ctx, &DeviceManager{Devices: user.Devices}, user.Email)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
 	if err != nil {
@@ -727,6 +727,8 @@ func (r userRepository) GetCurrentDevice(ctx context.Context, userId, identifier
 	case err == sql.ErrNoRows:
 		r.log.Error("QueryRowContext get current device", zap.String("getCurrentDevice", err.Error()), zap.String("query", getQuery), zap.String("msg: ", "device does not exist"))
 		return nil, errors.New("new device? device does not exist")
+	case err != sql.ErrNoRows:
+		return nil, err
 	}
 
 	devices.Devices = append(devices.Devices, Devices{
