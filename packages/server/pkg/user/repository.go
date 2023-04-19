@@ -19,7 +19,7 @@ type Repository interface {
 	Create(ctx context.Context, user *User) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetById(ctx context.Context, id string) (*User, error)
-	Login(ctx context.Context, email, password string) (*User, error)
+	Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(request *VerifyOTP) (*User, error)
 	ResetPassword(ctx context.Context, userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error)
@@ -209,7 +209,7 @@ func (r userRepository) GetById(ctx context.Context, id string) (*User, error) {
 	return r.getUser(ctx, "id", id)
 }
 
-func (r userRepository) Login(ctx context.Context, email, password string) (*User, error) {
+func (r userRepository) Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error) {
 	existingUser, err := r.GetByEmail(ctx, email)
 
 	if err == sql.ErrNoRows {
@@ -223,16 +223,19 @@ func (r userRepository) Login(ctx context.Context, email, password string) (*Use
 	if password != existingUser.Password {
 		return nil, http_helper.ErrUserPwd
 	}
-	//_, err = r.GetCurrentDevice(ctx, existingUser.ID, deviceIdentifier)
-	//if err != nil {
-	//	return nil, err
-	//}
+	_, err = r.GetCurrentDevice(ctx, existingUser.ID, deviceIdentifier)
+	if err != nil {
+		return nil, err
+	}
 
 	appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
 	if err != nil {
 		return nil, err
 	}
 	appVersion, err := r.GetAppVersion(ctx, appVersionId)
+	if err != nil {
+		return nil, err
+	}
 
 	existingUser.LatestAppVersion = *appVersion
 	return existingUser, nil
@@ -727,8 +730,6 @@ func (r userRepository) GetCurrentDevice(ctx context.Context, userId, identifier
 	case err == sql.ErrNoRows:
 		r.log.Error("QueryRowContext get current device", zap.String("getCurrentDevice", err.Error()), zap.String("query", getQuery), zap.String("msg: ", "device does not exist"))
 		return nil, errors.New("new device? device does not exist")
-	case err != sql.ErrNoRows:
-		return nil, err
 	}
 
 	devices.Devices = append(devices.Devices, Devices{

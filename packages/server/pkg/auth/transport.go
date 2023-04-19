@@ -15,9 +15,9 @@ type AuthenticateRequest struct {
 }
 
 type LoginUser struct {
-	Email    string `validate:"required,email"`
-	Password string `validate:"required"`
-	//DeviceIdentifier string `validate:"required"`
+	Email            string `validate:"required,email"`
+	Password         string `validate:"required"`
+	DeviceIdentifier string `validate:"required"`
 }
 
 type UserSession struct {
@@ -53,7 +53,7 @@ func SignInHandler(svc Service) http.HandlerFunc {
 			return
 		}
 
-		result, err := svc.Login(r.Context(), req.Email, req.Password)
+		result, err := svc.Login(r.Context(), req.Email, req.Password, req.DeviceIdentifier)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
