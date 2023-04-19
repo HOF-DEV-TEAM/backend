@@ -14,7 +14,7 @@ const (
 	PhoneVerified         = IsVerifiedEnum(1)
 	EmailVerified         = IsVerifiedEnum(2)
 	EmailAndPhoneVerified = IsVerifiedEnum(3)
-	appVersionID          = "60accd02-d627-4ea6-ab01-b6ff0ce86753"
+	appVersionID          = "8383afb2-2a5c-4c10-aaf7-f10735b9d895"
 )
 
 func (e IsVerifiedEnum) String() string {
