@@ -15,9 +15,9 @@ type AuthenticateRequest struct {
 }
 
 type LoginUser struct {
-	Email            string `validate:"required,email"`
-	Password         string `validate:"required"`
-	DeviceIdentifier string `validate:"required"`
+	Email    string `validate:"required,email"`
+	Password string `validate:"required"`
+	//DeviceIdentifier string `validate:"required"`
 }
 
 type UserSession struct {
