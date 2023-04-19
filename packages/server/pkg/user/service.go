@@ -180,7 +180,7 @@ func (s *userService) Login(ctx context.Context, email, password, deviceIdentifi
 	// md5 hash prior to sending it to repository
 	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(password)))
 
-	result, err := s.repo.Login(ctx, email, hashedPassword, deviceIdentifier)
+	result, err := s.repo.Login(ctx, email, hashedPassword)
 
 	if err == http_helper.ErrUserPwd {
 		return nil, err
