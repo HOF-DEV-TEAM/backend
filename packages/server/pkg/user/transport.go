@@ -482,12 +482,14 @@ func BuildDeviceHandler(svc Service) http.HandlerFunc {
 }
 func buildDeviceHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var devices DeviceManager
+	email := chi.URLParam(r, "email")
+
 	err := json.NewDecoder(r.Body).Decode(&devices)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	result, err := svc.(Service).BuildDevice(r.Context(), &devices)
+	result, err := svc.(Service).BuildDevice(r.Context(), &devices, email)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return

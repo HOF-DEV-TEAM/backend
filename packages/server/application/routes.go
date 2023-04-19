@@ -214,13 +214,12 @@ func buildDeviceEndpoints(svc user.Service) http.Handler {
 	deleteDeviceHandler := user.DeleteDeviceHandler(svc)
 	updateDeviceHandler := user.UpdateDeviceHandler(svc)
 
-	deviceRouter.Post("/", buildDevicesHandler)
+	deviceRouter.Post("/{email}", buildDevicesHandler)
 	deviceRouter.Get("/all", getAllDevicesHandler)
 	deviceRouter.Delete("/delete/{identifier}", deleteDeviceHandler)
-	deviceRouter.Patch("/update/{identifier}/{status}", updateDeviceHandler)
+	deviceRouter.Put("/update/{identifier}/{status}", updateDeviceHandler)
 
 	return deviceRouter
-
 }
 
 func buildAppVersionEndpoints(svc user.Service) http.Handler {
