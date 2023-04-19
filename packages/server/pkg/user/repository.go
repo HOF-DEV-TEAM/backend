@@ -123,10 +123,10 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 		return nil, err
 	}
 
-	//_, err = r.BuildDevice(ctx, &DeviceManager{Devices: user.Devices}, user.Email)
-	//if err != nil {
-	//	return nil, err
-	//}
+	_, err = r.BuildDevice(ctx, &DeviceManager{Devices: user.Devices}, user.Email)
+	if err != nil {
+		return nil, err
+	}
 
 	appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
 	if err != nil {
