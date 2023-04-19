@@ -29,7 +29,7 @@ type Repository interface {
 	GetFavourites(ctx context.Context, userId uuid.UUID) ([]*FavMessage, int, error)
 	DeleteFavourite(ctx context.Context, messageId, userId uuid.UUID) (uuid.UUID, error)
 	UpdateUserProfile(ctx context.Context, userId uuid.UUID, user *UpdateUser) (uuid.UUID, error)
-	BuildDevice(ctx context.Context, input *DeviceManager, createdUserId string) (*DeviceManager, error)
+	BuildDevice(ctx context.Context, input *DeviceManager, email string) (*DeviceManager, error)
 	GetDevices(ctx context.Context, userId string) (*DeviceManager, error)
 	DeleteDevice(ctx context.Context, identifier, userID string) (string, error)
 	UpdateDevice(ctx context.Context, userId, status, identifier string) (*DeviceManager, error)
@@ -123,7 +123,7 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 		return nil, err
 	}
 
-	_, err = r.BuildDevice(ctx, &DeviceManager{Devices: user.Devices}, createdUserId)
+	_, err = r.BuildDevice(ctx, &DeviceManager{Devices: user.Devices}, user.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -626,7 +626,11 @@ func (r userRepository) GetDevices(ctx context.Context, userId string) (*DeviceM
 	return &devices, err
 }
 
-func (r userRepository) BuildDevice(ctx context.Context, input *DeviceManager, createdUserId string) (*DeviceManager, error) {
+func (r userRepository) BuildDevice(ctx context.Context, input *DeviceManager, email string) (*DeviceManager, error) {
+	user, err := r.getUser(ctx, "email", email)
+	if err != nil {
+		return nil, err
+	}
 	var devices []Devices
 	for _, device := range input.Devices {
 		deviceID, err := r.idGenerator.IDGenerate()
@@ -638,6 +642,7 @@ func (r userRepository) BuildDevice(ctx context.Context, input *DeviceManager, c
 		device.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.DateTime)}
 		devices = append(devices, device)
 	}
+	createdUserId := user.ID
 
 	deviceManager := DeviceManager{
 		UserID:  createdUserId,

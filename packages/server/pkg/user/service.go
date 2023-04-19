@@ -31,7 +31,7 @@ type Service interface {
 	GetFavourites(ctx context.Context) (GetFavouritesResponse, error)
 	DeleteFavourite(ctx context.Context, favId string) (uuid.UUID, error)
 	UpdateUserProfile(ctx context.Context, user *User) (uuid.UUID, error)
-	BuildDevice(ctx context.Context, input *DeviceManager) (*DeviceManager, error)
+	BuildDevice(ctx context.Context, input *DeviceManager, email string) (*DeviceManager, error)
 	GetDevices(ctx context.Context) (*DeviceManager, error)
 	DeleteDevice(ctx context.Context, identifier string) (string, error)
 	UpdateDevice(ctx context.Context, status, identifier string) (*DeviceManager, error)
@@ -463,13 +463,8 @@ func (s *userService) UpdateUserProfile(ctx context.Context, user *User) (uuid.U
 	return result, nil
 }
 
-func (s *userService) BuildDevice(ctx context.Context, input *DeviceManager) (*DeviceManager, error) {
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
-	if !ok {
-		return nil, http_helper.ErrInvalidAccount
-	}
-
-	deviceManager, err := s.repo.BuildDevice(ctx, input, claims.JWTClaimsMain.LoggedInUserId)
+func (s *userService) BuildDevice(ctx context.Context, input *DeviceManager, email string) (*DeviceManager, error) {
+	deviceManager, err := s.repo.BuildDevice(ctx, input, email)
 	if err != nil {
 		return nil, err
 	}

@@ -117,6 +117,7 @@ func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user
 	forgotResetPasswordHandler := user.ForgotPasswordHandler(userSvc)
 	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(userSvc)
 	authenticateHandler := auth.AuthenticateHandler(authSvc)
+	buildDevicesHandler := user.BuildDeviceHandler(userSvc)
 
 	sessionsRouter.Post("/authenticate", authenticateHandler)
 	sessionsRouter.Post("/sign_in", signInHandler)
@@ -124,6 +125,7 @@ func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user
 	sessionsRouter.Post("/forgot_password", forgotResetPasswordHandler)
 	sessionsRouter.Put("/verify_token", verifyResetPasswordOTPHandler)
 	// sessionsRouter.Post("/authenticate/{token}", resetPasswordHandler)
+	sessionsRouter.Post("/device/{email}", buildDevicesHandler)
 
 	router.Mount("/session", sessionsRouter)
 }
@@ -209,18 +211,14 @@ func buildFavEndpoints(svc user.Service) http.Handler {
 
 func buildDeviceEndpoints(svc user.Service) http.Handler {
 	deviceRouter := chi.NewRouter()
-	buildDevicesHandler := user.BuildDeviceHandler(svc)
 	getAllDevicesHandler := user.GetDevicesHandler(svc)
 	deleteDeviceHandler := user.DeleteDeviceHandler(svc)
 	updateDeviceHandler := user.UpdateDeviceHandler(svc)
 
-	deviceRouter.Post("/", buildDevicesHandler)
 	deviceRouter.Get("/all", getAllDevicesHandler)
 	deviceRouter.Delete("/delete/{identifier}", deleteDeviceHandler)
-	deviceRouter.Patch("/update/{identifier}/{status}", updateDeviceHandler)
-
+	deviceRouter.Put("/update/{identifier}/{status}", updateDeviceHandler)
 	return deviceRouter
-
 }
 
 func buildAppVersionEndpoints(svc user.Service) http.Handler {
