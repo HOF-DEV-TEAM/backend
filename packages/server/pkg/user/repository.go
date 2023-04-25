@@ -623,7 +623,6 @@ func (r userRepository) GetDevices(ctx context.Context, userId string) (*DeviceM
 	err = tmpSmt.QueryRowContext(ctx, userId).Scan(&devices.ID, &devices.UserID, &savedDevices)
 	if err != nil {
 		r.log.Error("QueryRowContext get devices", zap.String("getDevices", err.Error()), zap.String("query", getQuery))
-		return nil, err
 	}
 	devices.Devices = savedDevices
 	return &devices, err
