@@ -113,7 +113,7 @@ func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user
 	sessionsRouter := chi.NewRouter()
 
 	signInHandler := auth.SignInHandler(authSvc)
-	signUpUserHandler := user.GetUserHandler(userSvc)
+	signUpUserHandler := user.SignupUserHandler(userSvc)
 	forgotResetPasswordHandler := user.ForgotPasswordHandler(userSvc)
 	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(userSvc)
 	authenticateHandler := auth.AuthenticateHandler(authSvc)

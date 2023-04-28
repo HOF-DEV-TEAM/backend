@@ -70,7 +70,7 @@ func (f *ScanFavourite) Scan(value interface{}) error {
 	return nil
 }
 
-func SaveDevicesJSONBValue(d []Devices) (driver.Value, error) {
+func SaveDevicesJSONBValue(d []Device) (driver.Value, error) {
 	j, err := json.Marshal(d)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func SaveDevicesJSONBValue(d []Devices) (driver.Value, error) {
 	return driver.Value([]byte(j)), nil
 }
 
-type ScanDevices []Devices
+type ScanDevices []Device
 
 func (d *ScanDevices) Scan(value interface{}) error {
 	var source []byte
@@ -97,7 +97,7 @@ func (d *ScanDevices) Scan(value interface{}) error {
 	return nil
 }
 
-type ScanDevice Devices
+type ScanDevice Device
 
 func (d *ScanDevice) Scan(value interface{}) error {
 	var source []byte

@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -16,7 +17,8 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, user *User) (*User, error)
+	CreateUser(ctx context.Context, user *User) (*User, error)
+	SignUpUser(ctx context.Context, user *User, deviceManger *DeviceManager) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetById(ctx context.Context, id string) (*User, error)
 	Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error)
@@ -67,7 +69,14 @@ func (r userRepository) Close() error {
 	return nil
 }
 
-func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
+func (r userRepository) logSQLError(sqlStmt, errorMsg string, err error) {
+	if errorMsg == "" {
+		errorMsg = "error"
+	}
+	r.log.Info("msg", zap.String("error preparing statement", ""), zap.String(errorMsg, err.Error()), zap.String("query", sqlStmt))
+}
+
+func (r userRepository) CreateUser(ctx context.Context, user *User) (*User, error) {
 	// sql insert query, primary key provided by autoincrement
 	const SQL = "INSERT INTO users (" +
 		"username," +
@@ -86,20 +95,21 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		r.logSQLError(SQL, "", err)
 		return nil, err
 	}
 
 	defer tx.Rollback()
 
 	tmpSmt, err := tx.PrepareContext(ctx, SQL)
-
 	if err != nil {
-		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", SQL))
+		r.logSQLError(SQL, "", err)
 		return nil, err
 	}
 
 	var createdUserId string
+
+	fmt.Printf("Printing user.... %+v\n", user)
 
 	err = tmpSmt.QueryRowContext(ctx,
 		user.UserName,
@@ -113,18 +123,45 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 		user.PasswordHash,
 		user.IsVerified,
 	).Scan(&createdUserId)
+
 	if err != nil {
 		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", SQL))
 		return nil, err
 	}
 
 	err = tx.Commit()
+
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = r.BuildDevice(ctx, &DeviceManager{Devices: user.Devices}, user.Email)
-	if err != nil {
+	user.ID = createdUserId
+	return user, err
+}
+
+func (r userRepository) SignUpUser(ctx context.Context, user *User, deviceManager *DeviceManager) (*User, error) {
+	var g errgroup.Group
+
+	g.Go(func() error {
+		_, err := r.CreateUser(ctx, user)
+		return err
+	})
+
+	g.Go(func() error {
+		_, err := r.BuildDevice(ctx, deviceManager, user.Email)
+		return err
+	})
+
+	if err := g.Wait(); err != nil {
+		if user.ID != "" {
+			//rollback user
+			r.rollBack(ctx, `DELETE FROM users WHERE id=$1 RETURNING id;`, user.ID)
+		}
+
+		if deviceManager.ID != uuid.Nil {
+			//rollback device
+			r.rollBack(ctx, `DELETE FROM devices WHERE id=$1 RETURNING id;`, deviceManager.ID.String())
+		}
 		return nil, err
 	}
 
@@ -136,7 +173,7 @@ func (r userRepository) Create(ctx context.Context, user *User) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	user.ID = createdUserId
+
 	user.LatestAppVersion = *appVersion
 
 	return user, nil
@@ -633,7 +670,7 @@ func (r userRepository) BuildDevice(ctx context.Context, input *DeviceManager, e
 	if err != nil {
 		return nil, err
 	}
-	var devices []Devices
+	var devices []Device
 	for _, device := range input.Devices {
 		deviceID, err := r.idGenerator.IDGenerate()
 		if err != nil {
@@ -641,7 +678,7 @@ func (r userRepository) BuildDevice(ctx context.Context, input *DeviceManager, e
 		}
 
 		device.ID = deviceID
-		device.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.DateTime)}
+		device.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.RFC3339)}
 		devices = append(devices, device)
 	}
 	createdUserId := user.ID
@@ -708,6 +745,22 @@ func (r userRepository) DeleteDevice(ctx context.Context, identifier, userID str
 	return "", err
 }
 
+func (r userRepository) rollBack(ctx context.Context, rbQuery, id string) (string, error) {
+
+	tmpSmt, err := r.db.PrepareContext(ctx, rbQuery)
+	if err != nil {
+
+		r.logSQLError(rbQuery, "Rollback..", err)
+		return "", err
+	}
+	err = tmpSmt.QueryRowContext(ctx, id).Scan()
+	if err == sql.ErrNoRows {
+		return "", err
+	}
+
+	return id, err
+}
+
 func (r userRepository) GetCurrentDevice(ctx context.Context, userId, identifier string) (*DeviceManager, error) {
 	getQuery := `SELECT id, user_id, arr.item_object FROM devices,jsonb_array_elements(devices) with ordinality arr(item_object, position) WHERE user_id=$1 and item_object->>'identifier'=$2`
 
@@ -731,7 +784,7 @@ func (r userRepository) GetCurrentDevice(ctx context.Context, userId, identifier
 		return nil, errors.New("new device? device does not exist")
 	}
 
-	devices.Devices = append(devices.Devices, Devices{
+	devices.Devices = append(devices.Devices, Device{
 		ID:          savedDevice.ID,
 		Who:         savedDevice.Who,
 		Identifier:  savedDevice.Identifier,

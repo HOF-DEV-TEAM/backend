@@ -34,7 +34,7 @@ type UserJSON struct {
 	Mobile           string         `json:"mobile,omitempty"`
 	Gender           string         `json:"gender,omitempty"`
 	IsVerified       IsVerifiedEnum `json:"is_verified"`
-	Devices          []Devices      `json:"devices,omitempty"`
+	Devices          []Device       `json:"devices,omitempty"`
 	LatestAppVersion VersionManager `json:"latest_app_version"`
 	NewJWTToken      string         `json:"newToken,omitempty"`
 } //	@name	UserJSON
@@ -45,11 +45,11 @@ type LoginRequestJSON struct {
 } //	@name	LoginRequestJSON
 
 type SignUpUserRequestJSON struct {
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password"`
-	Devices   []Devices `json:"devices"`
+	FirstName string   `json:"first_name"`
+	LastName  string   `json:"last_name"`
+	Email     string   `json:"email"`
+	Password  string   `json:"password"`
+	Devices   []Device `json:"devices"`
 } //	@name	SignUpUserRequestJSON
 
 type FavouriteJSON struct {
@@ -99,7 +99,6 @@ func (u *UserJSON) ToUser() *User {
 		Address:    u.Address,
 		Gender:     u.Gender,
 		IsVerified: u.IsVerified,
-		Devices:    u.Devices,
 	}
 
 	if u.Mobile != "" {
@@ -136,9 +135,9 @@ func (u *User) ToJSON() *UserJSON {
 	}
 }
 
-// GetUserHandler godoc
+// SignupUserHandler godoc
 //
-//	@Summary		Sign up a new user
+//	@Summary		Signs up a new user
 //	@Description	Creates a new user with the input payload
 //	@Tags			Sessions
 //	@Accept			json
@@ -146,11 +145,11 @@ func (u *User) ToJSON() *UserJSON {
 //	@Param			SignUpUserRequestJSON	body		SignUpUserRequestJSON	true	"Create user"
 //	@Success		200						{object}	UserJSON
 //	@Router			/session/sign_up [post]
-func GetUserHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(getUserHandler, svc)
+func SignupUserHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(signupUserHandler, svc)
 }
 
-func getUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+func signupUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var u SignUpUserRequestJSON
 	err := json.NewDecoder(r.Body).Decode(&u)
 
@@ -159,7 +158,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 		return
 	}
 
-	result, err := svc.(Service).SignUp(r.Context(), u.ToSignUpUser())
+	result, err := svc.(Service).SignUp(r.Context(), u.ToSignUpUser(), u.Devices)
 
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)

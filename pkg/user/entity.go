@@ -84,7 +84,6 @@ type User struct {
 	IsVerified           IsVerifiedEnum `sql:"is_verified"`
 	PaystackCustomerCode sql.NullString `sql:"paystack_customer_code"`
 	PaystackCustomerId   sql.NullString `sql:"paystack_customer_id"`
-	Devices              []Devices      `sql:"devices"`
 	LatestAppVersion     VersionManager `sql:"latest_app_version"`
 	DateAdded            sql.NullString `sql:"date_added"`
 	LastUpdated          sql.NullString `sql:"last_updated"`
@@ -96,11 +95,11 @@ type LoginUser struct {
 }
 
 type SignUpUser struct {
-	FirstName string    `validate:"required"`
-	LastName  string    `validate:"required"`
-	Email     string    `validate:"required,email"`
-	Password  string    `validate:"required"`
-	Devices   []Devices `sql:"devices" validate:"required"`
+	FirstName string   `validate:"required"`
+	LastName  string   `validate:"required"`
+	Email     string   `validate:"required,email"`
+	Password  string   `validate:"required"`
+	Devices   []Device `validate:"required"`
 }
 
 type UserPasswordToken struct {
@@ -191,10 +190,10 @@ type UpdateUser struct {
 type DeviceManager struct {
 	ID      uuid.UUID `sql:"id" json:"id"`
 	UserID  string    `sql:"user_id" json:"user_id"`
-	Devices []Devices `sql:"devices" json:"devices"`
+	Devices []Device  `sql:"devices" json:"devices"`
 }
 
-type Devices struct {
+type Device struct {
 	ID          uuid.UUID      `sql:"id" json:"id"`
 	Who         string         `sql:"who" json:"who"`
 	Identifier  string         `sql:"identifier" json:"identifier,omitempty"`

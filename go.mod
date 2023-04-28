@@ -10,10 +10,10 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jackc/tern v1.13.0
-	github.com/lib/pq v1.10.2
 	github.com/swaggo/http-swagger v1.3.3
 	github.com/swaggo/swag v1.8.9
 	go.uber.org/zap v1.24.0
+	golang.org/x/sync v0.1.0
 )
 
 require (

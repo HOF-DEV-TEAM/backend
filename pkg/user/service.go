@@ -20,7 +20,7 @@ import (
 var ErrFieldRequired = errors.New("field is required")
 
 type Service interface {
-	SignUp(ctx context.Context, user *SignUpUser) (*User, error)
+	SignUp(ctx context.Context, user *SignUpUser, devices []Device) (*User, error)
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	Login(ctx context.Context, email, password, deviceIdentifier string) (*UserAndToken, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
@@ -62,8 +62,7 @@ func (s *userService) validateSignUpStruct(user *SignUpUser) error {
 	return validate.Struct(user)
 }
 
-func (s *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, error) {
-
+func (s *userService) SignUp(ctx context.Context, user *SignUpUser, devices []Device) (*User, error) {
 	err := s.validateSignUpStruct(user)
 
 	if err != nil {
@@ -93,19 +92,16 @@ func (s *userService) SignUp(ctx context.Context, user *SignUpUser) (*User, erro
 	// leading and trailing whitespaces
 	password := fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(user.Password))))
 
-	result, err := s.repo.Create(
-		ctx,
-		&User{
-			Email:     user.Email,
-			Password:  password,
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Devices:   user.Devices,
-		})
-
-	if err == sql.ErrNoRows {
-		return nil, err
+	u := &User{
+		Email:     user.Email,
+		Password:  password,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
 	}
+
+	deviceManager := &DeviceManager{Devices: devices}
+
+	result, err := s.repo.SignUpUser(ctx, u, deviceManager)
 
 	if err != nil {
 		s.log.Error("msg",
@@ -149,7 +145,7 @@ func (s *userService) CreateUser(ctx context.Context, user *User) (*User, error)
 	// leading and trailing whitespaces
 	user.Password = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(user.Password))))
 
-	result, err := s.repo.Create(ctx, user)
+	result, err := s.repo.CreateUser(ctx, user)
 
 	if err == sql.ErrNoRows {
 		return nil, err
@@ -514,7 +510,7 @@ func (s *userService) UpdateDevice(ctx context.Context, status, identifier strin
 }
 
 func (s *userService) UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error) {
-	version.LastUpdated = sql.NullString{Valid: true, String: time.Now().Format(time.DateTime)}
+	version.LastUpdated = sql.NullString{Valid: true, String: time.Now().Format(time.RFC3339)}
 	result, err := s.repo.UpdateAppVersion(ctx, version)
 	if err != nil {
 		return uuid.Nil, err
