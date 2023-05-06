@@ -1,52 +1,5 @@
 basePath: /hof
 definitions:
-  FavBodyJSON:
-    properties:
-      date_added:
-        type: string
-      deleted_at:
-        type: string
-      fav:
-        type: boolean
-      message_id:
-        type: string
-      series_id:
-        type: string
-    type: object
-  FavMessageJSON:
-    properties:
-      audio_url:
-        type: string
-      author:
-        type: string
-      description:
-        type: string
-      fav:
-        type: boolean
-      id:
-        type: string
-      image_url:
-        type: string
-      message_id:
-        type: string
-      series_id:
-        type: string
-      title:
-        type: string
-      user_id:
-        type: string
-    type: object
-  FavouriteJSON:
-    properties:
-      fav:
-        items:
-          $ref: '#/definitions/FavBodyJSON'
-        type: array
-      id:
-        type: string
-      user_id:
-        type: string
-    type: object
   audio_message.AudioMessageJSON:
     properties:
       audio_url:
@@ -54,6 +7,8 @@ definitions:
       author:
         type: string
       date_added:
+        type: string
+      date_released:
         type: string
       description:
         type: string
@@ -68,6 +23,30 @@ definitions:
       title:
         type: string
     type: object
+  auth.LoginWithDeviceRequest:
+    properties:
+      device_identifier:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - device_identifier
+    - email
+    - password
+    type: object
+  auth.UserSession:
+    properties:
+      refresh_token:
+        type: string
+      subscription:
+        $ref: '#/definitions/subscription.SubscriptionJSON'
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/user.UserJSON'
+    type: object
   http_helper.DefaultResponse:
     properties:
       body: {}
@@ -79,6 +58,29 @@ definitions:
   http_helper.errorResponse:
     properties:
       error:
+        type: string
+    type: object
+  subscription.SubscriptionJSON:
+    properties:
+      currency:
+        type: string
+      fee:
+        type: number
+      freq:
+        type: integer
+      id:
+        type: string
+      next_payment_date:
+        type: string
+      plan_code:
+        type: string
+      status:
+        type: boolean
+      subscription_plan_id:
+        type: string
+      type:
+        type: integer
+      user_id:
         type: string
     type: object
   user.ChangePasswordPayload:
@@ -100,6 +102,82 @@ definitions:
     - new_password
     - old_password
     type: object
+  user.Device:
+    properties:
+      brand:
+        type: string
+      dateAdded:
+        type: string
+      id:
+        type: string
+      identifier:
+        type: string
+      lastUpdated:
+        type: string
+      os:
+        type: string
+      status:
+        $ref: '#/definitions/user.DeviceStatus'
+      version:
+        type: string
+      who:
+        type: string
+    type: object
+  user.DeviceStatus:
+    enum:
+    - ACTIVE
+    - INACTIVE
+    type: string
+    x-enum-varnames:
+    - ACTIVE_DEVICE_STATUS
+    - INACTIVE_DEVICE_STATUS
+  user.FavBodyJSON:
+    properties:
+      date_added:
+        type: string
+      deleted_at:
+        type: string
+      fav:
+        type: boolean
+      message_id:
+        type: string
+      series_id:
+        type: string
+    type: object
+  user.FavMessageJSON:
+    properties:
+      audio_url:
+        type: string
+      author:
+        type: string
+      description:
+        type: string
+      fav:
+        type: boolean
+      id:
+        type: string
+      image_url:
+        type: string
+      message_id:
+        type: string
+      series_id:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: string
+    type: object
+  user.FavouriteJSON:
+    properties:
+      fav:
+        items:
+          $ref: '#/definitions/user.FavBodyJSON'
+        type: array
+      id:
+        type: string
+      user_id:
+        type: string
+    type: object
   user.ForgotPasswordPayload:
     properties:
       email:
@@ -112,17 +190,10 @@ definitions:
     properties:
       favourites:
         items:
-          $ref: '#/definitions/FavMessageJSON'
+          $ref: '#/definitions/user.FavMessageJSON'
         type: array
       pagination:
         $ref: '#/definitions/user.PageResponse'
-    type: object
-  user.LoginRequestJSON:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
     type: object
   user.OTPResponse:
     properties:
@@ -156,6 +227,10 @@ definitions:
     type: object
   user.SignUpUserRequestJSON:
     properties:
+      devices:
+        items:
+          $ref: '#/definitions/user.Device'
+        type: array
       email:
         type: string
       first_name:
@@ -169,6 +244,10 @@ definitions:
     properties:
       address:
         type: string
+      devices:
+        items:
+          $ref: '#/definitions/user.Device'
+        type: array
       email:
         type: string
       first_name:
@@ -181,6 +260,8 @@ definitions:
         type: integer
       last_name:
         type: string
+      latest_app_version:
+        $ref: '#/definitions/user.VersionManager'
       mobile:
         type: string
       newToken:
@@ -202,6 +283,19 @@ definitions:
       otp:
         type: string
       target:
+        type: string
+    type: object
+  user.VersionManager:
+    properties:
+      date_added:
+        type: string
+      force:
+        type: boolean
+      id:
+        type: string
+      last_updated:
+        type: string
+      version:
         type: string
     type: object
 host: localhost:3000
@@ -307,14 +401,14 @@ paths:
         name: FavouriteJSON
         required: true
         schema:
-          $ref: '#/definitions/FavouriteJSON'
+          $ref: '#/definitions/user.FavouriteJSON'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/FavouriteJSON'
+            $ref: '#/definitions/user.FavouriteJSON'
         "400":
           description: Bad Request
           schema:
@@ -371,17 +465,17 @@ paths:
       parameters:
       - description: Sign in user
         in: body
-        name: LoginRequestJSON
+        name: LoginWithDeviceRequest
         required: true
         schema:
-          $ref: '#/definitions/user.LoginRequestJSON'
+          $ref: '#/definitions/auth.LoginWithDeviceRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.UserSession'
+            $ref: '#/definitions/auth.UserSession'
       summary: Create a new session
       tags:
       - Sessions
@@ -404,7 +498,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/user.UserJSON'
-      summary: Sign up a new user
+      summary: Signs up a new user
       tags:
       - Sessions
   /session/verify_token:

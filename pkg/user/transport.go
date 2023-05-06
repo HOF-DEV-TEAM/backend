@@ -39,11 +39,6 @@ type UserJSON struct {
 	NewJWTToken      string         `json:"newToken,omitempty"`
 } //	@name	UserJSON
 
-type LoginRequestJSON struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-} //	@name	LoginRequestJSON
-
 type SignUpUserRequestJSON struct {
 	FirstName string   `json:"first_name"`
 	LastName  string   `json:"last_name"`
@@ -56,7 +51,7 @@ type FavouriteJSON struct {
 	ID     uuid.UUID     `json:"id,omitempty"`
 	UserID uuid.UUID     `json:"user_id"`
 	Fav    []FavBodyJSON `json:"fav"`
-} // @name FavouriteJSON
+} //	@name	FavouriteJSON
 
 type FavBodyJSON struct {
 	MessageID uuid.UUID `json:"message_id"`
@@ -64,7 +59,7 @@ type FavBodyJSON struct {
 	Fav       bool      `json:"fav"`
 	DateAdded string    `json:"date_added"`
 	DeletedAt string    `json:"deleted_at"`
-} // @name FavBodyJSON
+} //	@name	FavBodyJSON
 
 type FavMessageJSON struct {
 	ID          uuid.UUID `json:"id"`
@@ -77,7 +72,7 @@ type FavMessageJSON struct {
 	ImageUrl    string    `json:"image_url"`
 	AudioUrl    string    `json:"audio_url"`
 	Description string    `json:"description"`
-} // @name FavMessageJSON
+} //	@name	FavMessageJSON
 
 type PageResponse struct {
 	TotalResults int32 `json:"totalResults"`
@@ -205,7 +200,7 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 //	@Accept			json
 //	@Produce		json
 //	@Param			VerifyOTP	body		VerifyOTP	true	"Verify OTP"
-//	@Success		200						{object}	UserSession
+//	@Success		200			{object}	UserSession
 //	@Router			/session/verify_token [post]
 func VerifyPasswordResetOTPHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -370,9 +365,9 @@ func NewJSONFavMessage(fav *FavMessage) *FavMessageJSON {
 //	@Accept			json
 //	@Produce		json
 //	@Param			FavouriteJSON	body		FavouriteJSON	true	"create favourites request body"
-//	@Success		200	{object}	FavouriteJSON
+//	@Success		200				{object}	FavouriteJSON
 //
-// @Failure 400 {object} http_helper.errorResponse
+//	@Failure		400				{object}	http_helper.errorResponse
 //
 //	@Router			/fav [post]
 func CreateFavouriteHandler(svc Service) http.HandlerFunc {
@@ -413,8 +408,8 @@ func createFavouriteHandler(w http.ResponseWriter, r *http.Request, s interface{
 //	@Tags			Favourites
 //	@Accept			json
 //	@Produce		json
-//	@Success		200			{object}	GetFavouritesResponse
-//	@Failure		400			{object}	http_helper.errorResponse
+//	@Success		200	{object}	GetFavouritesResponse
+//	@Failure		400	{object}	http_helper.errorResponse
 //	@Router			/favourites [get]
 func GetFavouritesHandler(svc Service) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(getFavouritesHandler, svc)

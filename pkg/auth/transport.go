@@ -14,10 +14,14 @@ type AuthenticateRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-type LoginUser struct {
-	Email            string `validate:"required,email"`
-	Password         string `validate:"required"`
-	DeviceIdentifier string `validate:"required"`
+type LoginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+type LoginWithDeviceRequest struct {
+	LoginRequest
+	DeviceIdentifier string `json:"device_identifier" validate:"required"`
 }
 
 type UserSession struct {
@@ -27,12 +31,6 @@ type UserSession struct {
 	RefreshToken string                         `json:"refresh_token"`
 } //	@name	UserSession
 
-type LoginRequestJSON struct {
-	Email            string `json:"email"`
-	Password         string `json:"password"`
-	DeviceIdentifier string `json:"device_identifier"`
-} //	@name	LoginRequestJSON
-
 // SignInHandler godoc
 //
 //	@Summary		Create a new session
@@ -40,20 +38,40 @@ type LoginRequestJSON struct {
 //	@Tags			Sessions
 //	@Accept			json
 //	@Produce		json
-//	@Param			LoginRequestJSON	body		LoginRequestJSON	true	"Sign in user"
-//	@Success		200					{object}	UserSession
+//	@Param			LoginWithDeviceRequest	body		LoginWithDeviceRequest	true	"Sign in user"
+//	@Success		200						{object}	UserSession
 //	@Router			/session/sign_in [post]
 func SignInHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req LoginRequestJSON
-		err := json.NewDecoder(r.Body).Decode(&req)
+		var loginRequest *LoginWithDeviceRequest
+		err := json.NewDecoder(r.Body).Decode(loginRequest)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
 
-		result, err := svc.Login(r.Context(), req.Email, req.Password, req.DeviceIdentifier)
+		result, err := svc.Login(r.Context(), loginRequest)
+
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, result, http.StatusOK)
+	}
+}
+func AdminSignInHandler(svc Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var loginRequest *LoginRequest
+		err := json.NewDecoder(r.Body).Decode(loginRequest)
+
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		result, err := svc.AdminLogin(r.Context(), loginRequest)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)

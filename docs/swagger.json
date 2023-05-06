@@ -153,7 +153,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/FavouriteJSON"
+                            "$ref": "#/definitions/user.FavouriteJSON"
                         }
                     }
                 ],
@@ -161,7 +161,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/FavouriteJSON"
+                            "$ref": "#/definitions/user.FavouriteJSON"
                         }
                     },
                     "400": {
@@ -252,11 +252,11 @@
                 "parameters": [
                     {
                         "description": "Sign in user",
-                        "name": "LoginRequestJSON",
+                        "name": "LoginWithDeviceRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.LoginRequestJSON"
+                            "$ref": "#/definitions/auth.LoginWithDeviceRequest"
                         }
                     }
                 ],
@@ -264,7 +264,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.UserSession"
+                            "$ref": "#/definitions/auth.UserSession"
                         }
                     }
                 }
@@ -282,7 +282,7 @@
                 "tags": [
                     "Sessions"
                 ],
-                "summary": "Sign up a new user",
+                "summary": "Signs up a new user",
                 "parameters": [
                     {
                         "description": "Create user",
@@ -484,78 +484,6 @@
         }
     },
     "definitions": {
-        "FavBodyJSON": {
-            "type": "object",
-            "properties": {
-                "date_added": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "fav": {
-                    "type": "boolean"
-                },
-                "message_id": {
-                    "type": "string"
-                },
-                "series_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "FavMessageJSON": {
-            "type": "object",
-            "properties": {
-                "audio_url": {
-                    "type": "string"
-                },
-                "author": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "fav": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "message_id": {
-                    "type": "string"
-                },
-                "series_id": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "FavouriteJSON": {
-            "type": "object",
-            "properties": {
-                "fav": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/FavBodyJSON"
-                    }
-                },
-                "id": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
         "audio_message.AudioMessageJSON": {
             "type": "object",
             "properties": {
@@ -566,6 +494,9 @@
                     "type": "string"
                 },
                 "date_added": {
+                    "type": "string"
+                },
+                "date_released": {
                     "type": "string"
                 },
                 "description": {
@@ -588,6 +519,42 @@
                 }
             }
         },
+        "auth.LoginWithDeviceRequest": {
+            "type": "object",
+            "required": [
+                "device_identifier",
+                "email",
+                "password"
+            ],
+            "properties": {
+                "device_identifier": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.UserSession": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                },
+                "subscription": {
+                    "$ref": "#/definitions/subscription.SubscriptionJSON"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/user.UserJSON"
+                }
+            }
+        },
         "http_helper.DefaultResponse": {
             "type": "object",
             "properties": {
@@ -604,6 +571,41 @@
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "subscription.SubscriptionJSON": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "fee": {
+                    "type": "number"
+                },
+                "freq": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "next_payment_date": {
+                    "type": "string"
+                },
+                "plan_code": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "boolean"
+                },
+                "subscription_plan_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "integer"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -634,6 +636,121 @@
                 }
             }
         },
+        "user.Device": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "dateAdded": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "lastUpdated": {
+                    "type": "string"
+                },
+                "os": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/user.DeviceStatus"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "who": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.DeviceStatus": {
+            "type": "string",
+            "enum": [
+                "ACTIVE",
+                "INACTIVE"
+            ],
+            "x-enum-varnames": [
+                "ACTIVE_DEVICE_STATUS",
+                "INACTIVE_DEVICE_STATUS"
+            ]
+        },
+        "user.FavBodyJSON": {
+            "type": "object",
+            "properties": {
+                "date_added": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "fav": {
+                    "type": "boolean"
+                },
+                "message_id": {
+                    "type": "string"
+                },
+                "series_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.FavMessageJSON": {
+            "type": "object",
+            "properties": {
+                "audio_url": {
+                    "type": "string"
+                },
+                "author": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "fav": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "message_id": {
+                    "type": "string"
+                },
+                "series_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.FavouriteJSON": {
+            "type": "object",
+            "properties": {
+                "fav": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.FavBodyJSON"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "user.ForgotPasswordPayload": {
             "type": "object",
             "required": [
@@ -652,22 +769,11 @@
                 "favourites": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/FavMessageJSON"
+                        "$ref": "#/definitions/user.FavMessageJSON"
                     }
                 },
                 "pagination": {
                     "$ref": "#/definitions/user.PageResponse"
-                }
-            }
-        },
-        "user.LoginRequestJSON": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
                 }
             }
         },
@@ -718,6 +824,12 @@
         "user.SignUpUserRequestJSON": {
             "type": "object",
             "properties": {
+                "devices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.Device"
+                    }
+                },
                 "email": {
                     "type": "string"
                 },
@@ -738,6 +850,12 @@
                 "address": {
                     "type": "string"
                 },
+                "devices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.Device"
+                    }
+                },
                 "email": {
                     "type": "string"
                 },
@@ -755,6 +873,9 @@
                 },
                 "last_name": {
                     "type": "string"
+                },
+                "latest_app_version": {
+                    "$ref": "#/definitions/user.VersionManager"
                 },
                 "mobile": {
                     "type": "string"
@@ -788,6 +909,26 @@
                     "type": "string"
                 },
                 "target": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.VersionManager": {
+            "type": "object",
+            "properties": {
+                "date_added": {
+                    "type": "string"
+                },
+                "force": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "string"
                 }
             }

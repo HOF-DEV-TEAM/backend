@@ -89,11 +89,6 @@ type User struct {
 	LastUpdated          sql.NullString `sql:"last_updated"`
 }
 
-type LoginUser struct {
-	Email    string `validate:"required,email"`
-	Password string `validate:"required"`
-}
-
 type SignUpUser struct {
 	FirstName string   `validate:"required"`
 	LastName  string   `validate:"required"`
@@ -201,8 +196,8 @@ type Device struct {
 	Brand       string         `sql:"brand" json:"brand,omitempty"`
 	Version     string         `sql:"version" json:"version"`
 	Status      DeviceStatus   `sql:"status" json:"status,omitempty"`
-	DateAdded   sql.NullString `sql:"date_added"`
-	LastUpdated sql.NullString `sql:"last_updated"`
+	DateAdded   sql.NullString `sql:"date_added" swaggertype:"string"`
+	LastUpdated sql.NullString `sql:"last_updated" swaggertype:"string"`
 }
 
 // DeviceStatus enum type
@@ -218,6 +213,6 @@ type VersionManager struct {
 	ID          string         `sql:"id" json:"id"`
 	Version     string         `sql:"version" json:"version"`
 	Force       *bool          `sql:"force" json:"force"`
-	DateAdded   sql.NullString `sql:"date_added" json:"date_added"`
-	LastUpdated sql.NullString `sql:"last_updated" json:"last_updated"`
+	DateAdded   sql.NullString `sql:"date_added" json:"date_added" swaggertype:"string"`
+	LastUpdated sql.NullString `sql:"last_updated" json:"last_updated" swaggertype:"string"`
 }

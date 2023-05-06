@@ -22,7 +22,6 @@ var ErrFieldRequired = errors.New("field is required")
 type Service interface {
 	SignUp(ctx context.Context, user *SignUpUser, devices []Device) (*User, error)
 	CreateUser(ctx context.Context, user *User) (*User, error)
-	Login(ctx context.Context, email, password, deviceIdentifier string) (*UserAndToken, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error)
 	ResetPassword(ctx context.Context, request ResetPasswordPayload) (uuid.UUID, error)
@@ -160,53 +159,6 @@ func (s *userService) CreateUser(ctx context.Context, user *User) (*User, error)
 	}
 
 	return result, nil
-}
-
-func (s *userService) Login(ctx context.Context, email, password, deviceIdentifier string) (*UserAndToken, error) {
-	err := validator.New().Struct(LoginUser{
-		Email:    email,
-		Password: password,
-	})
-
-	// If either Email or Password field is empty
-	if err != nil {
-		return nil, http_helper.ErrEmptyLoginCredentials
-	}
-
-	// md5 hash prior to sending it to repository
-	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(password)))
-
-	result, err := s.repo.Login(ctx, email, hashedPassword, deviceIdentifier)
-
-	if err == http_helper.ErrUserPwd {
-		return nil, err
-	}
-
-	if err != nil {
-		s.log.Error("msg",
-			zap.String("method", "Login"),
-			zap.String("error", err.Error()),
-		)
-		return nil, http_helper.ErrQueryRepository
-	}
-
-	// recover claims from JWT
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
-
-	if !ok {
-		s.log.Info("msg",
-			zap.String("JWTError", "broken"),
-			zap.String(s.config.JWTContextKey, ""),
-		)
-	}
-
-	updatedJWTToken, err := claims.PutUserIDAndSign(s.config, result.ID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &UserAndToken{User: result, Token: updatedJWTToken}, nil
 }
 
 func (s *userService) ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error) {

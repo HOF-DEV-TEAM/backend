@@ -21,7 +21,8 @@ type Repository interface {
 	SignUpUser(ctx context.Context, user *User, deviceManger *DeviceManager) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetById(ctx context.Context, id string) (*User, error)
-	Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error)
+	LoginWithEmailPasswordDevice(ctx context.Context, email, password, deviceIdentifier string) (*User, error)
+	LoginWithEmailPassword(ctx context.Context, email, password string) (*User, error)
 	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
 	VerifyPasswordResetOTP(request *VerifyOTP) (*User, error)
 	ResetPassword(ctx context.Context, userId uuid.UUID, request ResetPasswordPayload) (uuid.UUID, error)
@@ -246,9 +247,8 @@ func (r userRepository) GetById(ctx context.Context, id string) (*User, error) {
 	return r.getUser(ctx, "id", id)
 }
 
-func (r userRepository) Login(ctx context.Context, email, password, deviceIdentifier string) (*User, error) {
+func (r userRepository) LoginWithEmailPassword(ctx context.Context, email, password string) (*User, error) {
 	existingUser, err := r.GetByEmail(ctx, email)
-
 	if err == sql.ErrNoRows {
 		return nil, http_helper.ErrUserPwd
 	}
@@ -260,6 +260,15 @@ func (r userRepository) Login(ctx context.Context, email, password, deviceIdenti
 	if password != existingUser.Password {
 		return nil, http_helper.ErrUserPwd
 	}
+	return existingUser, nil
+}
+
+func (r userRepository) LoginWithEmailPasswordDevice(ctx context.Context, email, password, deviceIdentifier string) (*User, error) {
+	existingUser, err := r.LoginWithEmailPassword(ctx, email, password)
+	if err != nil {
+		return nil, err
+	}
+
 	_, err = r.GetCurrentDevice(ctx, existingUser.ID, deviceIdentifier)
 	if err != nil {
 		return nil, err

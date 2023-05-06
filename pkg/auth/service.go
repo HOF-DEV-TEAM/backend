@@ -16,7 +16,8 @@ import (
 )
 
 type Service interface {
-	Login(ctx context.Context, email, password, deviceIdentifier string) (*UserSession, error)
+	Login(ctx context.Context, loginRequest *LoginWithDeviceRequest) (*UserSession, error)
+	AdminLogin(ctx context.Context, loginRequest *LoginRequest) (*UserSession, error)
 	Authenticate(ctx context.Context, token, refreshToken string) (*UserSession, error)
 }
 
@@ -109,12 +110,8 @@ func (svc *authService) Authenticate(ctx context.Context, authToken, refeshToken
 	return svc.createSession(ctx, user)
 }
 
-func (svc *authService) Login(ctx context.Context, email, password, deviceIdentifier string) (*UserSession, error) {
-	err := validator.New().Struct(LoginUser{
-		Email:            email,
-		Password:         password,
-		DeviceIdentifier: deviceIdentifier,
-	})
+func (svc *authService) Login(ctx context.Context, loginRequest *LoginWithDeviceRequest) (*UserSession, error) {
+	err := validator.New().Struct(loginRequest)
 
 	// If either Email or Password field is empty
 	if err != nil {
@@ -122,9 +119,37 @@ func (svc *authService) Login(ctx context.Context, email, password, deviceIdenti
 	}
 
 	// md5 hash prior to sending it to repository
-	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(password)))
+	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(loginRequest.Password)))
 
-	result, err := svc.userRepo.Login(ctx, email, hashedPassword, deviceIdentifier)
+	result, err := svc.userRepo.LoginWithEmailPasswordDevice(ctx, loginRequest.Email, hashedPassword, loginRequest.DeviceIdentifier)
+
+	if err == http_helper.ErrUserPwd {
+		return nil, err
+	}
+
+	if err != nil {
+		svc.log.Error("msg",
+			zap.String("method", "Login"),
+			zap.String("error", err.Error()),
+		)
+		return nil, http_helper.ErrQueryRepository
+	}
+
+	return svc.createSession(ctx, result)
+}
+
+func (svc *authService) AdminLogin(ctx context.Context, user *LoginRequest) (*UserSession, error) {
+	err := validator.New().Struct(user)
+
+	// If either Email or Password field is empty
+	if err != nil {
+		return nil, http_helper.ErrEmptyLoginCredentials
+	}
+
+	// md5 hash prior to sending it to repository
+	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(user.Password)))
+
+	result, err := svc.userRepo.LoginWithEmailPassword(ctx, user.Email, hashedPassword)
 
 	if err == http_helper.ErrUserPwd {
 		return nil, err

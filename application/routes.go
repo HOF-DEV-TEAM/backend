@@ -113,6 +113,7 @@ func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user
 	sessionsRouter := chi.NewRouter()
 
 	signInHandler := auth.SignInHandler(authSvc)
+	adminSignInHandler := auth.AdminSignInHandler(authSvc)
 	signUpUserHandler := user.SignupUserHandler(userSvc)
 	forgotResetPasswordHandler := user.ForgotPasswordHandler(userSvc)
 	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(userSvc)
@@ -122,6 +123,7 @@ func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user
 	sessionsRouter.Post("/authenticate", authenticateHandler)
 	sessionsRouter.Post("/sign_in", signInHandler)
 	sessionsRouter.Post("/sign_up", signUpUserHandler)
+	sessionsRouter.Post("/sign_in/admin", adminSignInHandler)
 	sessionsRouter.Post("/forgot_password", forgotResetPasswordHandler)
 	sessionsRouter.Put("/verify_token", verifyResetPasswordOTPHandler)
 	// sessionsRouter.Post("/authenticate/{token}", resetPasswordHandler)
