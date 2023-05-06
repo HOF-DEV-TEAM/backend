@@ -43,15 +43,15 @@ type UserSession struct {
 //	@Router			/session/sign_in [post]
 func SignInHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var loginRequest *LoginWithDeviceRequest
-		err := json.NewDecoder(r.Body).Decode(loginRequest)
+		var loginRequest LoginWithDeviceRequest
+		err := json.NewDecoder(r.Body).Decode(&loginRequest)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
 
-		result, err := svc.Login(r.Context(), loginRequest)
+		result, err := svc.Login(r.Context(), &loginRequest)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
@@ -63,15 +63,15 @@ func SignInHandler(svc Service) http.HandlerFunc {
 }
 func AdminSignInHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var loginRequest *LoginRequest
-		err := json.NewDecoder(r.Body).Decode(loginRequest)
+		var loginRequest LoginRequest
+		err := json.NewDecoder(r.Body).Decode(&loginRequest)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
 
-		result, err := svc.AdminLogin(r.Context(), loginRequest)
+		result, err := svc.AdminLogin(r.Context(), &loginRequest)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
