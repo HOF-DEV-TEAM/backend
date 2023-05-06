@@ -1,0 +1,57 @@
+{
+  "family": "%TASK_FAMILY%",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "%EXECUTION_ROLE_ARN%",
+  "containerDefinitions": [
+    {
+      "image": "%REPOSITORY_URI%:%SHORT_COMMIT%",
+      "name": "%SERVICE_NAME%",
+      "cpu": 10,
+      "memory": 256,
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/hof_backend",
+          "awslogs-region": "eu-west-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "environment": [
+        {
+          "name": "AWS_ENDPOINT",
+          "value": "%AWS_ENDPOINT%"
+        },
+        {
+          "name": "AWS_SECRET",
+          "value": "%AWS_SECRET%"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "%AWS_REGION%"
+        },
+        {
+          "name": "JWT_SECRET",
+          "value": "%JWT_SECREt%"
+        },
+        {
+          "name": "PAYSTACK_SECRET",
+          "value": "%PAYSTACK_SECRET%"
+        },
+        {
+          "name": "DATABASE_URL",
+          "value": "%DATABASE_URL%"
+        }
+      ],
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080
+        }
+      ]
+    }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512"
+}
