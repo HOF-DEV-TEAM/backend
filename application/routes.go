@@ -182,16 +182,28 @@ func buildUploadEndpoints(router chi.Router, svc uploader.Service) {
 func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	subRouter := chi.NewRouter()
 
+	getSubscriptions := subscription.GetSubscriptionsHandler(svc)
+	getSubscriptionPlansHandler := subscription.GetSubscriptionPlansHandler(svc)
+	deleteSubscriptionPlanHandler := subscription.DeleteSubscriptionPlanHandler(svc)
+
 	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
 	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
 	getSubscriptionPlanOfferings := subscription.GetSubscriptionPlanOfferingsHandler(svc)
 	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
 	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
 
-	subRouter.Post("/plan", createSubscriptionPlanHandler)
+	//Subscription routes
+	subRouter.Get("/", getSubscriptions)
 	subRouter.Post("/verify", verifySubscriptionHandler)
 
+	//Plan routes
+	subRouter.Get("/plan", getSubscriptionPlansHandler)
+	subRouter.Post("/plan", createSubscriptionPlanHandler)
+	subRouter.Delete("/plan/{id}", deleteSubscriptionPlanHandler)
+	//Offering routes
 	subRouter.Post("/offering", createSubscriptionOfferingHandler)
+
+	//Plan Offering routes
 	subRouter.Get("/plan/offering", getSubscriptionPlanOfferings)
 	subRouter.Post("/plan/offering", createSubscritionPlanOfferings)
 

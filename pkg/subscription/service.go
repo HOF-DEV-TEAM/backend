@@ -10,7 +10,10 @@ import (
 )
 
 type SubscriptionService interface {
+	GetSubscriptions(ctx context.Context) ([]*Subscription, int, error)
+	GetSubscriptionPlans(ctx context.Context) ([]*SubscriptionPlan, int, error)
 	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
+	DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error)
 	CancelSubscription(ctx context.Context)
 	ChangeSubscription(ctx context.Context)
 	GetSubscription(ctx context.Context, userId string) (*Subscription, error)
@@ -43,7 +46,7 @@ func (ss *subscriptionSvc) CreateSubscription(ctx context.Context, subReq *Subsc
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
-	
+
 	if sub != nil {
 		return sub, nil
 	}
@@ -91,7 +94,7 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 	if !ok {
 		return nil, nil
 	}
-	
+
 	sub, err := ss.subProvider.VerifySubscription(ctx, subReq)
 
 	if err != nil {
@@ -99,7 +102,6 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 	}
 
 	sub.UserID = claims.JWTClaimsMain.LoggedInUserId
-		
 
 	if err != nil {
 		return nil, err
@@ -150,9 +152,8 @@ func (ss *subscriptionSvc) GetSession(ctx context.Context) (*user.UserSession, e
 	return &user.UserSession{User: u.ToJSON(), Token: updatedJWTToken}, nil
 }
 
-
 func (ss *subscriptionSvc) GetSubscription(ctx context.Context, userId string) (*Subscription, error) {
-	sub :=  &Subscription{
+	sub := &Subscription{
 		UserID: userId,
 	}
 
@@ -163,4 +164,16 @@ func (ss *subscriptionSvc) GetSubscription(ctx context.Context, userId string) (
 	}
 
 	return sub, err
+}
+
+func (ss *subscriptionSvc) GetSubscriptions(ctx context.Context) ([]*Subscription, int, error) {
+	return ss.repo.GetSubscriptions(ctx)
+}
+
+func (ss *subscriptionSvc) GetSubscriptionPlans(ctx context.Context) ([]*SubscriptionPlan, int, error) {
+	return ss.repo.GetSubscriptionPlans(ctx)
+}
+
+func (ss *subscriptionSvc) DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error) {
+	return ss.repo.DeleteSubscriptionPlanById(ctx, id)
 }

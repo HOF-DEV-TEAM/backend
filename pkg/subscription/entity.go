@@ -261,14 +261,14 @@ func (e TypeEnum) Value() (driver.Value, error) {
 // }
 
 type SubscriptionPlan struct {
-	ID                     string         `sql:"id"`
-	Name                   string         `sql:"name" validate:"required"`
-	Type                   TypeEnum       `sql:"type"`
-	Freq                   FreqEnum       `sql:"freq"`
-	Fee                    float64        `sql:"fee"`
-	Status                 StatusEnum     `sql:"status"`
-	Currency               string         `sql:"currency"`
-	Code                   string         `sql:"code"`
+	ID                     string         `sql:"id" json:"id"`
+	Name                   string         `sql:"name" validate:"required" json:"name"`
+	Type                   TypeEnum       `sql:"type" json:"type"`
+	Freq                   FreqEnum       `sql:"freq" json:"freq"`
+	Fee                    float64        `sql:"fee"  json:"fee"`
+	Status                 StatusEnum     `sql:"status" json:"status"`
+	Currency               string         `sql:"currency" json:"currency"`
+	Code                   string         `sql:"code" json:"code"`
 	DateAdded              sql.NullString `sql:"date_added"`
 	LastUpdated            sql.NullString `sql:"last_updated"`
 	PlanId                 sql.NullString `sql:"plan_id"`

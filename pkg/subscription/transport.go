@@ -3,6 +3,7 @@ package subscription
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"strconv"
@@ -209,6 +210,23 @@ func CreateSubscriptionPlanHandler(svc SubscriptionService) http.HandlerFunc {
 
 }
 
+// Get subscriptions
+func GetSubscriptionsHandler(svc SubscriptionService) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getSubscriptionHandler, svc)
+
+}
+
+func getSubscriptionHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
+	payload, _, err := svc.(SubscriptionService).GetSubscriptions(r.Context())
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, wr)
+		return
+	}
+
+	http_helper.EncodeResult(wr, http_helper.DefaultResponse{Body: payload, Code: 200, Success: true}, http.StatusOK)
+}
+
 func createSubscriptionPlanHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
 	var subscriptionPlan SubscriptionPlanRequest
 
@@ -370,4 +388,34 @@ func createSubscriptionHookHandler(wr http.ResponseWriter, r *http.Request, evt 
 	subEvent := evt.(Event)
 
 	subEvent.HandleEvent(r.Context(), &event)
+}
+
+func GetSubscriptionPlansHandler(svc SubscriptionService) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getSubscriptionPlansHandler, svc)
+}
+
+func getSubscriptionPlansHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
+	payload, _, err := svc.(Service).GetSubscriptionPlans(r.Context())
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, wr)
+		return
+	}
+
+	http_helper.EncodeResult(wr, http_helper.DefaultResponse{Body: payload, Code: 200, Success: true}, http.StatusOK)
+}
+
+func DeleteSubscriptionPlanHandler(svc SubscriptionService) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(deleteSubscriptionPlanHandler, svc)
+}
+
+func deleteSubscriptionPlanHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
+	subPlanId := chi.URLParam(r, "id")
+
+	result, err := svc.(Service).DeleteSubscriptionPlanById(r.Context(), subPlanId)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, wr)
+		return
+	}
+	http_helper.EncodeResult(wr, result, http.StatusOK)
 }

@@ -14,6 +14,9 @@ type Repository interface {
 	CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error)
 	CreateSubscriptionPlan(ctx context.Context, plan *SubscriptionPlan) (*SubscriptionPlan, error)
 	GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error)
+	GetSubscriptionPlans(ctx context.Context) ([]*SubscriptionPlan, int, error)
+	DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error)
+	GetSubscriptions(ctx context.Context) ([]*Subscription, int, error)
 	GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
 	GetSubscriptionByUserAndPlanId(ctx context.Context, userId, planId string) (*Subscription, error)
 	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
@@ -41,6 +44,20 @@ func (r subscriptionRepo) Close() error {
 	}
 	return nil
 }
+
+var getSubscriptionQuery = `SELECT
+	s.id,
+	s.status,
+	s.user_id,
+	s.subscription_plan_id,	
+	sp.type,
+	sp.freq,
+	sp.fee,
+	sp.currency,
+	sp.code
+	FROM subscriptions s
+	LEFT JOIN subscription_plans sp
+	ON sp.id = s.subscription_plan_id `
 
 func (r *subscriptionRepo) CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error) {
 	const SQL = "INSERT INTO subscription_offerings (" +
@@ -245,6 +262,79 @@ func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*Subscr
 	return &plan, nil
 }
 
+func (r subscriptionRepo) GetSubscriptionPlans(ctx context.Context) ([]*SubscriptionPlan, int, error) {
+	query := `
+	SELECT 
+    	id, 
+    	name,
+    	fee,
+    	type,
+    	freq,
+    	currency,
+    	status, 
+    	code FROM subscription_plans
+		WHERE deleted_at IS NULL;
+`
+
+	getPlansSmt, err := r.db.PrepareContext(ctx, query)
+	rows, err := getPlansSmt.QueryContext(ctx)
+	defer rows.Close()
+
+	plans := []*SubscriptionPlan{}
+
+	if err == sql.ErrNoRows || err != nil {
+		return plans, 0, err
+	}
+
+	for rows.Next() {
+		var plan SubscriptionPlan
+
+		err = rows.Scan(
+			&plan.ID,
+			&plan.Name,
+			&plan.Fee,
+			&plan.Type,
+			&plan.Freq,
+			&plan.Currency,
+			&plan.Status,
+			&plan.Code,
+		)
+
+		if err != nil {
+			r.log.Info("msg",
+				zap.String("error querying", ""),
+				zap.String("error", err.Error()),
+				zap.String("query", getSubscriptionQuery),
+			)
+			return plans, 0, err
+		}
+
+		plans = append(plans, &plan)
+	}
+	return plans, 0, nil
+}
+
+func (r subscriptionRepo) DeleteSubscriptionPlanById(ctx context.Context, subPlanId string) (string, error) {
+	sqlQuery := `UPDATE subscription_plans SET deleted_at=$1 WHERE id=$2 RETURNING id`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("DeleteAudioMessagesByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+
+		return "", err
+	}
+
+	deletedAt := sql.NullString{
+		String: time.Now().Format(time.RFC3339),
+		Valid:  true,
+	}
+	row := stmt.QueryRowContext(ctx, deletedAt, subPlanId)
+	if err := row.Scan(&subPlanId); err != nil {
+		r.log.Error("DeleteSubscriptionPlanById", zap.String("error scanning row", err.Error()))
+		return "", err
+	}
+	return subPlanId, nil
+}
+
 func (r subscriptionRepo) GetSubscriptionByUserAndPlanId(ctx context.Context, userId, planId string) (*Subscription, error) {
 	sub := &Subscription{SubscriptionPlanID: planId, UserID: userId}
 	return r.GetSubscription(ctx, sub)
@@ -271,8 +361,8 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 
 	getSubStmt, err := r.db.PrepareContext(ctx, query)
 
-	r.log.Info("msg",  zap.String("query", query))
-	
+	r.log.Info("msg", zap.String("query", query))
+
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", query))
 		return nil, err
@@ -307,6 +397,55 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 	}
 
 	return sub, nil
+}
+
+func (r subscriptionRepo) GetSubscriptions(ctx context.Context) ([]*Subscription, int, error) {
+	getSubStmt, err := r.db.PrepareContext(ctx, getSubscriptionQuery)
+
+	r.log.Info("msg", zap.String("query", getSubscriptionQuery))
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getSubscriptionQuery))
+		return nil, 0, err
+	}
+
+	rows, err := getSubStmt.QueryContext(ctx)
+
+	defer rows.Close()
+
+	subs := []*Subscription{}
+
+	if err == sql.ErrNoRows {
+		return subs, 0, err
+	}
+
+	for rows.Next() {
+		var sub Subscription
+		err = rows.Scan(
+			&sub.ID,
+			&sub.Status,
+			&sub.UserID,
+			&sub.SubscriptionPlanID,
+			// &sub.NextPaymentDate,
+			&sub.Type,
+			&sub.Freq,
+			&sub.Fee,
+			&sub.Currency,
+			&sub.PlanCode,
+		)
+
+		if err != nil {
+			r.log.Info("msg",
+				zap.String("error querying", ""),
+				zap.String("error", err.Error()),
+				zap.String("query", getSubscriptionQuery),
+			)
+			return subs, 0, err
+		}
+
+		subs = append(subs, &sub)
+	}
+	return subs, 0, nil
 }
 
 func (r subscriptionRepo) GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error) {

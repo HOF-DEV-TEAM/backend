@@ -72,7 +72,7 @@ func (pc *paystackService) VerifySubscription(ctx context.Context, subReq subscr
 		}
 
 		sub := subResponse.Data.ToSubscription()
-		
+
 		return &sub, nil
 	}
 
@@ -103,4 +103,16 @@ func (pc *paystackService) GetSubscription(ctx context.Context, _ string) (*subs
 
 func (pc *paystackService) CreateSubscription(ctx context.Context, _ *subscription.Subscription) (*subscription.Subscription, error) {
 	return nil, nil
+}
+
+func (pc *paystackService) GetSubscriptions(ctx context.Context) ([]*subscription.Subscription, int, error) {
+	return nil, 0, nil
+}
+
+func (pc *paystackService) GetSubscriptionPlans(ctx context.Context) ([]*subscription.SubscriptionPlan, int, error) {
+	return nil, 0, nil
+}
+
+func (pc *paystackService) DeleteSubscriptionPlanById(ctx context.Context, subPlanId string) (string, error) {
+	return subPlanId, nil
 }
