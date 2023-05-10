@@ -80,6 +80,16 @@ pipeline {
                 sh "docker rmi $REPOSITORY_URI"
             }
         }
+
+         stage('Notify slack') {
+             steps {
+                 slackSend botUser: true,
+                 message: 'Project built successfully',
+                 channel: '#jenkins-hof-backend',
+                 color: 'good'
+             }
+         }
+
        }
          post {
              always {
