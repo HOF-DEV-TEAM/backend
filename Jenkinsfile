@@ -2,14 +2,10 @@
 pipeline {
      agent any
          environment {
-             AWS_ACCOUNT_ID="${env.AWS_ACCOUNT_ID}"
-             AWS_DEFAULT_REGION="${env.AWS_DEFAULT_REGION}"
              DOCKER_BUILDKIT="1"
              SERVICE_NAME="${GIT_URL.tokenize('/.')[-2]}"
              SHORT_COMMIT=sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-             EC2_CREDENTIAL_ID="${env.EC2_CREDENTIAL_ID}"
-             EC2_USER="${EC2_USER}"
-             ECR_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+             ECR_URL="${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_DEFAULT_REGION}.amazonaws.com"
              REPOSITORY_URI="${ECR_URL}/${SERVICE_NAME}"
 
              // ECS properties
@@ -26,7 +22,7 @@ pipeline {
           stage('Environment variables'){
             steps {
                 script {
-                    echo "AWS_DEFAULT_REGION = ${AWS_DEFAULT_REGION}"
+                    echo "AWS_DEFAULT_REGION = ${env.AWS_DEFAULT_REGION}"
                     echo "DOCKER_BUILDKIT = ${DOCKER_BUILDKIT}"
                     echo "SERVICE_NAME = ${SERVICE_NAME}"
                     echo "SHORT_COMMIT = ${SHORT_COMMIT}"
@@ -52,7 +48,7 @@ pipeline {
          stage('Deploy') {
              steps {
                  script{
-                     docker.withRegistry("https://${ECR_URL}", "ecr:${AWS_DEFAULT_REGION}:aws-credentials") {
+                     docker.withRegistry("https://${ECR_URL}", "ecr:${env.AWS_DEFAULT_REGION}:aws-credentials") {
                        docker.image("${REPOSITORY_URI}").push("${SHORT_COMMIT}")
                      }
                  }

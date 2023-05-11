@@ -33,6 +33,8 @@ func NewService(userRepo user.Repository, subService subscription.Service, log *
 }
 
 func (svc *authService) createSession(ctx context.Context, user *user.User) (*UserSession, error) {
+	//authenticate from paystack
+
 	sub, err := svc.subService.GetSubscription(ctx, user.ID)
 
 	if err != nil && err != sql.ErrNoRows {
