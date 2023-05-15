@@ -31,6 +31,7 @@ type Service interface {
 	HomePageDirectory(ctx context.Context) (*Homepage, error)
 	CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error)
+	GetMeditations(ctx context.Context) ([]Meditation, error)
 }
 
 type FilterType string
@@ -58,13 +59,13 @@ func NewService(repo Repository, log *zap.Logger, config *security.SecurityConfi
 	return &audioMessageService{log: log, repo: repo, config: config}
 }
 
-func (s *audioMessageService) validateStruct(audioMessage *AudioMessage) error {
+func (svc *audioMessageService) validateStruct(audioMessage *AudioMessage) error {
 	validate := validator.New()
 
 	return validate.Struct(audioMessage)
 }
 
-func (s *audioMessageService) validateAudioSeriesStruct(audioSeries *AudioSeries) error {
+func (svc *audioMessageService) validateAudioSeriesStruct(audioSeries *AudioSeries) error {
 	validate := validator.New()
 
 	return validate.Struct(audioSeries)
@@ -337,4 +338,14 @@ func (svc *audioMessageService) UpdateMeditationByID(ctx context.Context, status
 	}
 
 	return result, nil
+}
+
+func (svc *audioMessageService) GetMeditations(ctx context.Context) ([]Meditation, error) {
+	meditation, err := svc.repo.GetMeditations(ctx)
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	return meditation, nil
+
 }

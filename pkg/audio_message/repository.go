@@ -25,6 +25,7 @@ type Repository interface {
 	HomePageDirectory(ctx context.Context) (*Homepage, error)
 	CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string, deletedAt sql.NullString) (*string, error)
+	GetMeditations(ctx context.Context) ([]Meditation, error)
 	Close() error
 }
 
@@ -586,4 +587,51 @@ func (r audioMessageRepository) UpdateMeditationByID(ctx context.Context, status
 		return nil, err
 	}
 	return &medID, nil
+}
+
+func (r audioMessageRepository) GetMeditations(ctx context.Context) ([]Meditation, error) {
+	meditationSQL := `SELECT * FROM meditation WHERE deleted_at IS NULL`
+
+	var meditation []Meditation
+	getMeditationStmt, err := r.db.PrepareContext(ctx, meditationSQL)
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", meditationSQL),
+		)
+		return nil, err
+	}
+
+	rows, err := getMeditationStmt.QueryContext(ctx)
+
+	defer rows.Close()
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var as Meditation
+
+		if err := rows.Scan(
+			&as.ID,
+			&as.Name,
+			&as.Image,
+			&as.Status,
+			&as.DateAdded,
+			&as.DeletedAt,
+		); err != nil {
+			r.log.Info("msg",
+				zap.String("error querying", ""),
+				zap.String("error", err.Error()),
+				zap.String("query", meditationSQL),
+			)
+			return nil, err
+		}
+
+		meditation = append(meditation, as)
+	}
+
+	return meditation, nil
 }

@@ -142,6 +142,7 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	deleteAudioMesageByIDHandler := audio_message.DeleteAudioMessagesByIDHandler(svc)
 	createMeditationHandler := audio_message.CreateMeditationHandler(svc)
 	updateMeditationByIDHandler := audio_message.UpdateMeditationByIDHandler(svc)
+	getMeditationsHandler := audio_message.GetMeditationsHandler(svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
@@ -150,6 +151,7 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	audioMessageRouter.Delete("/delete/{message_id}", deleteAudioMesageByIDHandler)
 	audioMessageRouter.Post("/meditation", createMeditationHandler)
 	audioMessageRouter.Put("/meditation/{meditation_id}", updateMeditationByIDHandler)
+	audioMessageRouter.Get("/meditations", getMeditationsHandler)
 
 	router.Mount("/audio_message", audioMessageRouter)
 }

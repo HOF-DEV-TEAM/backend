@@ -589,14 +589,13 @@ func HomePageDirectoryHandler(svc Service) http.HandlerFunc {
 
 func homePageDirectoryHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	result, err := svc.(Service).HomePageDirectory(r.Context())
-
-	home := NewJSONHomePage(result)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	http_helper.EncodeResult(w, home, http.StatusOK)
 
+	home := NewJSONHomePage(result)
+	http_helper.EncodeResult(w, home, http.StatusOK)
 }
 
 func CreateMeditationHandler(svc Service) http.HandlerFunc {
@@ -606,7 +605,6 @@ func CreateMeditationHandler(svc Service) http.HandlerFunc {
 func createMeditationHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var meditation []*MeditationJSON
 	err := json.NewDecoder(r.Body).Decode(&meditation)
-
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
@@ -642,4 +640,34 @@ func updateMeditationByIDHandler(w http.ResponseWriter, r *http.Request, svc int
 	}
 
 	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
+func GetMeditationsHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getMeditationsHandler, svc)
+}
+
+func getMeditationsHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	result, err := svc.(Service).GetMeditations(r.Context())
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	var meditationJSON []*MeditationJSON
+
+	for _, m := range result {
+		var meditation MeditationJSON
+
+		meditation = MeditationJSON{
+			ID:        m.ID,
+			Name:      m.Name,
+			Image:     m.Image,
+			Status:    m.Status,
+			DateAdded: m.DateAdded.String,
+		}
+
+		meditationJSON = append(meditationJSON, &meditation)
+	}
+
+	http_helper.EncodeResult(w, meditationJSON, http.StatusOK)
 }
