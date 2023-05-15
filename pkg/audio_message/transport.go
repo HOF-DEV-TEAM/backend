@@ -643,7 +643,7 @@ func updateMeditationByIDHandler(w http.ResponseWriter, r *http.Request, svc int
 }
 
 func GetMeditationsHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(homePageDirectoryHandler, svc)
+	return http_helper.NewHTTPHandler(getMeditationsHandler, svc)
 }
 
 func getMeditationsHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
