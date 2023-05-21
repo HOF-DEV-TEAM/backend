@@ -48,7 +48,7 @@ func (r *PayStackClientHttp) getHeaders(_ context.Context) (http_helper.HttpHead
 	return headerValues, nil
 }
 
-func (r *PayStackClientHttp) CreateSubscription(ctx context.Context, subRequest *subscription.SubscriptionRequest) (*subscription.SubscriptionResponse, error) {
+func (r *PayStackClientHttp) CreateSubscription(ctx context.Context, subRequest *subscription.SubscriptionRequest) (*PaystackCustomerSubscriptionResponse, error) {
 	resp, err := r.doPostSubscription(ctx, subRequest)
 
 	if err != nil {
@@ -62,7 +62,7 @@ func (r *PayStackClientHttp) CreateSubscription(ctx context.Context, subRequest 
 		return nil, errRead
 	}
 
-	var response subscription.SubscriptionResponse
+	var response PaystackCustomerSubscriptionResponse
 
 	json.Unmarshal(bytes, &response)
 	r.logger.Info("msg", zap.String(response.Message, ""))
@@ -73,7 +73,52 @@ func (r *PayStackClientHttp) CreateSubscription(ctx context.Context, subRequest 
 	return &response, nil
 }
 
-func (r *PayStackClientHttp) CreateSubscriptionPlan(ctx context.Context, planInfo *subscription.SubscriptionPlanRequest) (*subscription.PlanResponse, error) {
+func (r *PayStackClientHttp) GetSubscription(ctx context.Context, idOrCode string) (*PaystackCustomerSubscriptionResponse, error) {
+	resp, err := r.goGetSubscription(ctx, idOrCode)
+
+	if err != nil {
+		r.logger.Error("msg", zap.String("paystack get suscription", err.Error()))
+		return nil, err
+	}
+
+	defer r.close(ctx, resp)
+
+	bytes, errRead := io.ReadAll(resp.Body)
+
+	if errRead != nil {
+		return nil, http_helper.ErrInvalidRequest
+	}
+
+	var response PaystackCustomerSubscriptionResponse
+
+	json.Unmarshal(bytes, &response)
+
+	r.logger.Info("msg", zap.String(response.Message, ""))
+
+	if !response.Status {
+		return nil, errors.New(response.Message)
+	}
+
+	return &response, nil
+}
+
+func (r *PayStackClientHttp) goGetSubscription(ctx context.Context, idOrCode string) (*http.Response, error) {
+	url := fmt.Sprintf(
+		"%s/subscription/%s",
+		r.config.Addr,
+		idOrCode,
+	)
+
+	headerValues, err := r.getHeaders(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.httpCaller.DoGet(ctx, headerValues, url)
+}
+
+func (r *PayStackClientHttp) CreateSubscriptionPlan(ctx context.Context, planInfo *subscription.SubscriptionPlanRequest) (*PaystackPlanResponse, error) {
 	resp, err := r.doPostSubscriptionPlan(ctx, planInfo)
 
 	if err != nil {
@@ -89,7 +134,7 @@ func (r *PayStackClientHttp) CreateSubscriptionPlan(ctx context.Context, planInf
 		return nil, http_helper.ErrInvalidRequest
 	}
 
-	var response subscription.PlanResponse
+	var response PaystackPlanResponse
 
 	json.Unmarshal(bytes, &response)
 
@@ -123,7 +168,7 @@ func (r *PayStackClientHttp) doPostSubscription(ctx context.Context, subRequest 
 	return r.httpCaller.DoPost(ctx, headerValues, url, body)
 }
 
-func (r *PayStackClientHttp) VerifySubscription(ctx context.Context, subRef string) (*subscription.SubscriptionResponse, error) {
+func (r *PayStackClientHttp) VerifySubscription(ctx context.Context, subRef string) (*PaystackCustomerSubscriptionResponse, error) {
 	resp, err := r.doVerifySubscription(ctx, subRef)
 
 	if err != nil {
@@ -139,7 +184,7 @@ func (r *PayStackClientHttp) VerifySubscription(ctx context.Context, subRef stri
 		return nil, http_helper.ErrInvalidRequest
 	}
 
-	var response subscription.SubscriptionResponse
+	var response PaystackCustomerSubscriptionResponse
 
 	json.Unmarshal(bytes, &response)
 
@@ -190,7 +235,7 @@ func (r *PayStackClientHttp) doPostSubscriptionPlan(ctx context.Context, planInf
 	return r.httpCaller.DoPost(ctx, headerValues, url, body)
 }
 
-func (r *PayStackClientHttp) CreateCustomer(ctx context.Context, customer *PaystackCustomer) (*subscription.CustomerResponse, error) {
+func (r *PayStackClientHttp) CreateCustomer(ctx context.Context, customer *PaystackCustomer) (*PaystackCustomerResponse, error) {
 	resp, err := r.doPostCustomer(ctx, customer)
 
 	if err != nil {
@@ -206,7 +251,7 @@ func (r *PayStackClientHttp) CreateCustomer(ctx context.Context, customer *Payst
 		return nil, http_helper.ErrInvalidRequest
 	}
 
-	var response subscription.CustomerResponse
+	var response PaystackCustomerResponse
 
 	json.Unmarshal(bytes, &response)
 
@@ -220,7 +265,6 @@ func (r *PayStackClientHttp) CreateCustomer(ctx context.Context, customer *Payst
 }
 
 func (r *PayStackClientHttp) doPostCustomer(ctx context.Context, customer *PaystackCustomer) (*http.Response, error) {
-
 	url := fmt.Sprintf(
 		"%s/customer",
 		r.config.Addr,

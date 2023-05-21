@@ -20,6 +20,7 @@ type Repository interface {
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	SignUpUser(ctx context.Context, user *User, deviceManger *DeviceManager) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetByCustomerCode(ctx context.Context, email string) (*User, error)
 	GetById(ctx context.Context, id string) (*User, error)
 	LoginWithEmailPasswordDevice(ctx context.Context, email, password, deviceIdentifier string) (*User, error)
 	LoginWithEmailPassword(ctx context.Context, email, password string) (*User, error)
@@ -241,6 +242,10 @@ func (r userRepository) getUser(ctx context.Context, field string, value string)
 
 func (r userRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	return r.getUser(ctx, "email", email)
+}
+
+func (r userRepository) GetByCustomerCode(ctx context.Context, customerCode string) (*User, error) {
+	return r.getUser(ctx, "paystack_customer_code", customerCode)
 }
 
 func (r userRepository) GetById(ctx context.Context, id string) (*User, error) {

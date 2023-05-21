@@ -82,7 +82,7 @@ func (e FreqEnum) String() string {
 	case Quarterly:
 		return "quarterly"
 	case Yearly:
-		return "yearly"
+		return "annually"
 
 	default:
 		return "invalid"
@@ -107,7 +107,7 @@ func (e *FreqEnum) UnMarshalText(from []byte) error {
 		*e = Monthly
 	case "quarterly":
 		*e = Quarterly
-	case "yearly", "annually":
+	case "annually", "yearly":
 		*e = Yearly
 	default:
 		return errors.New("invalid FreqEnum")
@@ -317,6 +317,7 @@ type Subscription struct {
 	UserID             string         `sql:"user_id" validate:"required"`
 	SubscriptionPlanID string         `sql:"subscription_plan_id" validate:"required"`
 	NextPaymentDate    sql.NullString `sql:"next_payment_date"`
+	SubCode            string         `sql:"sub_code"`
 	DateAdded          sql.NullString `sql:"date_added"`
 	LastUpdated        sql.NullString `sql:"last_updated"`
 	DeletedAt          sql.NullString `sql:"deleted_at"`

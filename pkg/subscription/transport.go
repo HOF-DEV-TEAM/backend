@@ -1,15 +1,10 @@
 package subscription
 
 import (
-	"database/sql"
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
-	"io"
 	"net/http"
-	"strconv"
-	"time"
-
-	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 )
 
 type SubscriptionRequest struct {
@@ -21,6 +16,7 @@ type VerifySubRequest struct {
 	PlanId string `json:"plan_id"`
 	RefId  string `json:"ref_id"`
 }
+
 type SubscriptionPlanRequest struct {
 	Type TypeEnum `json:"type,string,omitempty"`
 	Name string   `json:"name,omitempty"`
@@ -59,55 +55,13 @@ type SubscriptionPlanOfferingResponse struct {
 	Offerings map[string][]*PlanOfferingResponse `json:"offerings"`
 }
 
-type PaystackResponse struct {
-	Status  bool   `json:"status"`
-	Message string `json:"message"`
-}
-
-type PlanResponseData struct {
-	Name         string   `json:"name"`
-	Interval     FreqEnum `json:"interval,string,omit_empty"`
-	Currency     string   `json:"currency"`
-	PlanCode     string   `json:"plan_code"`
-	Amount       float64  `json:"amount"`
-	SendInvoices bool     `json:"send_invoices"`
-	SendSms      bool     `json:"send_sms"`
-	IsArchived   bool     `json:"is_archived"`
-	ID           int      `json:"id"`
-	CreatedAt    string   `json:"createdAt"`
-	UpdatedAt    string   `json:"updatedAt"`
-}
-
-type CustomerResponseData struct {
-	Email        string `json:"email"`
-	CustomerCode string `json:"customer_code"`
-	ID           int    `json:"id"`
-	CreatedAt    string `json:"createdAt"`
-	UpdatedAt    string `json:"updatedAt"`
-}
-
-type PlanResponse struct {
-	PaystackResponse
-	Data PlanResponseData `json:"data"`
-}
-
-type SubscriptionResponseData struct {
-	Customer         CustomerResponseData `json:"customer"`
-	Plan             PlanResponseData     `json:"plan"`
-	NextPaymentDate  string               `json:"next_payment_date"`
-	CreatedAt        string               `json:"createdAt"`
-	UpdatedAt        string               `json:"updatedAt"`
-	SubscriptionCode string               `json:"subscription_code"`
-	//to verify transaction status //success or failure
-	Status string `json:"status"`
-}
-
 type SubscriptionJSON struct {
 	ID                 string   `json:"id"`
 	Status             bool     `json:"status"`
 	UserID             string   `json:"user_id"`
 	SubscriptionPlanID string   `json:"subscription_plan_id"`
 	NextPaymentDate    string   `json:"next_payment_date"`
+	SubCode            string   `json:"sub_code"`
 	Type               TypeEnum `json:"type"`
 	Freq               FreqEnum `json:"freq"`
 	Fee                float64  `json:"fee"`
@@ -121,6 +75,7 @@ func (sub *Subscription) ToJSON() *SubscriptionJSON {
 		Status:             sub.Status == 1,
 		UserID:             sub.UserID,
 		NextPaymentDate:    sub.NextPaymentDate.String,
+		SubCode:            sub.SubCode,
 		SubscriptionPlanID: sub.SubscriptionPlanID,
 		Type:               sub.Type,
 		Freq:               sub.Freq,
@@ -160,49 +115,6 @@ func (sub *SubscriptionPlan) ToJSON() *SubscriptionPlanJSON {
 		LastUpdated:            sub.LastUpdated.String,
 		SubscritpionProviderID: sub.SubscritpionProviderID.String,
 	}
-}
-
-type SubscriptionResponse struct {
-	PaystackResponse
-	Data SubscriptionResponseData `json:"data"`
-}
-
-type CustomerResponse struct {
-	PaystackResponse
-	Data CustomerResponseData `json:"data"`
-}
-
-func (paystackResponse *PlanResponse) ToSubscriptionPlan() SubscriptionPlan {
-	data := paystackResponse.Data
-	plan := SubscriptionPlan{
-		Name:     data.Name,
-		Code:     data.PlanCode,
-		Freq:     data.Interval,
-		Fee:      data.Amount,
-		PlanId:   sql.NullString{String: strconv.Itoa(data.ID), Valid: true},
-		Currency: data.Currency,
-	}
-
-	plan.DateAdded = parseDateTime(data.CreatedAt)
-	plan.LastUpdated = parseDateTime(data.UpdatedAt)
-
-	return plan
-}
-
-func (subResponse *SubscriptionResponseData) ToSubscription() Subscription {
-	sub := Subscription{}
-
-	sub.NextPaymentDate = parseDateTime(subResponse.NextPaymentDate)
-	sub.DateAdded = parseDateTime(subResponse.CreatedAt)
-	sub.LastUpdated = parseDateTime(subResponse.UpdatedAt)
-	return sub
-}
-
-func parseDateTime(dateString string) sql.NullString {
-	if _, err := time.Parse(time.RFC3339, dateString); err == nil {
-		return sql.NullString{String: dateString, Valid: true}
-	}
-	return sql.NullString{}
 }
 
 func CreateSubscriptionPlanHandler(svc SubscriptionService) http.HandlerFunc {
@@ -365,29 +277,6 @@ func verifySubscriptionHandler(wr http.ResponseWriter, r *http.Request, svc inte
 	}
 
 	http_helper.EncodeResult(wr, http_helper.DefaultResponse{Body: payload, Code: 200, Success: true}, http.StatusOK)
-}
-
-func CreateSubscriptionHookHandler(event Event) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(createSubscriptionHookHandler, event)
-
-}
-
-func createSubscriptionHookHandler(wr http.ResponseWriter, r *http.Request, evt interface{}) {
-
-	bytes, errRead := io.ReadAll(r.Body)
-
-	if errRead != nil {
-		http_helper.EncodeJSONError(r.Context(), errRead, wr)
-		return
-	}
-
-	var event SubscriptionEvent
-
-	json.Unmarshal(bytes, &event)
-
-	subEvent := evt.(Event)
-
-	subEvent.HandleEvent(r.Context(), &event)
 }
 
 func GetSubscriptionPlansHandler(svc SubscriptionService) http.HandlerFunc {
