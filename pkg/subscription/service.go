@@ -14,14 +14,16 @@ type SubscriptionService interface {
 	GetSubscriptionPlans(ctx context.Context) ([]*SubscriptionPlan, int, error)
 	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
 	DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error)
-	CancelSubscription(ctx context.Context)
-	ChangeSubscription(ctx context.Context)
 	GetSubscription(ctx context.Context, userId string) (*Subscription, error)
 	CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOfferingRequest) (string, error)
 	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
-	MakePayment(ctx context.Context)
+}
+
+type SubscriptionProviderService interface {
+	CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error)
+	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
 }
 
 type Service interface {
@@ -34,10 +36,10 @@ type subscriptionSvc struct {
 	repo        Repository
 	userRepo    user.Repository
 	config      *security.SecurityConfig
-	subProvider SubscriptionService //implements subsription service
+	subProvider SubscriptionProviderService //implements subscription provider service
 }
 
-func NewService(subProvider SubscriptionService, repo Repository, config *security.SecurityConfig, userRepo user.Repository) Service {
+func NewService(subProvider SubscriptionProviderService, repo Repository, config *security.SecurityConfig, userRepo user.Repository) Service {
 	return &subscriptionSvc{subProvider: subProvider, repo: repo, userRepo: userRepo, config: config}
 }
 
@@ -51,14 +53,6 @@ func (ss *subscriptionSvc) CreateSubscription(ctx context.Context, subReq *Subsc
 		return sub, nil
 	}
 	return ss.repo.CreateSubscription(ctx, subReq)
-}
-
-func (ss *subscriptionSvc) CancelSubscription(ctx context.Context) {
-	ss.subProvider.ChangeSubscription(ctx)
-}
-
-func (ss *subscriptionSvc) ChangeSubscription(ctx context.Context) {
-	ss.subProvider.CancelSubscription(ctx)
 }
 
 func (ss *subscriptionSvc) CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error) {
@@ -75,10 +69,6 @@ func (ss *subscriptionSvc) CreateSubscriptionPlan(ctx context.Context, subscript
 
 	plan.Type = planType
 	return ss.repo.CreateSubscriptionPlan(ctx, plan)
-}
-
-func (ss *subscriptionSvc) MakePayment(ctx context.Context) {
-	ss.subProvider.MakePayment(ctx)
 }
 
 func (ss *subscriptionSvc) CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error) {
@@ -103,8 +93,18 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 
 	sub.UserID = claims.JWTClaimsMain.LoggedInUserId
 
-	if err != nil {
+	existingSub, err := ss.repo.GetSubscription(ctx, sub)
+
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
+	}
+
+	if existingSub != nil {
+		_, err := ss.repo.UpdateSubscription(ctx, sub.UserID, sub)
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	sub.SubscriptionPlanID = subReq.PlanId

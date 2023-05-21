@@ -19,7 +19,9 @@ type Repository interface {
 	GetSubscriptions(ctx context.Context) ([]*Subscription, int, error)
 	GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
 	GetSubscriptionByUserAndPlanId(ctx context.Context, userId, planId string) (*Subscription, error)
+	GetSubscriptionByCode(ctx context.Context, subCode string) (*Subscription, error)
 	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
+	UpdateSubscription(ctx context.Context, userId string, sub *Subscription) (string, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOffering) (string, error)
 	Close() error
@@ -30,10 +32,11 @@ type subscriptionRepo struct {
 	getPlanStmt  *sql.Stmt
 	log          *zap.Logger
 	queryHandler urlqueryhelper.QueryHelper
+	queryBuilder *urlqueryhelper.QueryBuilder
 }
 
 func NewRepository(db *sql.DB, logger *zap.Logger) Repository {
-	return &subscriptionRepo{db: db, log: logger, queryHandler: urlqueryhelper.NewQueryHelper()}
+	return &subscriptionRepo{db: db, log: logger, queryHandler: urlqueryhelper.NewQueryHelper(), queryBuilder: urlqueryhelper.NewQueryBuilder()}
 }
 
 func (r subscriptionRepo) Close() error {
@@ -54,7 +57,7 @@ var getSubscriptionQuery = `SELECT
 	sp.freq,
 	sp.fee,
 	sp.currency,
-	sp.code
+	sp.sub_code
 	FROM subscriptions s
 	LEFT JOIN subscription_plans sp
 	ON sp.id = s.subscription_plan_id `
@@ -171,9 +174,11 @@ func (r *subscriptionRepo) CreateSubscription(ctx context.Context, sub *Subscrip
 		"status," +
 		"user_id," +
 		"subscription_plan_id," +
+		"next_payment_date," +
+		"sub_code," +
 		"date_added," +
 		"last_updated" +
-		") VALUES ($1, $2, $3, $4, $5) " +
+		") VALUES ($1, $2, $3, $4, $5, $6, $7) " +
 		"RETURNING id"
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -198,6 +203,8 @@ func (r *subscriptionRepo) CreateSubscription(ctx context.Context, sub *Subscrip
 		sub.Status,
 		sub.UserID,
 		sub.SubscriptionPlanID,
+		sub.NextPaymentDate,
+		sub.SubCode,
 		sub.DateAdded,
 		sub.LastUpdated,
 	).Scan(&subsriptionId)
@@ -216,6 +223,25 @@ func (r *subscriptionRepo) CreateSubscription(ctx context.Context, sub *Subscrip
 	sub.ID = subsriptionId
 	r.log.Info("msg", zap.String("subscription created successfully", ""), zap.String("sub", fmt.Sprintf("%+v", sub)))
 	return sub, nil
+}
+
+func (r subscriptionRepo) UpdateSubscription(ctx context.Context, userId string, sub *Subscription) (string, error) {
+	subWhere := Subscription{
+		UserID: userId,
+	}
+
+	var subId string
+	whereQuery := r.queryBuilder.Where(subWhere)
+	setQuery := r.queryBuilder.Set(*sub)
+
+	sqlQuery := `UPDATE subscriptions SET ` + setQuery + " WHERE status != 0 AND " + whereQuery + " RETURNING id"
+
+	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&subId)
+	if err != nil {
+		r.log.Error("UpdateSubscription", zap.String("error scanning row", err.Error()))
+		return "", err
+	}
+	return subId, nil
 }
 
 func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error) {
@@ -340,6 +366,11 @@ func (r subscriptionRepo) GetSubscriptionByUserAndPlanId(ctx context.Context, us
 	return r.GetSubscription(ctx, sub)
 }
 
+func (r subscriptionRepo) GetSubscriptionByCode(ctx context.Context, subCode string) (*Subscription, error) {
+	sub := &Subscription{SubCode: subCode}
+	return r.GetSubscription(ctx, sub)
+}
+
 func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error) {
 	whereQuery := r.queryHandler.WhereQueryHelper(*sub)
 	query := "SELECT " +
@@ -347,7 +378,8 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 		"s.status, " +
 		"s.user_id, " +
 		"s.subscription_plan_id, " +
-		// "s.next_payment_date, " +
+		"s.next_payment_date, " +
+		"s.sub_code, " +
 		"sp.type, " +
 		"sp.freq, " +
 		"sp.fee, " +
@@ -356,7 +388,8 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 		"FROM subscriptions s " +
 		"LEFT JOIN subscription_plans sp " +
 		"ON sp.id = s.subscription_plan_id " +
-		"WHERE s.status = 1" + whereQuery +
+		"WHERE s.status != 0" + whereQuery +
+		" ORDER BY s.date_added" +
 		" LIMIT 1;"
 
 	getSubStmt, err := r.db.PrepareContext(ctx, query)
@@ -375,7 +408,8 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 		&sub.Status,
 		&sub.UserID,
 		&sub.SubscriptionPlanID,
-		// &sub.NextPaymentDate,
+		&sub.NextPaymentDate,
+		&sub.SubCode,
 		&sub.Type,
 		&sub.Freq,
 		&sub.Fee,

@@ -26,18 +26,21 @@ func (app *application) buildRoutes() {
 	userService := user.NewService(userRepo, app.logger, &app.config.Security)
 
 	//Subscription
-	subscritpionRepo := subscription.NewRepository(app.db, app.logger)
+	subscriptionRepo := subscription.NewRepository(app.db, app.logger)
+
 	subProvider := paystack.NewPaystackService(
 		paystack.NewPayStackHttpClient(
 			&app.config.PaystackConfig,
 			http_helper.NewHTTPCaller(),
 			app.logger,
 		),
+		subscriptionRepo,
 		userRepo,
-		subscritpionRepo,
 		&app.config.Security,
 	)
-	subscriptionSvc := subscription.NewService(subProvider, subscritpionRepo, &app.config.Security, userRepo)
+	subscriptionSvc := subscription.NewService(subProvider, subscriptionRepo, &app.config.Security, userRepo)
+	subEvents := paystack.New(subProvider, app.logger)
+	subEvents.Listen()
 
 	authService := auth.NewService(userRepo, subscriptionSvc, app.logger, &app.config.Security)
 
@@ -79,9 +82,9 @@ func (app *application) buildRoutes() {
 	app.router.Group(func(r chi.Router) {
 		buildSessionEndpoints(r, authService, userService)
 		//webhook
+		//listen for subscription events
+		createSubscriptionHookHandler := paystack.HandleSubscriptionEvents(subEvents)
 
-		subEvent := subscription.NewSubEvent(userRepo, subscritpionRepo, app.logger)
-		createSubscriptionHookHandler := subscription.CreateSubscriptionHookHandler(subEvent)
 		r.Post("/subscription/webhook", createSubscriptionHookHandler)
 	})
 

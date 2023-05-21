@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
-	"bitbucket.org/hofng/hofApp/infrastructure/db"	
+	"bitbucket.org/hofng/hofApp/infrastructure/db"
 	"bitbucket.org/hofng/hofApp/pkg/uploader"
 
 	"github.com/go-chi/chi/v5"
@@ -17,11 +17,11 @@ import (
 )
 
 type application struct {
-	logger      *zap.Logger
-	config      *config.ServerConfig
-	db  		*sql.DB
-	awsClient 	*uploader.AWSClient
-	router      *chi.Mux
+	logger    *zap.Logger
+	config    *config.ServerConfig
+	db        *sql.DB
+	awsClient *uploader.AWSClient
+	router    *chi.Mux
 }
 
 // New instances a new application
@@ -87,10 +87,9 @@ func (app *application) buildRouter() error {
 	app.router.Use(app.config.Security.AddClaimToContext)
 
 	app.buildRoutes()
-	
+
 	return nil
 }
-
 
 func (app *application) buildConfig() (*config.ServerConfig, error) {
 	return config.Read(*app.logger)
@@ -109,12 +108,11 @@ func (app *application) buildSqlClient() *sql.DB {
 		log2.Fatal(err)
 	}
 
-
 	return dbConn
 }
 
 // Allow aws fail silently?
-func (app *application) getAwsS3Uploader() *uploader.AWSClient {	
+func (app *application) getAwsS3Uploader() *uploader.AWSClient {
 	awsClient := uploader.AWSClient{Config: app.config, Log: app.logger}
 	awsClient.ConnectAWS()
 
