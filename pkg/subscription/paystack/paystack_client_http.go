@@ -204,6 +204,7 @@ func (r *PayStackClientHttp) doVerifySubscription(ctx context.Context, subRef st
 		subRef,
 	)
 
+	r.logger.Info("msg", zap.String("calling verify subscription", url))
 	headerValues, err := r.getHeaders(ctx)
 
 	if err != nil {
