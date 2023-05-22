@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -142,41 +141,48 @@ func (r userRepository) CreateUser(ctx context.Context, user *User) (*User, erro
 }
 
 func (r userRepository) SignUpUser(ctx context.Context, user *User, deviceManager *DeviceManager) (*User, error) {
-	var g errgroup.Group
+	//var g errgroup.Group
 
-	g.Go(func() error {
-		_, err := r.CreateUser(ctx, user)
-		return err
-	})
-
-	g.Go(func() error {
-		_, err := r.BuildDevice(ctx, deviceManager, user.Email)
-		return err
-	})
-
-	if err := g.Wait(); err != nil {
-		if user.ID != "" {
-			//rollback user
-			r.rollBack(ctx, `DELETE FROM users WHERE id=$1 RETURNING id;`, user.ID)
-		}
-
-		if deviceManager.ID != uuid.Nil {
-			//rollback device
-			r.rollBack(ctx, `DELETE FROM devices WHERE id=$1 RETURNING id;`, deviceManager.ID.String())
-		}
-		return nil, err
-	}
-
-	appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
+	//g.Go(func() error {
+	_, err := r.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-	appVersion, err := r.GetAppVersion(ctx, appVersionId)
+	//return err
+	//})
+
+	//g.Go(func() error {
+	_, err = r.BuildDevice(ctx, deviceManager, user.Email)
+	//	return err
+	//})
+
 	if err != nil {
 		return nil, err
 	}
 
-	user.LatestAppVersion = *appVersion
+	//if err := g.Wait(); err != nil {
+	//	if user.ID != "" {
+	//		//rollback user
+	//		r.rollBack(ctx, `DELETE FROM users WHERE id=$1 RETURNING id;`, user.ID)
+	//	}
+	//
+	//	if deviceManager.ID != uuid.Nil {
+	//		//rollback device
+	//		r.rollBack(ctx, `DELETE FROM devices WHERE id=$1 RETURNING id;`, deviceManager.ID.String())
+	//	}
+	//	return nil, err
+	//}
+	//
+	//appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//appVersion, err := r.GetAppVersion(ctx, appVersionId)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//user.LatestAppVersion = *appVersion
 
 	return user, nil
 }
@@ -265,6 +271,7 @@ func (r userRepository) LoginWithEmailPassword(ctx context.Context, email, passw
 	if password != existingUser.Password {
 		return nil, http_helper.ErrUserPwd
 	}
+
 	return existingUser, nil
 }
 
@@ -279,16 +286,17 @@ func (r userRepository) LoginWithEmailPasswordDevice(ctx context.Context, email,
 		return nil, err
 	}
 
-	appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
-	if err != nil {
-		return nil, err
-	}
-	appVersion, err := r.GetAppVersion(ctx, appVersionId)
-	if err != nil {
-		return nil, err
-	}
+	//appVersionId, err := r.idGenerator.IDGenerateFromString(appVersionID)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	existingUser.LatestAppVersion = *appVersion
+	//appVersion, err := r.GetAppVersion(ctx, appVersionId)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//existingUser.LatestAppVersion = *appVersion
 	return existingUser, nil
 }
 
