@@ -18,6 +18,7 @@ type Repository interface {
 	DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error)
 	GetSubscriptions(ctx context.Context) ([]*Subscription, int, error)
 	GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
+	GetSubscriptionPlanById(ctx context.Context, subPlanId string) (*SubscriptionPlan, error)
 	GetSubscriptionByUserAndPlanId(ctx context.Context, userId, planId string) (*Subscription, error)
 	GetSubscriptionByCode(ctx context.Context, subCode string) (*Subscription, error)
 	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
@@ -53,11 +54,13 @@ var getSubscriptionQuery = `SELECT
 	s.status,
 	s.user_id,
 	s.subscription_plan_id,	
+	s.next_payment_date,
 	sp.type,
 	sp.freq,
 	sp.fee,
 	sp.currency,
-	sp.sub_code
+	s.sub_code,
+	sp.code
 	FROM subscriptions s
 	LEFT JOIN subscription_plans sp
 	ON sp.id = s.subscription_plan_id `
@@ -244,17 +247,28 @@ func (r subscriptionRepo) UpdateSubscription(ctx context.Context, userId string,
 	return subId, nil
 }
 
-func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error) {
-	query := "SELECT " +
-		"id," +
-		"status," +
-		"code " +
-		"FROM subscription_plans WHERE code = $1"
+func (r subscriptionRepo) getPlan(ctx context.Context, subPlan *SubscriptionPlan) (*SubscriptionPlan, error) {
+	whereQuery := r.queryBuilder.Where(*subPlan)
+	query := `SELECT 
+    	id, 
+    	name,
+    	fee,
+    	type,
+    	freq,
+    	currency,
+    	status, 
+    	code,
+    	date_added,
+    	last_updated,
+    	plan_id,
+    	subscription_provider_id
+		FROM subscription_plans
+		WHERE deleted_at IS NULL AND %s;`
 
 	var err error
 	// first call, prepare statement for reuse
 	if r.getPlanStmt == nil {
-		r.getPlanStmt, err = r.db.PrepareContext(ctx, query)
+		r.getPlanStmt, err = r.db.PrepareContext(ctx, fmt.Sprintf(query, whereQuery))
 
 		if err != nil {
 			r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", query))
@@ -262,14 +276,23 @@ func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*Subscr
 		}
 	}
 
-	row := r.getPlanStmt.QueryRowContext(ctx, planCode)
+	row := r.getPlanStmt.QueryRowContext(ctx)
 
 	var plan SubscriptionPlan
 
 	err = row.Scan(
 		&plan.ID,
+		&plan.Name,
+		&plan.Fee,
+		&plan.Type,
+		&plan.Freq,
+		&plan.Currency,
 		&plan.Status,
 		&plan.Code,
+		&plan.DateAdded,
+		&plan.LastUpdated,
+		&plan.PlanId,
+		&plan.SubscritpionProviderID,
 	)
 
 	if err == sql.ErrNoRows {
@@ -286,6 +309,14 @@ func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*Subscr
 	}
 
 	return &plan, nil
+}
+
+func (r subscriptionRepo) GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error) {
+	return r.getPlan(ctx, &SubscriptionPlan{Code: planCode})
+}
+
+func (r subscriptionRepo) GetSubscriptionPlanById(ctx context.Context, planId string) (*SubscriptionPlan, error) {
+	return r.getPlan(ctx, &SubscriptionPlan{ID: planId})
 }
 
 func (r subscriptionRepo) GetSubscriptionPlans(ctx context.Context) ([]*SubscriptionPlan, int, error) {
@@ -460,11 +491,12 @@ func (r subscriptionRepo) GetSubscriptions(ctx context.Context) ([]*Subscription
 			&sub.Status,
 			&sub.UserID,
 			&sub.SubscriptionPlanID,
-			// &sub.NextPaymentDate,
+			&sub.NextPaymentDate,
 			&sub.Type,
 			&sub.Freq,
 			&sub.Fee,
 			&sub.Currency,
+			&sub.SubCode,
 			&sub.PlanCode,
 		)
 

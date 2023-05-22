@@ -16,6 +16,7 @@ type SubscriptionService interface {
 	DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error)
 	GetSubscription(ctx context.Context, userId string) (*Subscription, error)
 	CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error)
+	GetSubscriptionPlanById(ctx context.Context, subPlanId string) (*SubscriptionPlan, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOfferingRequest) (string, error)
 	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
@@ -176,4 +177,8 @@ func (ss *subscriptionSvc) GetSubscriptionPlans(ctx context.Context) ([]*Subscri
 
 func (ss *subscriptionSvc) DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error) {
 	return ss.repo.DeleteSubscriptionPlanById(ctx, id)
+}
+
+func (ss *subscriptionSvc) GetSubscriptionPlanById(ctx context.Context, subPlanId string) (*SubscriptionPlan, error) {
+	return ss.repo.GetSubscriptionPlanById(ctx, subPlanId)
 }

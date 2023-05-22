@@ -294,6 +294,23 @@ func getSubscriptionPlansHandler(wr http.ResponseWriter, r *http.Request, svc in
 	http_helper.EncodeResult(wr, http_helper.DefaultResponse{Body: payload, Code: 200, Success: true}, http.StatusOK)
 }
 
+func GetSubscriptionPlanByIdHandler(svc SubscriptionService) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getSubscriptionPlanByIdHandler, svc)
+}
+
+func getSubscriptionPlanByIdHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
+	subPlanId := chi.URLParam(r, "id")
+
+	payload, err := svc.(Service).GetSubscriptionPlanById(r.Context(), subPlanId)
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, wr)
+		return
+	}
+
+	http_helper.EncodeResult(wr, http_helper.DefaultResponse{Body: payload.ToJSON(), Code: 200, Success: true}, http.StatusOK)
+}
+
 func DeleteSubscriptionPlanHandler(svc SubscriptionService) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(deleteSubscriptionPlanHandler, svc)
 }
