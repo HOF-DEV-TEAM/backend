@@ -49,21 +49,24 @@ func (r subscriptionRepo) Close() error {
 	return nil
 }
 
-var getSubscriptionQuery = `SELECT
-	s.id,
-	s.status,
-	s.user_id,
-	s.subscription_plan_id,	
-	s.next_payment_date,
-	sp.type,
-	sp.freq,
-	sp.fee,
-	sp.currency,
-	s.sub_code,
-	sp.code
-	FROM subscriptions s
-	LEFT JOIN subscription_plans sp
-	ON sp.id = s.subscription_plan_id `
+var getSubscriptionQuery = "SELECT " +
+	"s.id, " +
+	"s.status, " +
+	"s.user_id, " +
+	"s.subscription_plan_id, " +
+	"s.next_payment_date, " +
+	"s.sub_code, " +
+	"sp.type, " +
+	"sp.freq, " +
+	"sp.fee, " +
+	"sp.currency, " +
+	"sp.code " +
+	"FROM subscriptions s " +
+	"LEFT JOIN subscription_plans sp " +
+	"ON sp.id = s.subscription_plan_id " +
+	"WHERE s.status != 0" + "%s" +
+	" ORDER BY s.date_added" +
+	" LIMIT 1;"
 
 func (r *subscriptionRepo) CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error) {
 	const SQL = "INSERT INTO subscription_offerings (" +
@@ -361,7 +364,7 @@ func (r subscriptionRepo) GetSubscriptionPlans(ctx context.Context) ([]*Subscrip
 			r.log.Info("msg",
 				zap.String("error querying", ""),
 				zap.String("error", err.Error()),
-				zap.String("query", getSubscriptionQuery),
+				zap.String("query", query),
 			)
 			return plans, 0, err
 		}
@@ -404,24 +407,7 @@ func (r subscriptionRepo) GetSubscriptionByCode(ctx context.Context, subCode str
 
 func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error) {
 	whereQuery := r.queryHandler.WhereQueryHelper(*sub)
-	query := "SELECT " +
-		"s.id, " +
-		"s.status, " +
-		"s.user_id, " +
-		"s.subscription_plan_id, " +
-		"s.next_payment_date, " +
-		"s.sub_code, " +
-		"sp.type, " +
-		"sp.freq, " +
-		"sp.fee, " +
-		"sp.currency, " +
-		"sp.code " +
-		"FROM subscriptions s " +
-		"LEFT JOIN subscription_plans sp " +
-		"ON sp.id = s.subscription_plan_id " +
-		"WHERE s.status != 0" + whereQuery +
-		" ORDER BY s.date_added" +
-		" LIMIT 1;"
+	query := fmt.Sprintf(getSubscriptionQuery, whereQuery)
 
 	getSubStmt, err := r.db.PrepareContext(ctx, query)
 
@@ -465,9 +451,10 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 }
 
 func (r subscriptionRepo) GetSubscriptions(ctx context.Context) ([]*Subscription, int, error) {
-	getSubStmt, err := r.db.PrepareContext(ctx, getSubscriptionQuery)
+	query := fmt.Sprintf(getSubscriptionQuery, "")
+	getSubStmt, err := r.db.PrepareContext(ctx, query)
 
-	r.log.Info("msg", zap.String("query", getSubscriptionQuery))
+	r.log.Info("msg", zap.String("query", query))
 
 	if err != nil {
 		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", getSubscriptionQuery))
@@ -492,11 +479,11 @@ func (r subscriptionRepo) GetSubscriptions(ctx context.Context) ([]*Subscription
 			&sub.UserID,
 			&sub.SubscriptionPlanID,
 			&sub.NextPaymentDate,
+			&sub.SubCode,
 			&sub.Type,
 			&sub.Freq,
 			&sub.Fee,
 			&sub.Currency,
-			&sub.SubCode,
 			&sub.PlanCode,
 		)
 
