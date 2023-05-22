@@ -67,6 +67,17 @@ type PaystackCustomerSubscriptionResponse struct {
 	Data PaystackCustomerSubscription `json:"data"`
 }
 
+type VerifyPlanResponse struct {
+	Plan     PaystackPlan     `json:"plan_object"`
+	Customer PaystackCustomer `json:"customer"`
+	PaystackSubscription
+}
+
+type PaystackVerifySubscriptionResponse struct {
+	PaystackResponse
+	Data VerifyPlanResponse `json:"data"`
+}
+
 type PaystackCustomerResponse struct {
 	PaystackResponse
 	Data PaystackCustomer `json:"data"`
@@ -98,6 +109,14 @@ func (paystackResponse *PaystackPlanResponse) ToSubscriptionPlan() subscription.
 }
 
 func (subResponse *PaystackCustomerSubscription) ToSubscription() subscription.Subscription {
+	return subscription.Subscription{
+		NextPaymentDate: parseDateTime(subResponse.NextPaymentDate),
+		DateAdded:       parseDateTime(subResponse.CreatedAt),
+		LastUpdated:     parseDateTime(subResponse.UpdatedAt),
+	}
+}
+
+func (subResponse *VerifyPlanResponse) ToSubscription() subscription.Subscription {
 	return subscription.Subscription{
 		NextPaymentDate: parseDateTime(subResponse.NextPaymentDate),
 		DateAdded:       parseDateTime(subResponse.CreatedAt),

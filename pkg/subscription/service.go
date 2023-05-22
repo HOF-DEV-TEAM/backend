@@ -94,19 +94,19 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 
 	sub.UserID = claims.JWTClaimsMain.LoggedInUserId
 
-	//existingSub, err := ss.repo.GetSubscription(ctx, sub)
-	//
-	//if err != nil && err != sql.ErrNoRows {
-	//	return nil, err
-	//}
-	//
-	//if existingSub != nil {
-	//	_, err := ss.repo.UpdateSubscription(ctx, sub.UserID, sub)
-	//
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+	existingSub, err := ss.repo.GetSubscription(ctx, sub)
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	if existingSub != nil {
+		_, err := ss.repo.UpdateSubscription(ctx, sub.UserID, sub)
+
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	sub.SubscriptionPlanID = subReq.PlanId
 	sub.Status = 1

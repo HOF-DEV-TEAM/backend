@@ -168,7 +168,7 @@ func (r *PayStackClientHttp) doPostSubscription(ctx context.Context, subRequest 
 	return r.httpCaller.DoPost(ctx, headerValues, url, body)
 }
 
-func (r *PayStackClientHttp) VerifySubscription(ctx context.Context, subRef string) (*PaystackCustomerSubscriptionResponse, error) {
+func (r *PayStackClientHttp) VerifySubscription(ctx context.Context, subRef string) (*PaystackVerifySubscriptionResponse, error) {
 	resp, err := r.doVerifySubscription(ctx, subRef)
 
 	if err != nil {
@@ -184,7 +184,7 @@ func (r *PayStackClientHttp) VerifySubscription(ctx context.Context, subRef stri
 		return nil, http_helper.ErrInvalidRequest
 	}
 
-	var response PaystackCustomerSubscriptionResponse
+	var response PaystackVerifySubscriptionResponse
 
 	json.Unmarshal(bytes, &response)
 
