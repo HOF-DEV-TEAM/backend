@@ -29,7 +29,8 @@ type Service interface {
 	DeleteAudioMessagesByID(ctx context.Context, messageId string) (uuid.UUID, error)
 	DeleteAudioSeriesByID(ctx context.Context, seriesId string) (uuid.UUID, error)
 	HomePageDirectory(ctx context.Context) (*Homepage, error)
-	CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
+	CreateMeditation(ctx context.Context, meditation *Meditation) (string, error)
+	CreateMeditations(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error)
 	GetMeditations(ctx context.Context) ([]Meditation, error)
 }
@@ -304,14 +305,26 @@ func (svc *audioMessageService) HomePageDirectory(ctx context.Context) (*Homepag
 
 }
 
-func (svc *audioMessageService) CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error) {
+func (svc *audioMessageService) UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error) {
+	deletedAt := sql.NullString{
+		String: time.Now().Format(time.RFC3339),
+	}
+	result, err := svc.repo.UpdateMeditationByID(ctx, status, meditationID, deletedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (svc *audioMessageService) CreateMeditations(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error) {
 	var med []*Meditation
 	for _, m := range meditation {
 		m.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.RFC3339)}
 		med = append(med, m)
 	}
 
-	result, err := svc.repo.CreateMeditation(ctx, med)
+	result, err := svc.repo.CreateMeditations(ctx, med)
 
 	if err == sql.ErrNoRows {
 		return nil, err
@@ -328,13 +341,21 @@ func (svc *audioMessageService) CreateMeditation(ctx context.Context, meditation
 	return result, nil
 }
 
-func (svc *audioMessageService) UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error) {
-	deletedAt := sql.NullString{
-		String: time.Now().Format(time.RFC3339),
+func (svc *audioMessageService) CreateMeditation(ctx context.Context, meditation *Meditation) (string, error) {
+	meditation.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.RFC3339)}
+
+	result, err := svc.repo.CreateMeditation(ctx, meditation)
+
+	if err == sql.ErrNoRows {
+		return "", err
 	}
-	result, err := svc.repo.UpdateMeditationByID(ctx, status, meditationID, deletedAt)
+
 	if err != nil {
-		return nil, err
+		svc.log.Error("msg",
+			zap.String("method", "CreateMeditation"),
+			zap.String("error", err.Error()),
+		)
+		return "", err
 	}
 
 	return result, nil

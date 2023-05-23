@@ -97,22 +97,27 @@ func (audioSeries *AudioSeriesJSON) ToAudioSeries() *AudioSeries {
 	return result
 }
 
+func ToMeditation(meditation *MeditationJSON) *Meditation {
+	result := &Meditation{
+		Name:   meditation.Name,
+		Image:  meditation.Image,
+		Status: meditation.Status,
+	}
+	if meditation.DateAdded != "" {
+		result.DateAdded = sql.NullString{
+			Valid:  true,
+			String: meditation.DateAdded,
+		}
+	}
+	return result
+}
+
 func ToMeditations(meditations []*MeditationJSON) []*Meditation {
 	var results []*Meditation
 	for _, meditation := range meditations {
-		result := Meditation{
-			Name:   meditation.Name,
-			Image:  meditation.Image,
-			Status: meditation.Status,
-		}
-		if meditation.DateAdded != "" {
-			result.DateAdded = sql.NullString{
-				Valid:  true,
-				String: meditation.DateAdded,
-			}
-		}
+		result := ToMeditation(meditation)
 
-		results = append(results, &result)
+		results = append(results, result)
 	}
 
 	return results
@@ -603,21 +608,21 @@ func CreateMeditationHandler(svc Service) http.HandlerFunc {
 }
 
 func createMeditationHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	var meditation []*MeditationJSON
+	var meditation MeditationJSON
 	err := json.NewDecoder(r.Body).Decode(&meditation)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
 
-	result, err := svc.(Service).CreateMeditation(r.Context(), ToMeditations(meditation))
+	meditationId, err := svc.(Service).CreateMeditation(r.Context(), ToMeditation(&meditation))
 
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
 
-	http_helper.EncodeResult(w, result, http.StatusOK)
+	http_helper.EncodeResult(w, meditationId, http.StatusOK)
 }
 
 func UpdateMeditationByIDHandler(svc Service) http.HandlerFunc {

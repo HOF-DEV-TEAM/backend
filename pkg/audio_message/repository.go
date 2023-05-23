@@ -23,7 +23,8 @@ type Repository interface {
 	DeleteAudioMessagesByID(ctx context.Context, messageId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error)
 	DeleteAudioSeriesByID(ctx context.Context, seriesId uuid.UUID, deletedAt sql.NullString) (uuid.UUID, error)
 	HomePageDirectory(ctx context.Context) (*Homepage, error)
-	CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
+	CreateMeditation(ctx context.Context, meditation *Meditation) (string, error)
+	CreateMeditations(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string, deletedAt sql.NullString) (*string, error)
 	GetMeditations(ctx context.Context) ([]Meditation, error)
 	Close() error
@@ -539,7 +540,48 @@ func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepag
 	return &home, nil
 }
 
-func (r audioMessageRepository) CreateMeditation(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error) {
+func (r audioMessageRepository) CreateMeditation(ctx context.Context, meditation *Meditation) (string, error) {
+	sqlStr := "INSERT INTO meditation (name, image_url, status, date_added) VALUES ($1, $2, $3, $4) RETURNING id;"
+
+	stmt, err := r.db.PrepareContext(ctx, sqlStr)
+	if err != nil {
+		r.log.Error("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", sqlStr))
+		return "", err
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+
+	if err != nil {
+		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlStr))
+		return "", err
+	}
+
+	defer tx.Rollback()
+
+	var meditationId string
+
+	err = stmt.QueryRowContext(ctx,
+		meditation.Name,
+		meditation.Image,
+		meditation.Status,
+		meditation.DateAdded,
+	).Scan(&meditationId)
+
+	if err != nil {
+		r.log.Error("error", zap.String("error", err.Error()), zap.String("query", sqlStr))
+		return "", err
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return "", err
+	}
+
+	return meditationId, err
+}
+
+func (r audioMessageRepository) CreateMeditations(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error) {
 	sqlStr := "INSERT INTO meditation (name, image_url, status, date_added) VALUES "
 	var vals []interface{}
 
