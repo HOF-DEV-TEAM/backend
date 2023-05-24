@@ -27,6 +27,7 @@ type Repository interface {
 	CreateMeditations(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string, deletedAt sql.NullString) (*string, error)
 	GetMeditations(ctx context.Context) ([]Meditation, error)
+	GetMeditation(ctx context.Context, meditationId string) (*Meditation, error)
 	Close() error
 }
 
@@ -629,6 +630,41 @@ func (r audioMessageRepository) UpdateMeditationByID(ctx context.Context, status
 		return nil, err
 	}
 	return &medID, nil
+}
+
+func (r audioMessageRepository) GetMeditation(ctx context.Context, meditationId string) (*Meditation, error) {
+	meditationSQL := `SELECT * FROM meditation WHERE id=$1 AND deleted_at IS NULL LIMIT 1;`
+
+	getMeditationStmt, err := r.db.PrepareContext(ctx, meditationSQL)
+	if err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", meditationSQL),
+		)
+		return nil, err
+	}
+
+	row := getMeditationStmt.QueryRowContext(ctx, meditationId)
+	var meditation Meditation
+
+	if err := row.Scan(
+		&meditation.ID,
+		&meditation.Name,
+		&meditation.Image,
+		&meditation.Status,
+		&meditation.DateAdded,
+		&meditation.DeletedAt,
+	); err != nil {
+		r.log.Info("msg",
+			zap.String("error querying", ""),
+			zap.String("error", err.Error()),
+			zap.String("query", meditationSQL),
+		)
+		return nil, err
+	}
+
+	return &meditation, nil
 }
 
 func (r audioMessageRepository) GetMeditations(ctx context.Context) ([]Meditation, error) {

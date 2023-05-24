@@ -61,6 +61,8 @@ type SubscriptionJSON struct {
 	UserID             string   `json:"user_id"`
 	SubscriptionPlanID string   `json:"subscription_plan_id"`
 	NextPaymentDate    string   `json:"next_payment_date"`
+	LastUpdated        string   `json:"last_updated"`
+	DateAdded          string   `json:"date_added"`
 	SubCode            string   `json:"sub_code"`
 	Type               TypeEnum `json:"type"`
 	Freq               FreqEnum `json:"freq"`
@@ -75,6 +77,8 @@ func (sub *Subscription) ToJSON() *SubscriptionJSON {
 		Status:             sub.Status == 1,
 		UserID:             sub.UserID,
 		NextPaymentDate:    sub.NextPaymentDate.String,
+		LastUpdated:        sub.LastUpdated.String,
+		DateAdded:          sub.DateAdded.String,
 		SubCode:            sub.SubCode,
 		SubscriptionPlanID: sub.SubscriptionPlanID,
 		Type:               sub.Type,

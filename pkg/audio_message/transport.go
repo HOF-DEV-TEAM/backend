@@ -647,6 +647,22 @@ func updateMeditationByIDHandler(w http.ResponseWriter, r *http.Request, svc int
 	http_helper.EncodeResult(w, result, http.StatusOK)
 }
 
+func GetMeditationHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(getMeditationHandler, svc)
+}
+
+func getMeditationHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	medParam := chi.URLParam(r, "meditation_id")
+
+	result, err := svc.(Service).GetMeditation(r.Context(), medParam)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+
+	http_helper.EncodeResult(w, result, http.StatusOK)
+}
+
 func GetMeditationsHandler(svc Service) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(getMeditationsHandler, svc)
 }

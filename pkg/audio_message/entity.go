@@ -30,12 +30,12 @@ type AudioSeries struct {
 }
 
 type Meditation struct {
-	ID        string         `sql:"id"`
-	Name      string         `sql:"name"`
-	Image     string         `sql:"image"`
-	Status    string         `sql:"status"`
-	DateAdded sql.NullString `sql:"date_added"`
-	DeletedAt sql.NullString `sql:"deleted_at"`
+	ID        string         `sql:"id" json:"id"`
+	Name      string         `sql:"name" json:"name"`
+	Image     string         `sql:"image" json:"image"`
+	Status    string         `sql:"status" json:"status"`
+	DateAdded sql.NullString `sql:"date_added" json:"-"`
+	DeletedAt sql.NullString `sql:"deleted_at" json:"-"`
 }
 
 type MeditationResponse struct {

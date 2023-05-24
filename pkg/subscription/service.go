@@ -10,7 +10,7 @@ import (
 )
 
 type SubscriptionService interface {
-	GetSubscriptions(ctx context.Context) ([]*Subscription, int, error)
+	GetSubscriptions(ctx context.Context) ([]*SubscriptionJSON, int, error)
 	GetSubscriptionPlans(ctx context.Context) ([]*SubscriptionPlan, int, error)
 	CreateSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
 	DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error)
@@ -167,7 +167,7 @@ func (ss *subscriptionSvc) GetSubscription(ctx context.Context, userId string) (
 	return sub, err
 }
 
-func (ss *subscriptionSvc) GetSubscriptions(ctx context.Context) ([]*Subscription, int, error) {
+func (ss *subscriptionSvc) GetSubscriptions(ctx context.Context) ([]*SubscriptionJSON, int, error) {
 	return ss.repo.GetSubscriptions(ctx)
 }
 

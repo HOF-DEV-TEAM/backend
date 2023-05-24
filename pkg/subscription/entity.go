@@ -288,11 +288,11 @@ type SubscriptionOffering struct {
 
 type SubPlan struct {
 	//SubscriptionPlan
-	Type     TypeEnum `sql:"type"`
-	Freq     FreqEnum `sql:"freq"`
-	Fee      float64  `sql:"fee"`
-	PlanCode string   `sql:"code"`
-	Currency string   `sql:"currency"`
+	Type     TypeEnum `sql:"type" json:"type"`
+	Freq     FreqEnum `sql:"freq" json:"freq"`
+	Fee      float64  `sql:"fee" json:"fee"`
+	PlanCode string   `sql:"code" json:"code"`
+	Currency string   `sql:"currency" json:"currency"`
 }
 
 type SubscriptionPlanOffering struct {
@@ -312,14 +312,14 @@ type SubscriptionPlanOffering struct {
 }
 
 type Subscription struct {
-	ID                 string         `sql:"id"`
-	Status             int            `sql:"status"`
-	UserID             string         `sql:"user_id" validate:"required"`
-	SubscriptionPlanID string         `sql:"subscription_plan_id" validate:"required"`
-	NextPaymentDate    sql.NullString `sql:"next_payment_date"`
-	SubCode            string         `sql:"sub_code"`
-	DateAdded          sql.NullString `sql:"date_added"`
-	LastUpdated        sql.NullString `sql:"last_updated"`
+	ID                 string         `sql:"id" json:"id"`
+	Status             int            `sql:"status" json:"status"`
+	UserID             string         `sql:"user_id" validate:"required" json:"user_id"`
+	SubscriptionPlanID string         `sql:"subscription_plan_id" validate:"required" json:"subscription_plan_id"`
+	NextPaymentDate    sql.NullString `sql:"next_payment_date" json:"next_payment_date"`
+	SubCode            string         `sql:"sub_code" json:"sub_code"`
+	DateAdded          sql.NullString `sql:"date_added" json:"date_added"`
+	LastUpdated        sql.NullString `sql:"last_updated" json:"last_updated"`
 	DeletedAt          sql.NullString `sql:"deleted_at"`
 	SubPlan
 }

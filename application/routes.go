@@ -146,13 +146,16 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	createMeditationHandler := audio_message.CreateMeditationHandler(svc)
 	updateMeditationByIDHandler := audio_message.UpdateMeditationByIDHandler(svc)
 	getMeditationsHandler := audio_message.GetMeditationsHandler(svc)
+	getMeditationHandler := audio_message.GetMeditationHandler(svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
 	audioMessageRouter.Get("/id/message/{message_id}", getAudioMessageByIDHandler)
 	audioMessageRouter.Put("/update/{message_id}", updateAudioMesageByIDHandler)
 	audioMessageRouter.Delete("/delete/{message_id}", deleteAudioMesageByIDHandler)
+
 	audioMessageRouter.Post("/meditation", createMeditationHandler)
+	audioMessageRouter.Get("/meditation/{meditation_id}", getMeditationHandler)
 	audioMessageRouter.Put("/meditation/{meditation_id}", updateMeditationByIDHandler)
 	audioMessageRouter.Get("/meditations", getMeditationsHandler)
 

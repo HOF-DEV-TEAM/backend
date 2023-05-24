@@ -16,7 +16,7 @@ type Repository interface {
 	GetPlan(ctx context.Context, planCode string) (*SubscriptionPlan, error)
 	GetSubscriptionPlans(ctx context.Context) ([]*SubscriptionPlan, int, error)
 	DeleteSubscriptionPlanById(ctx context.Context, id string) (string, error)
-	GetSubscriptions(ctx context.Context) ([]*Subscription, int, error)
+	GetSubscriptions(ctx context.Context) ([]*SubscriptionJSON, int, error)
 	GetSubscription(ctx context.Context, sub *Subscription) (*Subscription, error)
 	GetSubscriptionPlanById(ctx context.Context, subPlanId string) (*SubscriptionPlan, error)
 	GetSubscriptionByUserAndPlanId(ctx context.Context, userId, planId string) (*Subscription, error)
@@ -450,7 +450,7 @@ func (r subscriptionRepo) GetSubscription(ctx context.Context, sub *Subscription
 	return sub, nil
 }
 
-func (r subscriptionRepo) GetSubscriptions(ctx context.Context) ([]*Subscription, int, error) {
+func (r subscriptionRepo) GetSubscriptions(ctx context.Context) ([]*SubscriptionJSON, int, error) {
 	query := fmt.Sprintf(getSubscriptionQuery, "")
 	getSubStmt, err := r.db.PrepareContext(ctx, query)
 
@@ -465,10 +465,10 @@ func (r subscriptionRepo) GetSubscriptions(ctx context.Context) ([]*Subscription
 
 	defer rows.Close()
 
-	subs := []*Subscription{}
+	subJSONs := []*SubscriptionJSON{}
 
 	if err == sql.ErrNoRows {
-		return subs, 0, err
+		return subJSONs, 0, err
 	}
 
 	for rows.Next() {
@@ -493,12 +493,14 @@ func (r subscriptionRepo) GetSubscriptions(ctx context.Context) ([]*Subscription
 				zap.String("error", err.Error()),
 				zap.String("query", getSubscriptionQuery),
 			)
-			return subs, 0, err
+			return subJSONs, 0, err
 		}
+		subJSON := sub.ToJSON()
+		subJSON.NextPaymentDate = sub.NextPaymentDate.String
 
-		subs = append(subs, &sub)
+		subJSONs = append(subJSONs, subJSON)
 	}
-	return subs, 0, nil
+	return subJSONs, 0, nil
 }
 
 func (r subscriptionRepo) GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error) {

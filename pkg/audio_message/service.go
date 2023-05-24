@@ -33,6 +33,7 @@ type Service interface {
 	CreateMeditations(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error)
 	GetMeditations(ctx context.Context) ([]Meditation, error)
+	GetMeditation(ctx context.Context, meditationId string) (*Meditation, error)
 }
 
 type FilterType string
@@ -363,6 +364,16 @@ func (svc *audioMessageService) CreateMeditation(ctx context.Context, meditation
 
 func (svc *audioMessageService) GetMeditations(ctx context.Context) ([]Meditation, error) {
 	meditation, err := svc.repo.GetMeditations(ctx)
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+
+	return meditation, nil
+
+}
+
+func (svc *audioMessageService) GetMeditation(ctx context.Context, meditationId string) (*Meditation, error) {
+	meditation, err := svc.repo.GetMeditation(ctx, meditationId)
 	if err == sql.ErrNoRows {
 		return nil, err
 	}
