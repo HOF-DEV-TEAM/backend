@@ -444,7 +444,7 @@ func (r audioMessageRepository) DeleteAudioSeriesByID(ctx context.Context, serie
 func (r audioMessageRepository) HomePageDirectory(ctx context.Context) (*Homepage, error) {
 
 	const (
-		meditationSQL = `SELECT * FROM meditation WHERE deleted_at IS NULL AND status='active'`
+		meditationSQL = `SELECT * FROM meditation WHERE deleted_at IS NULL AND LOWER(status)='active'`
 		seriesSQL     = `SELECT * FROM audio_series WHERE deleted_at IS NULL AND of_the_month=true`
 	)
 
