@@ -80,7 +80,7 @@ pipeline {
          stage('Notify slack') {
              steps {
                  slackSend botUser: true,
-                 message: 'Project built successfully',
+                 message: "Project built successfully - ${SHORT_COMMIT}",
                  channel: '#jenkins-hof-backend',
                  color: 'good'
              }
