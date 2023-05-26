@@ -172,7 +172,7 @@ func signupUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) 
 //	@Accept			json
 //	@Produce		json
 //	@Param			ForgotPasswordPayload	body		ForgotPasswordPayload	true	"Forgot password"
-//	@Success		200						{object}	OTPResponse
+//	@Success		200						{object}	http_helper.DefaultResponse
 //	@Router			/session/forgot_password [post]
 func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -182,13 +182,17 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		otpResponse, err := svc.ForgotPassword(request)
+		err = svc.ForgotPassword(request)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
 
-		http_helper.EncodeResult(w, otpResponse, http.StatusOK)
+		http_helper.EncodeResult(w, http_helper.DefaultResponse{
+			Code:    http.StatusOK,
+			Success: true,
+			Body:    "OTP sent",
+		}, http.StatusOK)
 	}
 }
 

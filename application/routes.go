@@ -23,7 +23,7 @@ func (app *application) buildRoutes() {
 	app.router.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	userRepo := user.NewRepository(app.db, app.logger)
-	userService := user.NewService(userRepo, app.logger, &app.config.Security)
+	userService := user.NewService(userRepo, app.logger, &app.config.Security, &app.config.Mailer)
 
 	//Subscription
 	subscriptionRepo := subscription.NewRepository(app.db, app.logger)
