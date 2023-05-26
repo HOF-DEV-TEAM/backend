@@ -389,13 +389,14 @@ func (r *userRepository) UpdatePaystack(ctx context.Context, user *User) (uuid.U
 }
 
 func (r userRepository) requestOTP(ctx context.Context, target string) (*OTPResponse, error) {
-	_, err := r.GetByEmail(ctx, target)
+	user, err := r.GetByEmail(ctx, target)
 	if err != nil {
 		return nil, err
 	}
-	expirationDuration := time.Duration(120) * time.Second
+	expirationDuration := time.Duration(5) * time.Minute
 
 	otpResponse := OTPResponse{
+		User:                fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 		Target:              target,
 		OTP:                 r.otpGenerator.Generate(),
 		ExpireTimeInSeconds: time.Now().Add(expirationDuration).Unix(),

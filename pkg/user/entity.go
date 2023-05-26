@@ -162,6 +162,7 @@ type OTPRequest struct {
 }
 
 type OTPResponse struct {
+	User                string `json:"user"`
 	Target              string `json:"target"`
 	OTP                 string `json:"otp"`
 	ExpireTimeInSeconds int64  `json:"expireTimeInSeconds"`

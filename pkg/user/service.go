@@ -1,14 +1,17 @@
 package user
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/config"
 	"bitbucket.org/hofng/hofApp/infrastructure/library"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
+	"bitbucket.org/hofng/hofApp/infrastructure/mailer"
 	"context"
 	"crypto/md5"
 	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/gofrs/uuid"
+	"math"
 	"strings"
 	"time"
 
@@ -22,7 +25,7 @@ var ErrFieldRequired = errors.New("field is required")
 type Service interface {
 	SignUp(ctx context.Context, user *SignUpUser, devices []Device) (*User, error)
 	CreateUser(ctx context.Context, user *User) (*User, error)
-	ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error)
+	ForgotPassword(request ForgotPasswordPayload) error
 	VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error)
 	ResetPassword(ctx context.Context, request ResetPasswordPayload) (uuid.UUID, error)
 	ChangePassword(ctx context.Context, request ChangePasswordPayload) (uuid.UUID, error)
@@ -42,11 +45,12 @@ type userService struct {
 	repo        Repository
 	log         *zap.Logger
 	config      *security.SecurityConfig
+	mailConfig  *config.MailerConfig
 	idGenerator library.IDGenerator
 }
 
-func NewService(repo Repository, log *zap.Logger, config *security.SecurityConfig) Service {
-	return &userService{log: log, repo: repo, config: config, idGenerator: library.NewIDGenerator()}
+func NewService(repo Repository, log *zap.Logger, config *security.SecurityConfig, mailConfig *config.MailerConfig) Service {
+	return &userService{log: log, repo: repo, config: config, mailConfig: mailConfig, idGenerator: library.NewIDGenerator()}
 }
 
 func (s *userService) validateStruct(v interface{}) error {
@@ -161,21 +165,50 @@ func (s *userService) CreateUser(ctx context.Context, user *User) (*User, error)
 	return result, nil
 }
 
-func (s *userService) ForgotPassword(request ForgotPasswordPayload) (*OTPResponse, error) {
+func (s *userService) ForgotPassword(request ForgotPasswordPayload) error {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
-
+		return err
 	}
 	otpResponse, err := s.repo.ForgotPassword(request)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// TODO insert mailer function
+	messageID, err := s.idGenerator.IDGenerate()
+	if err != nil {
+		return err
+	}
+	expirationTime := time.Unix(otpResponse.ExpireTimeInSeconds, 0)
+	expiresIn := expirationTime.Sub(time.Now()).Minutes()
+
+	message := mailer.Message{
+		ID:     messageID,
+		Title:  "Password Reset OTP",
+		Target: otpResponse.Target,
+		DataMap: map[string]string{
+			"User":              otpResponse.User,
+			"OTP":               otpResponse.OTP,
+			"ExpiresIn":         fmt.Sprintf("%v", math.Ceil(expiresIn/5)*5),
+			"HofRoundLogo":      mailer.EncodeImages("infrastructure/mailer/images/HoF_Logo_White.png"),
+			"ThisIsHome1":       mailer.EncodeImages("infrastructure/mailer/images/home1.jpg"),
+			"ThisIsHome2":       mailer.EncodeImages("infrastructure/mailer/images/home2.jpg"),
+			"ThisIsHome3":       mailer.EncodeImages("infrastructure/mailer/images/home3.jpg"),
+			"Instagram":         mailer.EncodeImages("infrastructure/mailer/images/instagram2x.png"),
+			"Facebook":          mailer.EncodeImages("infrastructure/mailer/images/facebook2x.png"),
+			"Twitter":           mailer.EncodeImages("infrastructure/mailer/images/twitter2x.png"),
+			"YouTube":           mailer.EncodeImages("infrastructure/mailer/images/youtube2x.png"),
+			"HOFHorizontalLogo": mailer.EncodeImages("infrastructure/mailer/images/hof_horizontal_logo.png"),
+		},
+	}
+	err = mailer.SendMail(message, s.mailConfig.PasswordResetMailPath, s.log, s.mailConfig)
+	if err != nil {
+		return err
+	}
 
 	// Temporary return statement pending the mail
-	return otpResponse, nil
+	return nil
 }
 
 func (s *userService) VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error) {

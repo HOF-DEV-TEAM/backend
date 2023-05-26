@@ -1,0 +1,68 @@
+{{define "base"}}
+    <!doctype html>
+    <html lang="en">
+    <head>
+    
+        <meta charset="UTF-8">
+        <meta name="viewport"
+              content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Document</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+              integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l"
+              crossorigin="anonymous">
+    </head>
+    <body style="overflow-x: hidden; background:#F1F1F1; display:flex; justify-content: center; align-items: center; flex-wrap: wrap; padding-bottom:15px; width:100%">
+
+    <header style="max-width:650px; background-color:#040654; display:flex; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
+
+        <div style="display:flex; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
+            <img src="data:image/png;base64,{{.DataMap.HofRoundLogo}}" alt="hof_logo" style="max-width:120px;">
+            <img src="data:image/jpeg;base64,{{.DataMap.ThisIsHome1}}" alt="welcome_to_the_faith_factory" style="max-width:100%;">
+        </div>
+    </header>
+    {{block "content" .}}
+
+    {{end}}
+
+    <footer style="max-width: 650px; display:flex; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
+        <section style="max-width: 100%; display:flex; justify-content: center; align-items: flex-start; flex-wrap: wrap; background-color:white; padding: 40px 25px 40px 25px;">
+            <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap; width:100%; gap:20px 20px;">
+                <img src="data:image/jpeg;base64,{{.DataMap.ThisIsHome2}}" alt="joyful_disciples" style="max-width:285px;">
+                <img src="data:image/jpeg;base64,{{.DataMap.ThisIsHome3}}" alt="joyful_disciples" style="max-width:285px;">
+            </div>
+
+            <p style="max-width:100%; padding: 40px 0 0 0; color:#072b52;direction:ltr;font-family:'Lora', Georgia, serif ;font-size:19px;font-weight:normal;letter-spacing:1px;line-height:120%;text-align:center;margin-top:0;margin-bottom:0;"">Raising Stronger Believers</p>
+
+        </section>
+
+        <div style="max-width:100%; padding: 60px 25px 40px 25px; display:flex; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
+            <img src="data:image/png;base64,{{.DataMap.HOFHorizontalLogo}}" alt="hof_horizontal_logo" style="width:100%;" />
+            <section style="padding-top:30px">
+                <span class="icon" style="padding:0 5px 0 5px;">
+                    <a href="https://facebook.com/hofchurchng" target="_self">
+                        <img alt="Facebook" src="data:image/png;base64,{{.DataMap.Facebook}}" title="Facebook" style="max-width:25px;"/>
+                    </a>
+                </span>
+                <span class="icon" style="padding:0 5px 0 5px;">
+                    <a href="https://twitter.com/hofchurchng" target="_self">
+                        <img alt="Twitter" src="data:image/png;base64,{{.DataMap.Twitter}}" title="Twitter" style="max-width:25px;"/>
+                    </a>
+                </span>
+                <span class="icon" style="padding:0 5px 0 5px;">
+                    <a href="https://instagram.com/hofchurchng" target="_self">
+                        <img alt="Instagram" src="data:image/png;base64,{{.DataMap.Instagram}}" title="Instagram" style="max-width:25px;"/>
+                    </a>
+                </span>
+                <span class="icon" style="padding:0 5px 0 5px;">
+                    <a href="https://youtube.com/hofchurchng" target="_self">
+                        <img alt="YouTube" src="data:image/png;base64,{{.DataMap.YouTube}}" title="YouTube" style="max-width:25px;"/>
+                    </a>
+                </span>
+            </section>
+        </div>
+    </footer>
+
+    </body>
+    </html>
+{{end}}

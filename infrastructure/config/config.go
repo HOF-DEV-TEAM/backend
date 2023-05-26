@@ -17,6 +17,7 @@ type ServerConfig struct {
 	AwsConfiguration AwsConfiguration
 	Security         security.SecurityConfig
 	PaystackConfig   PaystackConfig
+	Mailer           MailerConfig
 }
 
 type PaystackConfig struct {
@@ -40,6 +41,16 @@ type DatabaseConfig struct {
 	Password string `env:"DB_PASSWORD"`
 	DbUrl    string `env:"DATABASE_URL" envDefault:"" envWhitelisted:"true"`
 }
+type MailerConfig struct {
+	Email                 string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`
+	Smtp                  string `env:"MAILER_SMTP" envDefault:"smtp-relay.sendinblue.com"`
+	UserName              string `env:"MAILER_USERNAME" envDefault:"sunnexajayi@gmail.com"`
+	Password              string `env:"MAILER_PASSWORD" envDefault:"Hs2r7K69WMXf8pqb"`
+	Port                  int    `env:"MAILER_PORT" envDefault:"2525"`
+	Header                string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
+	TemplatePath          string `env:"TEMPLATE_PATH" envDefault:"./files/templates/"`
+	PasswordResetMailPath string `env:"MAIL_PATH" envDefault:"reset_password.page.tmpl"`
+}
 
 func Read(logger zap.Logger) (*ServerConfig, error) {
 	var serverConfig ServerConfig
@@ -50,6 +61,7 @@ func Read(logger zap.Logger) (*ServerConfig, error) {
 		&serverConfig.Security,
 		&serverConfig.AwsConfiguration,
 		&serverConfig.PaystackConfig,
+		&serverConfig.Mailer,
 	} {
 		if err := env.Parse(target); err != nil {
 			return &serverConfig, err
@@ -62,6 +74,7 @@ func Read(logger zap.Logger) (*ServerConfig, error) {
 
 	out := serverConfig.formartUri()
 	logger.Info(out)
+	logger.Info(serverConfig.Mailer.PasswordResetMailPath + " " + serverConfig.Mailer.Email)
 	return &serverConfig, nil
 }
 
