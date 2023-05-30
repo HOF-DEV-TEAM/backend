@@ -14,7 +14,7 @@ require (
 	github.com/swaggo/swag v1.8.9
 	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.1.0
-	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
+	gopkg.in/mail.v2 v2.3.1
 )
 
 require (

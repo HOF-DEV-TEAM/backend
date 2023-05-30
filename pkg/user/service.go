@@ -183,6 +183,7 @@ func (s *userService) ForgotPassword(request ForgotPasswordPayload) error {
 	expirationTime := time.Unix(otpResponse.ExpireTimeInSeconds, 0)
 	expiresIn := expirationTime.Sub(time.Now()).Minutes()
 
+	bucketPath := "https://hof-s3.s3.eu-west-2.amazonaws.com/email_template_images"
 	message := mailer.Message{
 		ID:     messageID,
 		Title:  "Password Reset OTP",
@@ -191,15 +192,15 @@ func (s *userService) ForgotPassword(request ForgotPasswordPayload) error {
 			"User":              otpResponse.User,
 			"OTP":               otpResponse.OTP,
 			"ExpiresIn":         fmt.Sprintf("%v", math.Ceil(expiresIn/5)*5),
-			"HofRoundLogo":      mailer.EncodeImages("infrastructure/mailer/images/HoF_Logo_White.png"),
-			"ThisIsHome1":       mailer.EncodeImages("infrastructure/mailer/images/home1.jpg"),
-			"ThisIsHome2":       mailer.EncodeImages("infrastructure/mailer/images/home2.jpg"),
-			"ThisIsHome3":       mailer.EncodeImages("infrastructure/mailer/images/home3.jpg"),
-			"Instagram":         mailer.EncodeImages("infrastructure/mailer/images/instagram2x.png"),
-			"Facebook":          mailer.EncodeImages("infrastructure/mailer/images/facebook2x.png"),
-			"Twitter":           mailer.EncodeImages("infrastructure/mailer/images/twitter2x.png"),
-			"YouTube":           mailer.EncodeImages("infrastructure/mailer/images/youtube2x.png"),
-			"HOFHorizontalLogo": mailer.EncodeImages("infrastructure/mailer/images/hof_horizontal_logo.png"),
+			"HofRoundLogo":      fmt.Sprintf("%s/HoF_Logo_White.png", bucketPath),
+			"ThisIsHome1":       fmt.Sprintf("%s/home1.jpg", bucketPath),
+			"ThisIsHome2":       fmt.Sprintf("%s/home2.jpg", bucketPath),
+			"ThisIsHome3":       fmt.Sprintf("%s/home3.jpg", bucketPath),
+			"Instagram":         fmt.Sprintf("%s/instagram2x.png", bucketPath),
+			"Facebook":          fmt.Sprintf("%s/facebook2x.png", bucketPath),
+			"Twitter":           fmt.Sprintf("%s/twitter2x.png", bucketPath),
+			"YouTube":           fmt.Sprintf("%s/youtube2x.png", bucketPath),
+			"HOFHorizontalLogo": fmt.Sprintf("%s/hof_horizontal_logo.png", bucketPath),
 		},
 	}
 	err = mailer.SendMail(message, s.mailConfig.PasswordResetMailPath, s.log, s.mailConfig)

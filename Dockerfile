@@ -42,6 +42,7 @@ ENV WORKDIR /app
 RUN apk --no-cache add ca-certificates
 COPY --from=base $WORKDIR/main .
 COPY --from=base $WORKDIR/migrations ./migrations
+COPY --from=base $WORKDIR/templates ./templates
 COPY --from=base $WORKDIR/go.mod .
 COPY --from=base $WORKDIR/go.sum .
 
