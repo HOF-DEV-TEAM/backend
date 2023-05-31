@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gofrs/uuid"
+	"github.com/golang-jwt/jwt/v4"
 	"math"
 	"strings"
 	"time"
@@ -39,6 +40,8 @@ type Service interface {
 	UpdateDevice(ctx context.Context, status, identifier string) (*DeviceManager, error)
 	UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error)
 	GetAppVersion(ctx context.Context, versionID string) (*VersionManager, error)
+	SendEmailVerificationLink(ctx context.Context, email string) error
+	VerifyEmail(ctx context.Context) error
 }
 
 type userService struct {
@@ -518,4 +521,94 @@ func (s *userService) GetAppVersion(ctx context.Context, versionID string) (*Ver
 
 	return appVersion, nil
 
+}
+
+func (s *userService) SendEmailVerificationLink(ctx context.Context, email string) error {
+	user, err := s.repo.GetByEmail(ctx, email)
+
+	if err != nil {
+		return err
+	}
+
+	cliams, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+
+	if !ok {
+		s.log.Info("msg",
+			zap.String("JWTError", "broken"),
+			zap.String(s.config.JWTContextKey, ""),
+		)
+	}
+
+	expiresAt := jwt.NewNumericDate(time.Now().Add(time.Hour * 2))
+
+	verificationCliam := security.EmailVerificationCliam{Type: "email_verification", Email: user.Email, ExpiresAt: expiresAt}
+	cliams.JWTClaimsMain.Claims = verificationCliam
+
+	tokenString, err := cliams.Sign(s.config, expiresAt)
+
+	if err != nil {
+		return err
+	}
+
+	messageID, err := s.idGenerator.IDGenerate()
+	if err != nil {
+		return err
+	}
+
+	expiresIn := verificationCliam.ExpiresAt.Sub(time.Now()).Minutes()
+	bucketPath := "https://hof-s3.s3.eu-west-2.amazonaws.com/email_template_images"
+	serverUrl := "https://app.hoftech.org"
+
+	message := mailer.Message{
+		ID:     messageID,
+		Title:  "Verify Email",
+		Target: user.Email,
+		DataMap: map[string]string{
+			"User":             fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+			"ExpiresIn":        fmt.Sprintf("%v", math.Ceil(expiresIn/5)*5),
+			"VerificationLink": fmt.Sprintf("%s/user/verify_email/%s", serverUrl, tokenString),
+			"HofRoundLogo":     fmt.Sprintf("%s/HoF_Logo_White.png", bucketPath),
+			"ThisIsHome1":      fmt.Sprintf("%s/home1.jpg", bucketPath),
+		},
+	}
+	err = mailer.SendMail(message, "verify_email.page.tmpl", s.log, s.mailConfig)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *userService) VerifyEmail(ctx context.Context) error {
+	//user claim is valid at this point
+	cliams, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	verificationClaim := cliams.JWTClaimsMain.Claims.(map[string]interface{})
+
+	if verificationClaim["type"] != "email_verification" {
+		return errors.New("invalid link")
+	}
+
+	user, err := s.repo.GetByEmail(ctx, fmt.Sprintf("%s", verificationClaim["email"]))
+
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		s.log.Info("msg",
+			zap.String("JWTError", "broken"),
+			zap.String(s.config.JWTContextKey, ""),
+		)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	user.IsVerified = EmailVerified
+	err = s.repo.UpdateUserIsVerified(ctx, user.ID, EmailVerified)
+
+	if err != nil {
+		return err
+	}
+	return nil
 }

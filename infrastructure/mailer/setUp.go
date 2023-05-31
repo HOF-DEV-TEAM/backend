@@ -50,26 +50,7 @@ func (r *MailRequest) AppSendMail(tempName string, item interface{}) error {
 
 var functions = template.FuncMap{}
 
-func (r *MailRequest) CreateTemplate(tmpl string, data interface{}) error {
-	err := r.CreateTemplateCache()
-	if err != nil || r.templatesCache == nil {
-		r.log.Error("CreateTemplateCache", zap.Error(err))
-	}
-	tc := *(r.templatesCache)
-	t, ok := tc[tmpl]
-	if !ok {
-		r.log.Error("tmpl", zap.Error(errors.New("passed template does not match any available template")))
-		return err
-	}
-	buf := new(bytes.Buffer)
-
-	if err = t.Execute(buf, data); err != nil {
-		r.log.Error("Execute Data", zap.Error(err))
-		return err
-	}
-	r.body = buf.String()
-	return nil
-}
+//: TODO create a templater parser package
 
 func (r *MailRequest) createSingleTemplate(tmpl string, data interface{}) error {
 	if r.templateStore == nil {
@@ -105,42 +86,6 @@ func (r *MailRequest) createSingleTemplate(tmpl string, data interface{}) error 
 
 	(*r.templateStore)[tmpl] = buf.String()
 
-	fmt.Println((r.templateStore), "(* after r.templateStore)")
-
-	return nil
-}
-
-func (r *MailRequest) CreateTemplateCache() error {
-	var myCache map[string]*template.Template
-
-	pages, err := filepath.Glob("./templates/*.page.tmpl")
-	if err != nil {
-		r.log.Error("filepath.Glob pages", zap.Error(err))
-		return err
-	}
-	for _, page := range pages {
-		name := filepath.Base(page)
-		ts, err := template.New(name).Funcs(functions).ParseFiles(page)
-		if err != nil {
-			r.log.Error("ParseFiles", zap.Error(err))
-			return err
-		}
-		matches, err := filepath.Glob("./templates/*.layout.tmpl")
-		if err != nil {
-			r.log.Error("filepath.Glob base layout", zap.Error(err))
-			return err
-		}
-
-		if len(matches) > 0 {
-			ts, err = ts.ParseGlob("./templates/*.layout.tmpl")
-			if err != nil {
-				return err
-			}
-		}
-		myCache[name] = ts
-	}
-
-	r.templatesCache = &myCache
 	return nil
 }
 

@@ -38,6 +38,7 @@ type Repository interface {
 	UpdateDevice(ctx context.Context, userId, status, identifier string) (*DeviceManager, error)
 	UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error)
 	GetAppVersion(ctx context.Context, versionID uuid.UUID) (*VersionManager, error)
+	UpdateUserIsVerified(ctx context.Context, userId string, verifyField IsVerifiedEnum) error
 	Close() error
 }
 
@@ -894,4 +895,17 @@ func (r userRepository) GetAppVersion(ctx context.Context, versionID uuid.UUID) 
 
 	}
 	return &version, nil
+}
+
+func (r userRepository) UpdateUserIsVerified(ctx context.Context, userId string, verifyField IsVerifiedEnum) error {
+	query := `UPDATE users SET is_verified=$1 WHERE id=$2 RETURNING id;`
+
+	fmt.Println(verifyField, userId, "userId")
+	err := r.db.QueryRowContext(ctx, query, verifyField, userId).Scan(&userId)
+
+	if err != nil {
+		r.log.Error("QueryRowContext Update users isVerified", zap.String("Update users is_verified field", err.Error()))
+		return err
+	}
+	return nil
 }

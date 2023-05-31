@@ -10,14 +10,14 @@ import (
 
 func (config *SecurityConfig) ValidateJWT(tokenString string) (*jwt.Token, JWTClaim, error) {
 	claims := &JWTClaim{}
-		token, err := jwt.ParseWithClaims((tokenString), claims, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, http_helper.ErrUnauthorized
-			}
+	token, err := jwt.ParseWithClaims((tokenString), claims, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, http_helper.ErrUnauthorized
+		}
 
-			return []byte(config.JWTSecret), nil
-		})
-		return token, *claims, err
+		return []byte(config.JWTSecret), nil
+	})
+	return token, *claims, err
 }
 
 // TODO: change this into a callback that returns a middlware
@@ -55,9 +55,4 @@ func (config *SecurityConfig) Authenticator(next http.Handler) http.Handler {
 		// Token is authenticated, pass it through
 		next.ServeHTTP(w, r.WithContext(newCtx))
 	})
-}
-
-func (v *JWTClaim) PutUserIDAndSign(config *SecurityConfig, userId string) (string, error) {
-	v.JWTClaimsMain.LoggedInUserId = userId
-	return v.Sign(config)
 }

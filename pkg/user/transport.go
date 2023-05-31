@@ -570,3 +570,46 @@ func getAppVersion(w http.ResponseWriter, r *http.Request, svc interface{}) {
 
 	http_helper.EncodeResult(w, result, http.StatusOK)
 }
+
+func SendEmailVerificationLink(svc Service) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		var user UserJSON
+
+		err := json.NewDecoder(r.Body).Decode(&user)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		err = svc.(Service).SendEmailVerificationLink(r.Context(), user.Email)
+
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, http_helper.DefaultResponse{
+			Code:    http.StatusOK,
+			Success: true,
+			Body:    "Verification link sent",
+		}, http.StatusOK)
+	}
+	return
+}
+
+func VerifyEmail(svc Service) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		err := svc.(Service).VerifyEmail(r.Context())
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, http_helper.DefaultResponse{
+			Code:    http.StatusOK,
+			Success: true,
+			Body:    "Verification successfull",
+		}, http.StatusOK)
+	}
+	return
+}

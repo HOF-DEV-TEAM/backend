@@ -100,6 +100,7 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
 	changePasswordHandler := user.ChangePasswordHandler(svc)
+	verifyEmail := user.VerifyEmail(svc)
 
 	router.Route("/user", func(r chi.Router) {
 		r.Mount("/favourite", favRouter)
@@ -109,6 +110,7 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 		r.Post("/reset_password", resetPasswordHandler)
 		r.Post("/change_password", changePasswordHandler)
 		r.Post("/update", updateUserProfileHandler)
+		r.Get("/verify_email/{token}", verifyEmail)
 	})
 }
 
@@ -122,6 +124,7 @@ func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user
 	verifyResetPasswordOTPHandler := user.VerifyPasswordResetOTPHandler(userSvc)
 	authenticateHandler := auth.AuthenticateHandler(authSvc)
 	buildDevicesHandler := user.BuildDeviceHandler(userSvc)
+	sendEmailVerificationLink := user.SendEmailVerificationLink(userSvc)
 
 	sessionsRouter.Post("/authenticate", authenticateHandler)
 	sessionsRouter.Post("/sign_in", signInHandler)
@@ -129,6 +132,7 @@ func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user
 	sessionsRouter.Post("/sign_in/admin", adminSignInHandler)
 	sessionsRouter.Post("/forgot_password", forgotResetPasswordHandler)
 	sessionsRouter.Put("/verify_token", verifyResetPasswordOTPHandler)
+	sessionsRouter.Post("/verify_email", sendEmailVerificationLink)
 	// sessionsRouter.Post("/authenticate/{token}", resetPasswordHandler)
 	sessionsRouter.Post("/device/{email}", buildDevicesHandler)
 
