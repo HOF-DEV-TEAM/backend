@@ -52,7 +52,7 @@ func (v *JWTClaim) Sign(config *SecurityConfig, expiresAt *jwt.NumericDate) (str
 
 func (v *JWTClaim) PutUserIDAndSign(config *SecurityConfig, userId string) (string, error) {
 	v.JWTClaimsMain.LoggedInUserId = userId
-	return v.Sign(config, jwt.NewNumericDate(time.Now().Add(time.Minute*10)))
+	return v.Sign(config, jwt.NewNumericDate(time.Now().Add(time.Hour*48)))
 }
 
 // TODO: validate approach for this longer lived token - ideally this should come from DB
