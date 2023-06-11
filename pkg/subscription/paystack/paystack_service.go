@@ -52,7 +52,7 @@ func (pc *PaystackService) VerifySubscription(ctx context.Context, subReq subscr
 
 	if subResponse.Data.Status == "success" {
 		//update customer code if not set
-		claims, ok := ctx.Value(pc.config.JWTClaimsContextKey).(*security.JWTClaim)
+		claims, ok := ctx.Value(pc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
 
 		if !ok {
 			return nil, http_helper.ErrUnauthorized

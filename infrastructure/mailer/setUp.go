@@ -4,11 +4,8 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/config"
 	"bytes"
 	"errors"
-	"fmt"
 	"go.uber.org/zap"
 	"gopkg.in/mail.v2"
-	"os"
-	"path/filepath"
 	"text/template"
 )
 
@@ -48,39 +45,18 @@ func (r *MailRequest) AppSendMail(tempName string, item interface{}) error {
 
 }
 
-var functions = template.FuncMap{}
-
-//: TODO create a templater parser package
-
 func (r *MailRequest) createSingleTemplate(tmpl string, data interface{}) error {
 	if r.templateStore == nil {
 		r.templateStore = &map[string]string{}
 	}
 
-	//template already exists in cache
-	if _, ok := (*r.templateStore)[tmpl]; ok {
-		return nil
-	}
-
-	dir, err := os.Getwd()
-	page := fmt.Sprintf("%s/%s", filepath.Join(dir, "templates"), tmpl)
-
-	ts, err := template.New(tmpl).Funcs(functions).ParseFiles(page)
-	if err != nil {
-		r.log.Error("ParseFiles", zap.Error(err))
-		return err
-	}
-
-	ts, err = ts.ParseGlob("./templates/*.layout.tmpl")
-
-	if err != nil {
-		return err
-	}
-
+	t := Template{}
 	buf := new(bytes.Buffer)
 
-	if err = ts.Execute(buf, data); err != nil {
-		r.log.Error("Execute Data", zap.Error(err))
+	err := t.Create(buf, tmpl, data)
+
+	if err != nil {
+		r.log.Error("Create SingleTemplate", zap.Error(err))
 		return err
 	}
 

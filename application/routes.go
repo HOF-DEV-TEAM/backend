@@ -23,7 +23,7 @@ func (app *application) buildRoutes() {
 	app.router.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	userRepo := user.NewRepository(app.db, app.logger)
-	userService := user.NewService(userRepo, app.logger, &app.config.Security, &app.config.Mailer)
+	userService := user.NewService(userRepo, app.logger, app.config)
 
 	//Subscription
 	subscriptionRepo := subscription.NewRepository(app.db, app.logger)
@@ -64,6 +64,14 @@ func (app *application) buildRoutes() {
 	})
 
 	app.router.Group(func(r chi.Router) {
+		r.Use(app.config.Security.VerifyFromPath())
+		r.Use(app.config.Security.AuthenticateVerifyEmail)
+
+		verifyEmail := user.VerifyEmail(userService)
+		r.Get("/verify_email/{token}", verifyEmail)
+	})
+
+	app.router.Group(func(r chi.Router) {
 		r.Use(app.config.Security.Verifier())
 		r.Use(app.config.Security.Authenticator)
 
@@ -90,7 +98,7 @@ func (app *application) buildRoutes() {
 
 }
 
-func buildUserEndpoints(router chi.Router, svc user.Service) {
+func buildUserEndpoints(router chi.Router, svc *user.UserService) {
 	userRouter := chi.NewRouter()
 	updateUserProfileHandler := user.UpdateUserProfileHandler(svc)
 
@@ -100,7 +108,6 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 
 	resetPasswordHandler := user.ResetPasswordHandler(svc)
 	changePasswordHandler := user.ChangePasswordHandler(svc)
-	verifyEmail := user.VerifyEmail(svc)
 
 	router.Route("/user", func(r chi.Router) {
 		r.Mount("/favourite", favRouter)
@@ -110,11 +117,10 @@ func buildUserEndpoints(router chi.Router, svc user.Service) {
 		r.Post("/reset_password", resetPasswordHandler)
 		r.Post("/change_password", changePasswordHandler)
 		r.Post("/update", updateUserProfileHandler)
-		r.Get("/verify_email/{token}", verifyEmail)
 	})
 }
 
-func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc user.Service) {
+func buildSessionEndpoints(router chi.Router, authSvc auth.Service, userSvc *user.UserService) {
 	sessionsRouter := chi.NewRouter()
 
 	signInHandler := auth.SignInHandler(authSvc)
@@ -224,7 +230,7 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	router.Mount("/subscription", subRouter)
 }
 
-func buildFavEndpoints(svc user.Service) http.Handler {
+func buildFavEndpoints(svc *user.UserService) http.Handler {
 	favRouter := chi.NewRouter()
 	createFavouriteHandler := user.CreateFavouriteHandler(svc)
 	getAllFavouritesHandler := user.GetFavouritesHandler(svc)
@@ -237,7 +243,7 @@ func buildFavEndpoints(svc user.Service) http.Handler {
 	return favRouter
 }
 
-func buildDeviceEndpoints(svc user.Service) http.Handler {
+func buildDeviceEndpoints(svc *user.UserService) http.Handler {
 	deviceRouter := chi.NewRouter()
 	getAllDevicesHandler := user.GetDevicesHandler(svc)
 	deleteDeviceHandler := user.DeleteDeviceHandler(svc)
@@ -249,7 +255,7 @@ func buildDeviceEndpoints(svc user.Service) http.Handler {
 	return deviceRouter
 }
 
-func buildAppVersionEndpoints(svc user.Service) http.Handler {
+func buildAppVersionEndpoints(svc *user.UserService) http.Handler {
 	appVersionRouter := chi.NewRouter()
 	updateAppVersionHandler := user.UpdateAppVersion(svc)
 	getAppVersionHandler := user.GetAppVersion(svc)

@@ -81,7 +81,7 @@ func (ss *subscriptionSvc) GetSubscriptionPlanOfferings(ctx context.Context) ([]
 }
 
 func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error) {
-	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return nil, nil
 	}
@@ -131,7 +131,7 @@ func (ss *subscriptionSvc) CreateSubscriptionPlanOffering(ctx context.Context, s
 }
 
 func (ss *subscriptionSvc) GetSession(ctx context.Context) (*user.UserSession, error) {
-	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	userId := claims.JWTClaimsMain.LoggedInUserId
 
 	if !ok {

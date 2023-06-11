@@ -23,24 +23,24 @@ type SecurityConfig struct {
 	JWTExpiration       time.Duration
 }
 
-type JWTClaim struct {
-	JWTClaimsMain jwtClaims `json:"v1"`
+type JWTClaim[T any] struct {
+	JWTClaimsMain jwtClaims[T] `json:"v1"`
 	jwt.RegisteredClaims
 }
 
-type EmailVerificationCliam struct {
+type EmailVerificationClaim struct {
 	Type      string           `json:"type"`
 	Email     string           `json:"email"`
 	ExpiresAt *jwt.NumericDate `json:"expiresAt"`
 }
 
-type jwtClaims struct {
-	Type           string      `json:"type"`
-	LoggedInUserId string      `json:"userId"`
-	Claims         interface{} `json:"claims"`
+type jwtClaims[T any] struct {
+	Type           string `json:"type"`
+	LoggedInUserId string `json:"userId"`
+	Claims         T      `json:"claims"`
 }
 
-func (v *JWTClaim) Sign(config *SecurityConfig, expiresAt *jwt.NumericDate) (string, error) {
+func (v *JWTClaim[T]) Sign(config *SecurityConfig, expiresAt *jwt.NumericDate) (string, error) {
 	v.RegisteredClaims = jwt.RegisteredClaims{
 		ExpiresAt: expiresAt,
 		IssuedAt:  jwt.NewNumericDate(jwt.TimeFunc()),
@@ -50,13 +50,13 @@ func (v *JWTClaim) Sign(config *SecurityConfig, expiresAt *jwt.NumericDate) (str
 	return token.SignedString([]byte(config.JWTSecret))
 }
 
-func (v *JWTClaim) PutUserIDAndSign(config *SecurityConfig, userId string) (string, error) {
+func (v *JWTClaim[T]) PutUserIDAndSign(config *SecurityConfig, userId string) (string, error) {
 	v.JWTClaimsMain.LoggedInUserId = userId
 	return v.Sign(config, jwt.NewNumericDate(time.Now().Add(time.Hour*48)))
 }
 
 // TODO: validate approach for this longer lived token - ideally this should come from DB
-func (v *JWTClaim) CreateRefreshToken(config *SecurityConfig) (string, error) {
+func (v *JWTClaim[T]) CreateRefreshToken(config *SecurityConfig) (string, error) {
 	v.RegisteredClaims = jwt.RegisteredClaims{
 		IssuedAt: jwt.NewNumericDate(jwt.TimeFunc()),
 	}
@@ -104,6 +104,10 @@ func (config *SecurityConfig) Verifier() func(http.Handler) http.Handler {
 	return config.Verify(TokenFromHeader, TokenFromCookie, TokenFromPath)
 }
 
+func (config *SecurityConfig) VerifyFromPath() func(http.Handler) http.Handler {
+	return config.Verify(TokenFromPath)
+}
+
 func (config *SecurityConfig) Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +127,7 @@ func (config *SecurityConfig) NewContext(ctx context.Context, t string, err erro
 
 func (config *SecurityConfig) AddClaimToContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), config.JWTClaimsContextKey, &JWTClaim{})
+		ctx := context.WithValue(r.Context(), JWTClaimsContextKey, &JWTClaim[any]{})
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

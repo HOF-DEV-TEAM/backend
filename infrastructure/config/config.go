@@ -27,10 +27,11 @@ type PaystackConfig struct {
 }
 
 type AwsConfiguration struct {
-	Region   string `env:"AWS_REGION"`
-	Endpoint string `env:"AWS_ENDPOINT"`
-	Secret   string `env:"AWS_SECRET"`
-	Bucket   string `env:"AWS_BUCKET" envDefault:"hof-s3" envWhitelisted:"true"`
+	Region     string `env:"AWS_REGION"`
+	Endpoint   string `env:"AWS_ENDPOINT"`
+	Secret     string `env:"AWS_SECRET"`
+	Bucket     string `env:"AWS_BUCKET" envDefault:"hof-s3" envWhitelisted:"true"`
+	BucketPath string `env:"AWS_BUCKET_PATH"`
 }
 
 type DatabaseConfig struct {

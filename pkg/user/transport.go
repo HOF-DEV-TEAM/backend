@@ -1,14 +1,15 @@
 package user
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
+	"bitbucket.org/hofng/hofApp/infrastructure/mailer"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/gofrs/uuid"
 	"net/http"
 	"time"
-
-	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 )
 
 type UserAndToken struct {
@@ -237,15 +238,15 @@ func VerifyPasswordResetOTPHandler(svc Service) http.HandlerFunc {
 //	@Param			ResetPasswordPayload	body		ResetPasswordPayload	true	"Reset password"
 //	@Success		200						{object}	http_helper.DefaultResponse
 //	@Router			/user/reset_password [post]
-func ResetPasswordHandler(svc Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func ResetPasswordHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
 		var resetPasswordRequest ResetPasswordPayload
 		err := json.NewDecoder(r.Body).Decode(&resetPasswordRequest)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		_, err = svc.ResetPassword(r.Context(), resetPasswordRequest)
+		_, err = s.ResetPassword(r.Context(), resetPasswordRequest)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
@@ -254,6 +255,7 @@ func ResetPasswordHandler(svc Service) http.HandlerFunc {
 
 		http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true}, http.StatusOK)
 	}
+	return
 }
 
 // ChangePasswordHandler godoc
@@ -266,15 +268,15 @@ func ResetPasswordHandler(svc Service) http.HandlerFunc {
 //	@Param			ChangePasswordPayload	body		ChangePasswordPayload	true	"Change password"
 //	@Success		200						{object}	http_helper.DefaultResponse
 //	@Router			/user/change_password [post]
-func ChangePasswordHandler(svc Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func ChangePasswordHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
 		var changePasswordRequest ChangePasswordPayload
 		err := json.NewDecoder(r.Body).Decode(&changePasswordRequest)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		_, err = svc.ChangePassword(r.Context(), changePasswordRequest)
+		_, err = s.ChangePassword(r.Context(), changePasswordRequest)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
@@ -283,6 +285,7 @@ func ChangePasswordHandler(svc Service) http.HandlerFunc {
 
 		http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true}, http.StatusOK)
 	}
+	return
 }
 
 func (fav *FavouriteJSON) ToFavourite() *Favourites {
@@ -374,35 +377,36 @@ func NewJSONFavMessage(fav *FavMessage) *FavMessageJSON {
 //	@Failure		400				{object}	http_helper.errorResponse
 //
 //	@Router			/fav [post]
-func CreateFavouriteHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(createFavouriteHandler, svc)
-}
-func createFavouriteHandler(w http.ResponseWriter, r *http.Request, s interface{}) {
-	var (
-		fav       FavouriteJSON
-		Favourite []FavBodyJSON
-	)
-	err := json.NewDecoder(r.Body).Decode(&fav)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
+func CreateFavouriteHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		var (
+			fav       FavouriteJSON
+			Favourite []FavBodyJSON
+		)
+		err := json.NewDecoder(r.Body).Decode(&fav)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		for _, bodyJSON := range fav.Fav {
+			bodyJSON.DateAdded = time.Now().Format(time.RFC3339)
+			Favourite = append(Favourite, bodyJSON)
+		}
+		fav.Fav = Favourite
+
+		result, err := s.CreateFavourite(r.Context(), fav.ToFavourite())
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		payload := NewJSONFavourite(result)
+
+		http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: payload}, http.StatusOK)
 	}
 
-	for _, bodyJSON := range fav.Fav {
-		bodyJSON.DateAdded = time.Now().Format(time.RFC3339)
-		Favourite = append(Favourite, bodyJSON)
-	}
-	fav.Fav = Favourite
-
-	result, err := s.(Service).CreateFavourite(r.Context(), fav.ToFavourite())
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-
-	payload := NewJSONFavourite(result)
-
-	http_helper.EncodeResult(w, http_helper.DefaultResponse{Code: http.StatusOK, Success: true, Body: payload}, http.StatusOK)
+	return
 }
 
 // GetFavouritesHandler godoc
@@ -415,18 +419,18 @@ func createFavouriteHandler(w http.ResponseWriter, r *http.Request, s interface{
 //	@Success		200	{object}	GetFavouritesResponse
 //	@Failure		400	{object}	http_helper.errorResponse
 //	@Router			/favourites [get]
-func GetFavouritesHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(getFavouritesHandler, svc)
-}
-func getFavouritesHandler(w http.ResponseWriter, r *http.Request, s interface{}) {
+func GetFavouritesHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		result, err := s.GetFavourites(r.Context())
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
 
-	result, err := s.(Service).GetFavourites(r.Context())
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
+		http_helper.EncodeResult(w, result, http.StatusOK)
 	}
 
-	http_helper.EncodeResult(w, result, http.StatusOK)
+	return
 }
 
 // DeleteFavouritesHandler godoc
@@ -442,136 +446,137 @@ func getFavouritesHandler(w http.ResponseWriter, r *http.Request, s interface{})
 //	@Failure		400			{object}	http_helper.errorResponse
 //
 //	@Router			/delete/{series_id} [delete]
-func DeleteFavouritesHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(deleteFavouritesHandler, svc)
-}
-func deleteFavouritesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	messageIdParam := chi.URLParam(r, "message_id")
-	result, err := svc.(Service).DeleteFavourite(r.Context(), messageIdParam)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
+func DeleteFavouritesHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		messageIdParam := chi.URLParam(r, "message_id")
+		result, err := s.DeleteFavourite(r.Context(), messageIdParam)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		http_helper.EncodeResult(w, result, http.StatusOK)
 	}
-	http_helper.EncodeResult(w, result, http.StatusOK)
+	return
 }
 
-func UpdateUserProfileHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(updateUserProfileHandler, svc)
-}
-func updateUserProfileHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	var userJSON UserJSON
-	err := json.NewDecoder(r.Body).Decode(&userJSON)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
+func UpdateUserProfileHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		var userJSON UserJSON
+		err := json.NewDecoder(r.Body).Decode(&userJSON)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		user := userJSON.ToUser()
+		result, err := s.UpdateUserProfile(r.Context(), user)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, result, http.StatusOK)
 	}
-	user := userJSON.ToUser()
-	result, err := svc.(Service).UpdateUserProfile(r.Context(), user)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
+	return
+}
+
+func BuildDeviceHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		var devices DeviceManager
+		email := chi.URLParam(r, "email")
+
+		err := json.NewDecoder(r.Body).Decode(&devices)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		result, err := s.BuildDevice(r.Context(), &devices, email)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, result, http.StatusOK)
+	}
+	return
+}
+
+func GetDevicesHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		result, err := s.GetDevices(r.Context())
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, result, http.StatusOK)
+	}
+	return
+}
+
+func DeleteDeviceHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		identifier := chi.URLParam(r, "identifier")
+		result, err := s.DeleteDevice(r.Context(), identifier)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, result, http.StatusOK)
+	}
+	return
+}
+
+func UpdateDeviceHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		identifier := chi.URLParam(r, "identifier")
+		status := chi.URLParam(r, "status")
+		result, err := s.UpdateDevice(r.Context(), status, identifier)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, result, http.StatusOK)
+	}
+	return
+}
+
+func UpdateAppVersion(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		var appVersion VersionManager
+		err := json.NewDecoder(r.Body).Decode(&appVersion)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		result, err := s.UpdateAppVersion(r.Context(), appVersion)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, result, http.StatusOK)
+	}
+	return
+}
+
+func GetAppVersion(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		versionIDParam := chi.URLParam(r, "version_id")
+		result, err := s.GetAppVersion(r.Context(), versionIDParam)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+
+		http_helper.EncodeResult(w, result, http.StatusOK)
 	}
 
-	http_helper.EncodeResult(w, result, http.StatusOK)
+	return
 }
 
-func BuildDeviceHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(buildDeviceHandler, svc)
-}
-func buildDeviceHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	var devices DeviceManager
-	email := chi.URLParam(r, "email")
-
-	err := json.NewDecoder(r.Body).Decode(&devices)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-	result, err := svc.(Service).BuildDevice(r.Context(), &devices, email)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-
-	http_helper.EncodeResult(w, result, http.StatusOK)
-}
-
-func GetDevicesHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(getDevicesHandler, svc)
-}
-func getDevicesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	result, err := svc.(Service).GetDevices(r.Context())
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-
-	http_helper.EncodeResult(w, result, http.StatusOK)
-}
-
-func DeleteDeviceHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(deleteDeviceHandler, svc)
-}
-func deleteDeviceHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	identifier := chi.URLParam(r, "identifier")
-	result, err := svc.(Service).DeleteDevice(r.Context(), identifier)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-
-	http_helper.EncodeResult(w, result, http.StatusOK)
-}
-
-func UpdateDeviceHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(updateDeviceHandler, svc)
-}
-func updateDeviceHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	identifier := chi.URLParam(r, "identifier")
-	status := chi.URLParam(r, "status")
-	result, err := svc.(Service).UpdateDevice(r.Context(), status, identifier)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-
-	http_helper.EncodeResult(w, result, http.StatusOK)
-}
-
-func UpdateAppVersion(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(updateAppVersion, svc)
-}
-func updateAppVersion(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	var appVersion VersionManager
-	err := json.NewDecoder(r.Body).Decode(&appVersion)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-	result, err := svc.(Service).UpdateAppVersion(r.Context(), appVersion)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-
-	http_helper.EncodeResult(w, result, http.StatusOK)
-}
-
-func GetAppVersion(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(getAppVersion, svc)
-}
-func getAppVersion(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	versionIDParam := chi.URLParam(r, "version_id")
-	result, err := svc.(Service).GetAppVersion(r.Context(), versionIDParam)
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-
-	http_helper.EncodeResult(w, result, http.StatusOK)
-}
-
-func SendEmailVerificationLink(svc Service) (fn http.HandlerFunc) {
+func SendEmailVerificationLink(s *UserService) (fn http.HandlerFunc) {
 	fn = func(w http.ResponseWriter, r *http.Request) {
 		var user UserJSON
 
@@ -581,7 +586,7 @@ func SendEmailVerificationLink(svc Service) (fn http.HandlerFunc) {
 			return
 		}
 
-		err = svc.(Service).SendEmailVerificationLink(r.Context(), user.Email)
+		err = s.SendEmailVerificationLink(r.Context(), user.Email)
 
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
@@ -597,19 +602,24 @@ func SendEmailVerificationLink(svc Service) (fn http.HandlerFunc) {
 	return
 }
 
-func VerifyEmail(svc Service) (fn http.HandlerFunc) {
+func VerifyEmail(s *UserService) (fn http.HandlerFunc) {
 	fn = func(w http.ResponseWriter, r *http.Request) {
-		err := svc.(Service).VerifyEmail(r.Context())
+		t := mailer.Template{}
+		data := mailer.Message{
+			DataMap: map[string]string{
+				"HofRoundLogo": fmt.Sprintf("%s/HoF_Logo_White.png", s.config.AwsConfiguration.BucketPath),
+				"ThisIsHome1":  fmt.Sprintf("%s/home1.jpg", s.config.AwsConfiguration.BucketPath),
+			},
+		}
+
+		err := s.VerifyEmail(r.Context())
+
 		if err != nil {
-			http_helper.EncodeJSONError(r.Context(), err, w)
+			_ = t.Create(w, "verify_email_error.page.tmpl", data)
 			return
 		}
 
-		http_helper.EncodeResult(w, http_helper.DefaultResponse{
-			Code:    http.StatusOK,
-			Success: true,
-			Body:    "Verification successfull",
-		}, http.StatusOK)
+		_ = t.Create(w, "verify_email_success.page.tmpl", data)
 	}
 	return
 }

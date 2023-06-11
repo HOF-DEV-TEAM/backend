@@ -42,7 +42,7 @@ func (svc *authService) createSession(ctx context.Context, user *user.User) (*Us
 	}
 
 	// recover claims from JWT
-	claims, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
 
 	if !ok {
 		svc.log.Info("msg",

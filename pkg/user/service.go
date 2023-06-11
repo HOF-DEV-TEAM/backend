@@ -44,31 +44,31 @@ type Service interface {
 	VerifyEmail(ctx context.Context) error
 }
 
-type userService struct {
+type UserService struct {
 	repo        Repository
 	log         *zap.Logger
-	config      *security.SecurityConfig
+	config      *config.ServerConfig
 	mailConfig  *config.MailerConfig
 	idGenerator library.IDGenerator
 }
 
-func NewService(repo Repository, log *zap.Logger, config *security.SecurityConfig, mailConfig *config.MailerConfig) Service {
-	return &userService{log: log, repo: repo, config: config, mailConfig: mailConfig, idGenerator: library.NewIDGenerator()}
+func NewService(repo Repository, log *zap.Logger, config *config.ServerConfig) *UserService {
+	return &UserService{log: log, repo: repo, config: config, idGenerator: library.NewIDGenerator()}
 }
 
-func (s *userService) validateStruct(v interface{}) error {
+func (s *UserService) validateStruct(v interface{}) error {
 	validate := validator.New()
 
 	return validate.Struct(v)
 }
 
-func (s *userService) validateSignUpStruct(user *SignUpUser) error {
+func (s *UserService) validateSignUpStruct(user *SignUpUser) error {
 	validate := validator.New()
 
 	return validate.Struct(user)
 }
 
-func (s *userService) SignUp(ctx context.Context, user *SignUpUser, devices []Device) (*User, error) {
+func (s *UserService) SignUp(ctx context.Context, user *SignUpUser, devices []Device) (*User, error) {
 	err := s.validateSignUpStruct(user)
 
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *userService) SignUp(ctx context.Context, user *SignUpUser, devices []De
 	return result, nil
 }
 
-func (s *userService) CreateUser(ctx context.Context, user *User) (*User, error) {
+func (s *UserService) CreateUser(ctx context.Context, user *User) (*User, error) {
 
 	err := s.validateStruct(user)
 
@@ -168,7 +168,7 @@ func (s *userService) CreateUser(ctx context.Context, user *User) (*User, error)
 	return result, nil
 }
 
-func (s *userService) ForgotPassword(request ForgotPasswordPayload) error {
+func (s *UserService) ForgotPassword(request ForgotPasswordPayload) error {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
@@ -215,7 +215,7 @@ func (s *userService) ForgotPassword(request ForgotPasswordPayload) error {
 	return nil
 }
 
-func (s *userService) VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error) {
+func (s *UserService) VerifyPasswordResetOTP(ctx context.Context, request *VerifyOTP) (*UserAndToken, error) {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
@@ -227,15 +227,15 @@ func (s *userService) VerifyPasswordResetOTP(ctx context.Context, request *Verif
 	}
 
 	// recover claims from JWT
-	c, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	c, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		s.log.Info("msg",
 			zap.String("JWTError", "broken"),
-			zap.String(s.config.JWTContextKey, ""),
+			zap.String(s.config.Security.JWTContextKey, ""),
 		)
 	}
 
-	updatedJWTToken, err := c.PutUserIDAndSign(s.config, user.ID)
+	updatedJWTToken, err := c.PutUserIDAndSign(&s.config.Security, user.ID)
 
 	if err != nil {
 		return nil, err
@@ -244,7 +244,7 @@ func (s *userService) VerifyPasswordResetOTP(ctx context.Context, request *Verif
 	return &UserAndToken{Token: updatedJWTToken}, nil
 }
 
-func (s *userService) ResetPassword(ctx context.Context, request ResetPasswordPayload) (uuid.UUID, error) {
+func (s *UserService) ResetPassword(ctx context.Context, request ResetPasswordPayload) (uuid.UUID, error) {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
@@ -257,7 +257,7 @@ func (s *userService) ResetPassword(ctx context.Context, request ResetPasswordPa
 
 	request.Password = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.Password))))
 
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return uuid.Nil, http_helper.ErrInvalidAccount
 	}
@@ -277,13 +277,13 @@ func (s *userService) ResetPassword(ctx context.Context, request ResetPasswordPa
 	return resp, nil
 }
 
-func (s *userService) validateFavouriteStruct(audioSeries *Favourites) error {
+func (s *UserService) validateFavouriteStruct(audioSeries *Favourites) error {
 	validate := validator.New()
 
 	return validate.Struct(audioSeries)
 }
 
-func (s *userService) CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error) {
+func (s *UserService) CreateFavourite(ctx context.Context, favourite *Favourites) (*Favourites, error) {
 	err := s.validateStruct(favourite)
 	if err != nil {
 		tErr, ok := err.(validator.ValidationErrors)
@@ -302,7 +302,7 @@ func (s *userService) CreateFavourite(ctx context.Context, favourite *Favourites
 		}
 		return nil, err
 	}
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return nil, http_helper.ErrInvalidAccount
 	}
@@ -327,10 +327,10 @@ func (s *userService) CreateFavourite(ctx context.Context, favourite *Favourites
 	return result, nil
 }
 
-func (s *userService) GetFavourites(ctx context.Context) (GetFavouritesResponse, error) {
+func (s *UserService) GetFavourites(ctx context.Context) (GetFavouritesResponse, error) {
 	result := GetFavouritesResponse{Favourites: []*FavMessageJSON{}}
 
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return result, http_helper.ErrInvalidAccount
 	}
@@ -358,12 +358,12 @@ func (s *userService) GetFavourites(ctx context.Context) (GetFavouritesResponse,
 	return result, nil
 }
 
-func (s *userService) DeleteFavourite(ctx context.Context, messageId string) (uuid.UUID, error) {
+func (s *UserService) DeleteFavourite(ctx context.Context, messageId string) (uuid.UUID, error) {
 	messageID, err := uuid.FromString(messageId)
 	if err != nil {
 		return uuid.Nil, err
 	}
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return uuid.Nil, http_helper.ErrInvalidAccount
 	}
@@ -380,7 +380,7 @@ func (s *userService) DeleteFavourite(ctx context.Context, messageId string) (uu
 	return result, nil
 }
 
-func (s *userService) ChangePassword(ctx context.Context, request ChangePasswordPayload) (uuid.UUID, error) {
+func (s *UserService) ChangePassword(ctx context.Context, request ChangePasswordPayload) (uuid.UUID, error) {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
@@ -394,7 +394,7 @@ func (s *userService) ChangePassword(ctx context.Context, request ChangePassword
 	request.OldPassword = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.OldPassword))))
 	request.NewPassword = fmt.Sprintf("%x", md5.Sum([]byte(strings.TrimSpace(request.NewPassword))))
 
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+	claims, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return uuid.Nil, http_helper.ErrInvalidAccount
 	}
@@ -416,8 +416,8 @@ func (s *userService) ChangePassword(ctx context.Context, request ChangePassword
 	return resp, nil
 }
 
-func (s *userService) UpdateUserProfile(ctx context.Context, user *User) (uuid.UUID, error) {
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+func (s *UserService) UpdateUserProfile(ctx context.Context, user *User) (uuid.UUID, error) {
+	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return uuid.Nil, http_helper.ErrInvalidAccount
 	}
@@ -448,7 +448,7 @@ func (s *userService) UpdateUserProfile(ctx context.Context, user *User) (uuid.U
 	return result, nil
 }
 
-func (s *userService) BuildDevice(ctx context.Context, input *DeviceManager, email string) (*DeviceManager, error) {
+func (s *UserService) BuildDevice(ctx context.Context, input *DeviceManager, email string) (*DeviceManager, error) {
 	deviceManager, err := s.repo.BuildDevice(ctx, input, email)
 	if err != nil {
 		return nil, err
@@ -457,8 +457,8 @@ func (s *userService) BuildDevice(ctx context.Context, input *DeviceManager, ema
 	return deviceManager, nil
 }
 
-func (s *userService) GetDevices(ctx context.Context) (*DeviceManager, error) {
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+func (s *UserService) GetDevices(ctx context.Context) (*DeviceManager, error) {
+	claims, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return nil, http_helper.ErrInvalidAccount
 	}
@@ -470,8 +470,8 @@ func (s *userService) GetDevices(ctx context.Context) (*DeviceManager, error) {
 	return devices, nil
 }
 
-func (s *userService) DeleteDevice(ctx context.Context, identifier string) (string, error) {
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+func (s *UserService) DeleteDevice(ctx context.Context, identifier string) (string, error) {
+	claims, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return "", http_helper.ErrInvalidAccount
 	}
@@ -484,8 +484,8 @@ func (s *userService) DeleteDevice(ctx context.Context, identifier string) (stri
 	return deletedDevice, nil
 }
 
-func (s *userService) UpdateDevice(ctx context.Context, status, identifier string) (*DeviceManager, error) {
-	claims, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
+func (s *UserService) UpdateDevice(ctx context.Context, status, identifier string) (*DeviceManager, error) {
+	claims, ok := ctx.Value(s.config.Security.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
 		return nil, http_helper.ErrInvalidAccount
 	}
@@ -498,7 +498,7 @@ func (s *userService) UpdateDevice(ctx context.Context, status, identifier strin
 	return updatedDevice, nil
 }
 
-func (s *userService) UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error) {
+func (s *UserService) UpdateAppVersion(ctx context.Context, version VersionManager) (uuid.UUID, error) {
 	version.LastUpdated = sql.NullString{Valid: true, String: time.Now().Format(time.RFC3339)}
 	result, err := s.repo.UpdateAppVersion(ctx, version)
 	if err != nil {
@@ -508,7 +508,7 @@ func (s *userService) UpdateAppVersion(ctx context.Context, version VersionManag
 	return result, nil
 }
 
-func (s *userService) GetAppVersion(ctx context.Context, versionID string) (*VersionManager, error) {
+func (s *UserService) GetAppVersion(ctx context.Context, versionID string) (*VersionManager, error) {
 	id, err := uuid.FromString(versionID)
 	if err != nil {
 		return nil, err
@@ -523,28 +523,21 @@ func (s *userService) GetAppVersion(ctx context.Context, versionID string) (*Ver
 
 }
 
-func (s *userService) SendEmailVerificationLink(ctx context.Context, email string) error {
+func (s *UserService) SendEmailVerificationLink(ctx context.Context, email string) error {
 	user, err := s.repo.GetByEmail(ctx, email)
 
 	if err != nil {
 		return err
 	}
 
-	cliams, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
-
-	if !ok {
-		s.log.Info("msg",
-			zap.String("JWTError", "broken"),
-			zap.String(s.config.JWTContextKey, ""),
-		)
-	}
+	claims := &security.JWTClaim[security.EmailVerificationClaim]{}
 
 	expiresAt := jwt.NewNumericDate(time.Now().Add(time.Hour * 2))
 
-	verificationCliam := security.EmailVerificationCliam{Type: "email_verification", Email: user.Email, ExpiresAt: expiresAt}
-	cliams.JWTClaimsMain.Claims = verificationCliam
+	verificationCliam := security.EmailVerificationClaim{Type: "email_verification", Email: user.Email, ExpiresAt: expiresAt}
+	claims.JWTClaimsMain.Claims = verificationCliam
 
-	tokenString, err := cliams.Sign(s.config, expiresAt)
+	tokenString, err := claims.Sign(&s.config.Security, expiresAt)
 
 	if err != nil {
 		return err
@@ -556,9 +549,6 @@ func (s *userService) SendEmailVerificationLink(ctx context.Context, email strin
 	}
 
 	expiresIn := verificationCliam.ExpiresAt.Sub(time.Now()).Minutes()
-	bucketPath := "https://hof-s3.s3.eu-west-2.amazonaws.com/email_template_images"
-	serverUrl := "https://app.hoftech.org"
-
 	message := mailer.Message{
 		ID:     messageID,
 		Title:  "Verify Email",
@@ -566,39 +556,37 @@ func (s *userService) SendEmailVerificationLink(ctx context.Context, email strin
 		DataMap: map[string]string{
 			"User":             fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 			"ExpiresIn":        fmt.Sprintf("%v", math.Ceil(expiresIn/5)*5),
-			"VerificationLink": fmt.Sprintf("%s/user/verify_email/%s", serverUrl, tokenString),
-			"HofRoundLogo":     fmt.Sprintf("%s/HoF_Logo_White.png", bucketPath),
-			"ThisIsHome1":      fmt.Sprintf("%s/home1.jpg", bucketPath),
+			"VerificationLink": fmt.Sprintf("%s/verify_email/%s", s.config.ServerUrl, tokenString),
+			"HofRoundLogo":     fmt.Sprintf("%s/HoF_Logo_White.png", s.config.AwsConfiguration.BucketPath),
+			"ThisIsHome1":      fmt.Sprintf("%s/home1.jpg", s.config.AwsConfiguration.BucketPath),
 		},
 	}
-	err = mailer.SendMail(message, "verify_email.page.tmpl", s.log, s.mailConfig)
+	err = mailer.SendMail(message, "verify_email.page.tmpl", s.log, &s.config.Mailer)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *userService) VerifyEmail(ctx context.Context) error {
+func (s *UserService) VerifyEmail(ctx context.Context) error {
 	//user claim is valid at this point
-	cliams, ok := ctx.Value(s.config.JWTClaimsContextKey).(*security.JWTClaim)
-	verificationClaim := cliams.JWTClaimsMain.Claims.(map[string]interface{})
-
-	if verificationClaim["type"] != "email_verification" {
-		return errors.New("invalid link")
-	}
-
-	user, err := s.repo.GetByEmail(ctx, fmt.Sprintf("%s", verificationClaim["email"]))
-
-	if err != nil {
-		return err
-	}
+	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim[security.EmailVerificationClaim])
 
 	if !ok {
 		s.log.Info("msg",
 			zap.String("JWTError", "broken"),
-			zap.String(s.config.JWTContextKey, ""),
+			zap.String(security.JWTClaimsContextKey, ""),
 		)
+		return errors.New("invalid link")
 	}
+
+	claim := claims.JWTClaimsMain.Claims
+
+	if claim.Type != "email_verification" {
+		return errors.New("invalid link")
+	}
+
+	user, err := s.repo.GetByEmail(ctx, fmt.Sprintf("%s", claim.Email))
 
 	if err != nil {
 		return err
