@@ -32,7 +32,7 @@
         },
         {
           "name": "JWT_SECRET",
-          "value": "%JWT_SECREt%"
+          "value": "%JWT_SECRET%"
         },
         {
           "name": "PAYSTACK_SECRET",
@@ -41,6 +41,18 @@
         {
           "name": "DATABASE_URL",
           "value": "%DATABASE_URL%"
+        },
+        {
+          "name": "MAILER_HOST",
+          "value": "%MAILER_HOST%"
+        },
+        {
+          "name": "MAILER_USERNAME",
+          "value": "%MAILER_USERNAME%"
+        },
+        {
+          "name": "MAILER_PASSWORD",
+          "value": "%MAILER_PASSWORD%"
         }
       ],
       "portMappings": [

@@ -45,9 +45,9 @@ type DatabaseConfig struct {
 }
 type MailerConfig struct {
 	Email                 string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`
-	Smtp                  string `env:"MAILER_SMTP" envDefault:"smtp-relay.sendinblue.com"`
-	UserName              string `env:"MAILER_USERNAME" envDefault:"sunnexajayi@gmail.com"`
-	Password              string `env:"MAILER_PASSWORD" envDefault:"Hs2r7K69WMXf8pqb"`
+	Smtp                  string `env:"MAILER_HOST"`
+	UserName              string `env:"MAILER_USERNAME"`
+	Password              string `env:"MAILER_PASSWORD"`
 	Port                  int    `env:"MAILER_PORT" envDefault:"2525"`
 	Header                string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
 	TemplatePath          string `env:"TEMPLATE_PATH" envDefault:"./files/templates/"`

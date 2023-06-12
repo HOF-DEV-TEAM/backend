@@ -141,28 +141,27 @@ func (u *User) ToJSON() *UserJSON {
 //	@Param			SignUpUserRequestJSON	body		SignUpUserRequestJSON	true	"Create user"
 //	@Success		200						{object}	UserJSON
 //	@Router			/session/sign_up [post]
-func SignupUserHandler(svc Service) http.HandlerFunc {
-	return http_helper.NewHTTPHandler(signupUserHandler, svc)
-}
+func SignupUserHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		var u SignUpUserRequestJSON
+		err := json.NewDecoder(r.Body).Decode(&u)
 
-func signupUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	var u SignUpUserRequestJSON
-	err := json.NewDecoder(r.Body).Decode(&u)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
 
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
+		result, err := s.SignUp(r.Context(), u.ToSignUpUser(), u.Devices)
+
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		payload := result.ToJSON()
+
+		http_helper.EncodeResult(w, payload, http.StatusOK)
 	}
-
-	result, err := svc.(Service).SignUp(r.Context(), u.ToSignUpUser(), u.Devices)
-
-	if err != nil {
-		http_helper.EncodeJSONError(r.Context(), err, w)
-		return
-	}
-	payload := result.ToJSON()
-
-	http_helper.EncodeResult(w, payload, http.StatusOK)
+	return
 }
 
 // ForgotPasswordHandler godoc
@@ -175,15 +174,15 @@ func signupUserHandler(w http.ResponseWriter, r *http.Request, svc interface{}) 
 //	@Param			ForgotPasswordPayload	body		ForgotPasswordPayload	true	"Forgot password"
 //	@Success		200						{object}	http_helper.DefaultResponse
 //	@Router			/session/forgot_password [post]
-func ForgotPasswordHandler(svc Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func ForgotPasswordHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
 		var request ForgotPasswordPayload
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		err = svc.ForgotPassword(request)
+		err = s.ForgotPassword(request)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
@@ -195,6 +194,7 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 			Body:    "OTP sent",
 		}, http.StatusOK)
 	}
+	return
 }
 
 // VerifyPasswordResetOTPHandler godoc
@@ -207,15 +207,15 @@ func ForgotPasswordHandler(svc Service) http.HandlerFunc {
 //	@Param			VerifyOTP	body		VerifyOTP	true	"Verify OTP"
 //	@Success		200			{object}	UserSession
 //	@Router			/session/verify_token [post]
-func VerifyPasswordResetOTPHandler(svc Service) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func VerifyPasswordResetOTPHandler(s *UserService) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
 		var request VerifyOTP
 		err := json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
 		}
-		result, err := svc.VerifyPasswordResetOTP(r.Context(), &request)
+		result, err := s.VerifyPasswordResetOTP(r.Context(), &request)
 		if err != nil {
 			http_helper.EncodeJSONError(r.Context(), err, w)
 			return
@@ -226,6 +226,7 @@ func VerifyPasswordResetOTPHandler(svc Service) http.HandlerFunc {
 
 		http_helper.EncodeResult(w, payload, http.StatusOK)
 	}
+	return
 }
 
 // ResetPasswordHandler godoc

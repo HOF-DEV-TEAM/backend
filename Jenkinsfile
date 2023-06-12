@@ -58,7 +58,7 @@ pipeline {
         stage('Deploy Image to ECS') {
             steps{
                 // prepare task definition file
-                sh """sed -e "s;%REPOSITORY_URI%;${REPOSITORY_URI};g" -e "s;%SHORT_COMMIT%;${SHORT_COMMIT};g" -e "s;%TASK_FAMILY%;${TASK_FAMILY};g" -e "s;%SERVICE_NAME%;${SERVICE_NAME};g" -e "s;%EXECUTION_ROLE_ARN%;${EXECUTION_ROLE_ARN};g" -e "s;%AWS_ENDPOINT%;${env.AWS_ID_USR};g" -e "s;%AWS_SECRET%;${env.AWS_ID_PSW};g" -e "s;%AWS_REGION%;${env.AWS_DEFAULT_REGION};g" -e "s;%JWT_SECRET%;${env.JWT_SECRET};g" -e "s;%PAYSTACK_SECRET%;${env.PAYSTACK_SECRET};g" -e "s;%DATABASE_URL%;${env.DATABASE_URL};g" taskdef_template.json > taskdef_${SHORT_COMMIT}.json"""
+                sh """sed -e "s;%REPOSITORY_URI%;${REPOSITORY_URI};g" -e "s;%SHORT_COMMIT%;${SHORT_COMMIT};g" -e "s;%TASK_FAMILY%;${TASK_FAMILY};g" -e "s;%SERVICE_NAME%;${SERVICE_NAME};g" -e "s;%EXECUTION_ROLE_ARN%;${EXECUTION_ROLE_ARN};g" -e "s;%AWS_ENDPOINT%;${env.AWS_ID_USR};g" -e "s;%AWS_SECRET%;${env.AWS_ID_PSW};g" -e "s;%AWS_REGION%;${env.AWS_DEFAULT_REGION};g" -e "s;%JWT_SECRET%;${env.JWT_SECRET};g" -e "s;%PAYSTACK_SECRET%;${env.PAYSTACK_SECRET};g" -e "s;%DATABASE_URL%;${env.DATABASE_URL};g" -e "s;%MAILER_HOST%;${env.MAILER_HOST};g" -e "s;%MAILER_USERNAME%;${env.MAILER_USERNAME};g" -e "s;%MAILER_PASSWORD%;${env.MAILER_PASSWORD};g" taskdef_template.json > taskdef_${SHORT_COMMIT}.json"""
                 script {
                     // Register task definition
                     AWS("ecs register-task-definition --output json --cli-input-json file://${WORKSPACE}/taskdef_${SHORT_COMMIT}.json > ${env.WORKSPACE}/temp.json")
