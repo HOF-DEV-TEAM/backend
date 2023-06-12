@@ -69,6 +69,7 @@ func (s *UserService) validateSignUpStruct(user *SignUpUser) error {
 }
 
 func (s *UserService) SignUp(ctx context.Context, user *SignUpUser, devices []Device) (*User, error) {
+	fmt.Println(user, devices, "user, devices")
 	err := s.validateSignUpStruct(user)
 
 	if err != nil {
