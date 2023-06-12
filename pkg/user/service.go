@@ -48,7 +48,6 @@ type UserService struct {
 	repo        Repository
 	log         *zap.Logger
 	config      *config.ServerConfig
-	mailConfig  *config.MailerConfig
 	idGenerator library.IDGenerator
 }
 
@@ -69,7 +68,6 @@ func (s *UserService) validateSignUpStruct(user *SignUpUser) error {
 }
 
 func (s *UserService) SignUp(ctx context.Context, user *SignUpUser, devices []Device) (*User, error) {
-	fmt.Println(user, devices, "user, devices")
 	err := s.validateSignUpStruct(user)
 
 	if err != nil {
@@ -175,6 +173,7 @@ func (s *UserService) ForgotPassword(request ForgotPasswordPayload) error {
 	if err != nil {
 		return err
 	}
+
 	otpResponse, err := s.repo.ForgotPassword(request)
 	if err != nil {
 		return err
@@ -184,6 +183,7 @@ func (s *UserService) ForgotPassword(request ForgotPasswordPayload) error {
 	if err != nil {
 		return err
 	}
+
 	expirationTime := time.Unix(otpResponse.ExpireTimeInSeconds, 0)
 	expiresIn := expirationTime.Sub(time.Now()).Minutes()
 
@@ -207,7 +207,7 @@ func (s *UserService) ForgotPassword(request ForgotPasswordPayload) error {
 			"HOFHorizontalLogo": fmt.Sprintf("%s/hof_horizontal_logo.png", bucketPath),
 		},
 	}
-	err = mailer.SendMail(message, s.mailConfig.PasswordResetMailPath, s.log, s.mailConfig)
+	err = mailer.SendMail(message, s.config.Mailer.PasswordResetMailPath, s.log, &s.config.Mailer)
 	if err != nil {
 		return err
 	}
