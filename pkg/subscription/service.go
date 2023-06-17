@@ -20,6 +20,7 @@ type SubscriptionService interface {
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOfferingRequest) (string, error)
 	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
+	GetOfferings(ctx context.Context) ([]*SubscriptionOffering, int, error)
 }
 
 type SubscriptionProviderService interface {
@@ -69,6 +70,7 @@ func (ss *subscriptionSvc) CreateSubscriptionPlan(ctx context.Context, subscript
 	}
 
 	plan.Type = planType
+	plan.Fee = plan.Fee / 100
 	return ss.repo.CreateSubscriptionPlan(ctx, plan)
 }
 
@@ -181,4 +183,8 @@ func (ss *subscriptionSvc) DeleteSubscriptionPlanById(ctx context.Context, id st
 
 func (ss *subscriptionSvc) GetSubscriptionPlanById(ctx context.Context, subPlanId string) (*SubscriptionPlan, error) {
 	return ss.repo.GetSubscriptionPlanById(ctx, subPlanId)
+}
+
+func (ss *subscriptionSvc) GetOfferings(ctx context.Context) ([]*SubscriptionOffering, int, error) {
+	return ss.repo.GetOfferings(ctx)
 }

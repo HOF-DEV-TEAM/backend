@@ -25,6 +25,7 @@ type Repository interface {
 	UpdateSubscription(ctx context.Context, userId string, sub *Subscription) (string, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOffering) (string, error)
+	GetOfferings(ctx context.Context) ([]*SubscriptionOffering, int, error)
 	Close() error
 }
 
@@ -553,6 +554,48 @@ func (r subscriptionRepo) GetSubscriptionPlanOfferings(ctx context.Context) ([]*
 
 	return subs, 0, nil
 
+}
+
+func (r *subscriptionRepo) GetOfferings(ctx context.Context) ([]*SubscriptionOffering, int, error) {
+	query := "SELECT id, name, status FROM subscription_offerings;"
+
+	getSubOfferingStmt, err := r.db.PrepareContext(ctx, query)
+
+	if err != nil {
+		r.log.Info("msg", zap.String("error preparing statement", ""), zap.String("error", err.Error()), zap.String("query", query))
+		return nil, 0, err
+	}
+
+	subs := []*SubscriptionOffering{}
+
+	rows, err := getSubOfferingStmt.QueryContext(ctx)
+
+	defer rows.Close()
+
+	if err == sql.ErrNoRows {
+		return subs, 0, err
+	}
+
+	for rows.Next() {
+		var sub SubscriptionOffering
+
+		if err := rows.Scan(
+			&sub.ID,
+			&sub.Name,
+			&sub.Status,
+		); err != nil {
+			r.log.Info("msg",
+				zap.String("error querying", ""),
+				zap.String("error", err.Error()),
+				zap.String("query", query),
+			)
+			return subs, 0, err
+		}
+
+		subs = append(subs, &sub)
+	}
+
+	return subs, 0, nil
 }
 
 func (r *subscriptionRepo) CreateSubscriptionPlanOffering(ctx context.Context, offering *SubscriptionPlanOffering) (string, error) {

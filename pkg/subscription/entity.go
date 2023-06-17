@@ -277,13 +277,13 @@ type SubscriptionPlan struct {
 }
 
 type SubscriptionOffering struct {
-	ID                     string         `sql:"id"`
-	Name                   string         `sql:"name" validate:"required"`
-	Status                 int            `sql:"status"`
-	DateAdded              sql.NullString `sql:"date_added"`
-	LastUpdated            sql.NullString `sql:"last_updated"`
-	SubscritpionProviderID sql.NullString `sql:"subscription_provider_id"`
-	DeletedAt              sql.NullString `sql:"deleted_at"`
+	ID                     string         `sql:"id" json:"id"`
+	Name                   string         `sql:"name" validate:"required" json:"name"`
+	Status                 int            `sql:"status" json:"status"`
+	DateAdded              sql.NullString `sql:"date_added" json:"_"`
+	LastUpdated            sql.NullString `sql:"last_updated" json:"_"`
+	SubscritpionProviderID sql.NullString `sql:"subscription_provider_id" json:"_"`
+	DeletedAt              sql.NullString `sql:"deleted_at" json:"_"`
 }
 
 type SubPlan struct {

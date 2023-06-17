@@ -119,7 +119,11 @@ func (r *PayStackClientHttp) goGetSubscription(ctx context.Context, idOrCode str
 }
 
 func (r *PayStackClientHttp) CreateSubscriptionPlan(ctx context.Context, planInfo *subscription.SubscriptionPlanRequest) (*PaystackPlanResponse, error) {
-	resp, err := r.doPostSubscriptionPlan(ctx, planInfo)
+	//Paystack fee 100 or greater
+	planRequest := *planInfo
+	planRequest.Fee = planInfo.Fee * 100
+
+	resp, err := r.doPostSubscriptionPlan(ctx, &planRequest)
 
 	if err != nil {
 		r.logger.Error("msg", zap.String("paystack subscription", err.Error()))

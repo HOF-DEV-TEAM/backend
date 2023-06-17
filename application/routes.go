@@ -210,6 +210,8 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	getSubscriptionPlanOfferings := subscription.GetSubscriptionPlanOfferingsHandler(svc)
 	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
 	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
+	getSubscriptionOfferingsHandler := subscription.GetOfferingsHandler(svc)
+	//getSubscriptionOfferingByIdHandler := subscription.GetSubscriptionOfferingByIdHandler(svc)
 
 	//Subscription routes
 	subRouter.Get("/", getSubscriptions)
@@ -220,7 +222,10 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	subRouter.Get("/plan/{id}", getSubscritpionPlanByIdHandler)
 	subRouter.Post("/plan", createSubscriptionPlanHandler)
 	subRouter.Delete("/plan/{id}", deleteSubscriptionPlanHandler)
+
 	//Offering routes
+	subRouter.Get("/offering", getSubscriptionOfferingsHandler)
+	//subRouter.Get("/offering/{id}", getSubscriptionOfferingByIdHandler)
 	subRouter.Post("/offering", createSubscriptionOfferingHandler)
 
 	//Plan Offering routes

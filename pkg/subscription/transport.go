@@ -329,3 +329,16 @@ func deleteSubscriptionPlanHandler(wr http.ResponseWriter, r *http.Request, svc 
 	}
 	http_helper.EncodeResult(wr, result, http.StatusOK)
 }
+
+func GetOfferingsHandler(s Service) (fn http.HandlerFunc) {
+	fn = func(w http.ResponseWriter, r *http.Request) {
+		result, _, err := s.GetOfferings(r.Context())
+
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), err, w)
+			return
+		}
+		http_helper.EncodeResult(w, result, http.StatusOK)
+	}
+	return
+}
