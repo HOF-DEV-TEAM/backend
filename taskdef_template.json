@@ -31,6 +31,10 @@
           "value": "%AWS_REGION%"
         },
         {
+          "name": "AWS_BUCKET_PATH",
+          "value": "%AWS_BUCKET_PATH%"
+        },
+        {
           "name": "JWT_SECRET",
           "value": "%JWT_SECRET%"
         },
