@@ -38,10 +38,10 @@ type DatabaseConfig struct {
 	Host     string `env:"DB_HOST"`
 	Port     string `env:"DB_PORT"`
 	Timeout  int    `env:"CONNECTION_TIMEOUT_SECONDS" envDefault:"10"`
-	DbName   string `env:"DB_NAME" envDefault:"hof_backend"`
+	DbName   string `env:"DB_NAME" envDefault:"postgres"`
 	UserName string `env:"DB_USERNAME"`
 	Password string `env:"DB_PASSWORD"`
-	DbUrl    string `env:"DATABASE_URL" envDefault:"" envWhitelisted:"true"`
+	DbUrl    string `env:"DATABASE_URL" envDefault:"postgres://postgres:hof_db@2023@db.fzeqoeqecuajgxnllbls.supabase.co:5432/postgres?sslmode=disable" envWhitelisted:"true"`
 }
 type MailerConfig struct {
 	Email                 string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`

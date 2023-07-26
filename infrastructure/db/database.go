@@ -16,11 +16,11 @@ import (
 )
 
 type Database struct {
-	Config	 	*config.ServerConfig
-	Log 		*zap.Logger
+	Config *config.ServerConfig
+	Log    *zap.Logger
 }
 
-func(db *Database) ConnectDB () (*sql.DB, error){
+func (db *Database) ConnectDB() (*sql.DB, error) {
 	dbConn, err := sql.Open("pgx", db.Config.GetUri())
 
 	if err != nil {
@@ -31,13 +31,11 @@ func(db *Database) ConnectDB () (*sql.DB, error){
 	return dbConn, nil
 }
 
-
 type EmbeddedF5 struct {
-	dirname string
+	dirname  string
 	filename string
-	glob string
+	glob     string
 }
-
 
 func (e EmbeddedF5) ReadDir(dirname string) ([]os.FileInfo, error) {
 	return ioutil.ReadDir(dirname)
@@ -55,44 +53,45 @@ func NewEmbeddedFS() migrate.MigratorFS {
 	return EmbeddedF5{}
 }
 
-
-
-func(db *Database) RunMigration (dbConn *sql.DB) error {
+func (db *Database) RunMigration(dbConn *sql.DB) error {
 	conn, err := dbConn.Conn(context.Background())
 
 	if err != nil {
 		return err
 	}
-	
-	err = conn.Raw(func (driverConn interface{}) error {
-		conn := driverConn.(*stdlib.Conn)		//conn is a *pgx.Conn
+
+	err = conn.Raw(func(driverConn interface{}) error {
+		conn := driverConn.(*stdlib.Conn) //conn is a *pgx.Conn
 		opts := migrate.MigratorOptions{
-				MigratorFS: NewEmbeddedFS(),
+			MigratorFS: NewEmbeddedFS(),
 		}
-	
+
 		schema := "public"
 		table := fmt.Sprintf("%s.schema_version", schema)
-		
+
 		dir, err := os.Getwd()
 
 		if err != nil {
 			db.Log.Info("msg", zap.String("msg", "incorrect migration path"))
 			return err
 		}
-	
+
 		migrationPath := filepath.Join(dir, "migrations")
-		
+
 		db.Log.Info("msg", zap.String("migrationPath", migrationPath))
-		
+
 		migrator, err := migrate.NewMigratorEx(context.Background(), conn.Conn(), table, &opts)
-	
-		migrator.LoadMigrations(migrationPath)
-	
+
+		err = migrator.LoadMigrations(migrationPath)
+		if err != nil {
+			return err
+		}
+
 		if err != nil {
 			db.Log.Info("msg", zap.String("msg", "failed to connect to migrator"))
 			return err
 		}
-		
+
 		if err := migrator.Migrate(context.Background()); err != nil {
 			db.Log.Info("msg", zap.String("msg", "failed to run migrations"))
 			return err
@@ -105,8 +104,3 @@ func(db *Database) RunMigration (dbConn *sql.DB) error {
 	}
 	return nil
 }
-	
-
-
-
-
