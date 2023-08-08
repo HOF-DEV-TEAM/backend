@@ -16,23 +16,22 @@ func UploadFile(svc Service) http.HandlerFunc {
 }
 
 func parseFile(r *http.Request) (*FileHandler, error) {
-	err := r.ParseMultipartForm(10 << 20)
+	err := r.ParseMultipartForm(200 << 20)
 	if err != nil {
-		log.Println(err)
+		log.Println("ParseMultipartForm: ", err)
 		return nil, err
 	}
 
 	file, handler, err := r.FormFile("image")
 	if err != nil {
-		log.Print("Error Retrieving the File")
-
+		log.Print("Error Retrieving the File: ", err)
 		return nil, err
 	}
 
 	defer func(file multipart.File) {
 		err := file.Close()
 		if err != nil {
-			log.Println(err)
+			log.Println("close multipart: ", err)
 		}
 	}(file)
 
@@ -43,6 +42,7 @@ func parseFile(r *http.Request) (*FileHandler, error) {
 
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, file); err != nil {
+
 		return nil, err
 	}
 
@@ -67,7 +67,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request, svc interface{}) {
 		return
 	}
 
-	result, err := svc.(Service).UploadFile(r.Context(), fileHandler, bucketKey)
+	result, err := svc.(Service).UploadFile(r.Context(), fileHandler, "")
 	if err != nil {
 		log.Println("Upload file", err)
 		http_helper.EncodeJSONError(r.Context(), err, w)

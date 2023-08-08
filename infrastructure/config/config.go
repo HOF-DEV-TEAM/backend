@@ -27,11 +27,11 @@ type PaystackConfig struct {
 }
 
 type AwsConfiguration struct {
-	Region     string `env:"AWS_REGION"`
-	Endpoint   string `env:"AWS_ENDPOINT"`
-	Secret     string `env:"AWS_SECRET"`
+	Region     string `env:"AWS_REGION" envDefault:"us-east-1"`
+	Endpoint   string `env:"AWS_ENDPOINT" envDefault:"AKIATT2RU3YXQR3XSCNG"`
+	Secret     string `env:"AWS_SECRET"  envDefault:"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"`
 	Bucket     string `env:"AWS_BUCKET" envDefault:"hof-s3" envWhitelisted:"true"`
-	BucketPath string `env:"AWS_BUCKET_PATH"`
+	BucketPath string `env:"AWS_BUCKET_PATH" envDefault:"goninja/hof/"`
 }
 
 type DatabaseConfig struct {
@@ -45,9 +45,9 @@ type DatabaseConfig struct {
 }
 type MailerConfig struct {
 	Email                 string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`
-	Smtp                  string `env:"MAILER_HOST"`
-	UserName              string `env:"MAILER_USERNAME"`
-	Password              string `env:"MAILER_PASSWORD"`
+	Smtp                  string `env:"MAILER_HOST" envDefault:"smtp-relay.sendinblue.com"`
+	UserName              string `env:"MAILER_USERNAME" envDefault:"hofchurchnig@gmail.com"`
+	Password              string `env:"MAILER_PASSWORD" envDefault:"DUBcPE8KYabH1gnr"`
 	Port                  int    `env:"MAILER_PORT" envDefault:"2525"`
 	Header                string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
 	TemplatePath          string `env:"TEMPLATE_PATH" envDefault:"./files/templates/"`

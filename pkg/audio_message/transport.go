@@ -616,7 +616,6 @@ func createMeditationHandler(w http.ResponseWriter, r *http.Request, svc interfa
 	}
 
 	meditationId, err := svc.(Service).CreateMeditation(r.Context(), ToMeditation(&meditation))
-
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
@@ -691,4 +690,19 @@ func getMeditationsHandler(w http.ResponseWriter, r *http.Request, svc interface
 	}
 
 	http_helper.EncodeResult(w, meditationJSON, http.StatusOK)
+}
+
+func DeleteMeditationByIDHandler(svc Service) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(deleteMeditationByIDHandler, svc)
+}
+
+func deleteMeditationByIDHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	meditationIdParam := chi.URLParam(r, "meditation_id")
+
+	result, err := svc.(Service).DeleteMeditationByID(r.Context(), meditationIdParam)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, w)
+		return
+	}
+	http_helper.EncodeResult(w, result, http.StatusOK)
 }

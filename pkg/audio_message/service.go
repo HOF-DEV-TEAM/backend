@@ -1,6 +1,7 @@
 package audio_message
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"context"
 	"database/sql"
 	"errors"
@@ -34,6 +35,7 @@ type Service interface {
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error)
 	GetMeditations(ctx context.Context) ([]Meditation, error)
 	GetMeditation(ctx context.Context, meditationId string) (*Meditation, error)
+	DeleteMeditationByID(ctx context.Context, meditationId string) (*DefaultResponse, error)
 }
 
 type FilterType string
@@ -381,4 +383,18 @@ func (svc *audioMessageService) GetMeditation(ctx context.Context, meditationId 
 
 	return meditation, nil
 
+}
+
+func (svc *audioMessageService) DeleteMeditationByID(ctx context.Context, meditationId string) (*DefaultResponse, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrInvalidAccount
+	}
+
+	result, err := svc.repo.DeleteMeditationByID(ctx, meditationId)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

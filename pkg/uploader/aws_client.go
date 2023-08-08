@@ -46,7 +46,8 @@ func (awsClient *AWSClient) Upload(ctx context.Context, fileHandler *FileHandler
 		Bucket:      aws.String(string(awsClient.Config.AwsConfiguration.Bucket)),     // bucket's name
 		Key:         aws.String(fmt.Sprintf("%s%s", bucketKey, fileHandler.FileName)), // files destination location
 		Body:        bytes.NewReader(fileHandler.File),                                // content of the file
-		ContentType: aws.String(fileHandler.ContentType),                              // content type
+		ContentType: aws.String(fileHandler.ContentType),
+		//ACL:         aws.String("public-read"), // content type
 	}
 	return awsClient.S3Uploader.UploadWithContext(ctx, input)
 }

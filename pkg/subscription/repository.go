@@ -26,6 +26,7 @@ type Repository interface {
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOffering) (string, error)
 	GetOfferings(ctx context.Context) ([]*SubscriptionOffering, int, error)
+	DeleteSubscriptionOfferingByID(ctx context.Context, subscriptionOfferingId string) (*DefaultResponse, error)
 	Close() error
 }
 
@@ -644,4 +645,27 @@ func (r *subscriptionRepo) CreateSubscriptionPlanOffering(ctx context.Context, o
 	}
 
 	return subsriptionPlanOfferingId, nil
+}
+
+func (r subscriptionRepo) DeleteSubscriptionOfferingByID(ctx context.Context, subscriptionOfferingId string) (*DefaultResponse, error) {
+	sqlQuery := `DELETE FROM subscription_offerings WHERE id=$1`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+
+		return nil, err
+	}
+	row := stmt.QueryRowContext(ctx, subscriptionOfferingId)
+	if err := row.Scan(&subscriptionOfferingId); err != nil {
+		if err == sql.ErrNoRows {
+			r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error scanning row", err.Error()))
+		} else {
+			r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error scanning row", err.Error()))
+			return nil, err
+		}
+	}
+	return &DefaultResponse{
+		Success: true,
+		Message: "subscription offering deleted successfully",
+	}, nil
 }

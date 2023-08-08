@@ -41,7 +41,13 @@ type Meditation struct {
 type MeditationResponse struct {
 	AffectedRows int64 `json:"affected_row" sql:"affected_row"`
 }
+
 type Homepage struct {
 	AudioSeries []*AudioSeries `sql:"audio_series"`
 	Meditation  []*Meditation  `sql:"meditation"`
 }
+
+type DefaultResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+} // @name DefaultResponse

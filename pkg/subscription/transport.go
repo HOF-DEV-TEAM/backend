@@ -188,6 +188,22 @@ func createSubscriptionOfferingHandler(wr http.ResponseWriter, r *http.Request, 
 
 }
 
+func DeleteSubscriptionOfferingHandler(svc SubscriptionService) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(deleteSubscriptionOfferingHandler, svc)
+}
+
+func deleteSubscriptionOfferingHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
+	subscriptionOfferingID := chi.URLParam(r, "offering_id")
+
+	result, err := svc.(Service).DeleteSubscriptionOfferingByID(r.Context(), subscriptionOfferingID)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, wr)
+		return
+	}
+
+	http_helper.EncodeResult(wr, result, http.StatusOK)
+}
+
 func GetSubscriptionPlanOfferingsHandler(svc SubscriptionService) http.HandlerFunc {
 	return http_helper.NewHTTPHandler(getSubscriptionPlanOfferingsHandler, svc)
 

@@ -19,6 +19,7 @@ type SubscriptionService interface {
 	GetSubscriptionPlanById(ctx context.Context, subPlanId string) (*SubscriptionPlan, error)
 	GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error)
 	CreateSubscriptionPlanOffering(ctx context.Context, sub *SubscriptionPlanOfferingRequest) (string, error)
+	DeleteSubscriptionOfferingByID(ctx context.Context, subscriptionOfferingId string) (*DefaultResponse, error)
 	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
 	GetOfferings(ctx context.Context) ([]*SubscriptionOffering, int, error)
 }
@@ -76,6 +77,15 @@ func (ss *subscriptionSvc) CreateSubscriptionPlan(ctx context.Context, subscript
 
 func (ss *subscriptionSvc) CreateSubscriptionOffering(ctx context.Context, offering *SubscriptionOfferingRequest) (string, error) {
 	return ss.repo.CreateSubscriptionOffering(ctx, offering)
+}
+
+func (ss *subscriptionSvc) DeleteSubscriptionOfferingByID(ctx context.Context, subscriptionOfferingId string) (*DefaultResponse, error) {
+	_, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, nil
+	}
+
+	return ss.repo.DeleteSubscriptionOfferingByID(ctx, subscriptionOfferingId)
 }
 
 func (ss *subscriptionSvc) GetSubscriptionPlanOfferings(ctx context.Context) ([]*SubscriptionPlanOffering, int, error) {

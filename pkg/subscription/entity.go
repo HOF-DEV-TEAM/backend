@@ -323,3 +323,8 @@ type Subscription struct {
 	DeletedAt          sql.NullString `sql:"deleted_at"`
 	SubPlan
 }
+
+type DefaultResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+} // @name DefaultResponse

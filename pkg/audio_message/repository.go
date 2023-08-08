@@ -28,6 +28,7 @@ type Repository interface {
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string, deletedAt sql.NullString) (*string, error)
 	GetMeditations(ctx context.Context) ([]Meditation, error)
 	GetMeditation(ctx context.Context, meditationId string) (*Meditation, error)
+	DeleteMeditationByID(ctx context.Context, meditationId string) (*DefaultResponse, error)
 	Close() error
 }
 
@@ -712,4 +713,27 @@ func (r audioMessageRepository) GetMeditations(ctx context.Context) ([]Meditatio
 	}
 
 	return meditation, nil
+}
+
+func (r audioMessageRepository) DeleteMeditationByID(ctx context.Context, meditationId string) (*DefaultResponse, error) {
+	sqlQuery := `DELETE FROM meditation WHERE id=$1`
+	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Error("DeleteMeditationByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+
+		return nil, err
+	}
+	row := stmt.QueryRowContext(ctx, meditationId)
+	if err := row.Scan(&meditationId); err != nil {
+		if err == sql.ErrNoRows {
+			r.log.Error("DeleteMeditationByID", zap.String("error scanning row", err.Error()))
+		} else {
+			r.log.Error("DeleteMeditationByID", zap.String("error scanning row", err.Error()))
+			return nil, err
+		}
+	}
+	return &DefaultResponse{
+		Success: true,
+		Message: "meditation deleted successfully",
+	}, nil
 }

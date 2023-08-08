@@ -157,6 +157,7 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	updateMeditationByIDHandler := audio_message.UpdateMeditationByIDHandler(svc)
 	getMeditationsHandler := audio_message.GetMeditationsHandler(svc)
 	getMeditationHandler := audio_message.GetMeditationHandler(svc)
+	deleteMeditationHandler := audio_message.DeleteMeditationByIDHandler(svc)
 
 	audioMessageRouter.Get("/", getAudioMessagesHandler)
 	audioMessageRouter.Post("/", createAudioMessageHandler)
@@ -168,6 +169,7 @@ func buildAudioMessageEndpoints(router chi.Router, svc audio_message.Service) {
 	audioMessageRouter.Get("/meditation/{meditation_id}", getMeditationHandler)
 	audioMessageRouter.Put("/meditation/{meditation_id}", updateMeditationByIDHandler)
 	audioMessageRouter.Get("/meditations", getMeditationsHandler)
+	audioMessageRouter.Delete("/meditation/delete/{meditation_id}", deleteMeditationHandler)
 
 	router.Mount("/audio_message", audioMessageRouter)
 }
@@ -207,6 +209,7 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 
 	createSubscriptionPlanHandler := subscription.CreateSubscriptionPlanHandler(svc)
 	createSubscriptionOfferingHandler := subscription.CreateSubscriptionOfferingHandler(svc)
+	deleteSubscriptionOfferingHandler := subscription.DeleteSubscriptionOfferingHandler(svc)
 	getSubscriptionPlanOfferings := subscription.GetSubscriptionPlanOfferingsHandler(svc)
 	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
 	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
@@ -227,6 +230,7 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	subRouter.Get("/offering", getSubscriptionOfferingsHandler)
 	//subRouter.Get("/offering/{id}", getSubscriptionOfferingByIdHandler)
 	subRouter.Post("/offering", createSubscriptionOfferingHandler)
+	subRouter.Delete("/offering/delete/{offering_id}", deleteSubscriptionOfferingHandler)
 
 	//Plan Offering routes
 	subRouter.Get("/plan/offering", getSubscriptionPlanOfferings)
