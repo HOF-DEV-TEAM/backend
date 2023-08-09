@@ -377,23 +377,23 @@ func (r subscriptionRepo) GetSubscriptionPlans(ctx context.Context) ([]*Subscrip
 }
 
 func (r subscriptionRepo) DeleteSubscriptionPlanById(ctx context.Context, subPlanId string) (string, error) {
-	sqlQuery := `UPDATE subscription_plans SET deleted_at=$1 WHERE id=$2 RETURNING id`
+	sqlQuery := `DELETE FROM subscription_plans WHERE id=$1`
 	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
 	if err != nil {
-		r.log.Error("DeleteAudioMessagesByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
+		r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
 
 		return "", err
 	}
-
-	deletedAt := sql.NullString{
-		String: time.Now().Format(time.RFC3339),
-		Valid:  true,
-	}
-	row := stmt.QueryRowContext(ctx, deletedAt, subPlanId)
+	row := stmt.QueryRowContext(ctx, subPlanId)
 	if err := row.Scan(&subPlanId); err != nil {
-		r.log.Error("DeleteSubscriptionPlanById", zap.String("error scanning row", err.Error()))
-		return "", err
+		if err == sql.ErrNoRows {
+			r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error scanning row", err.Error()))
+		} else {
+			r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error scanning row", err.Error()))
+			return "", err
+		}
 	}
+
 	return subPlanId, nil
 }
 
