@@ -3,6 +3,8 @@ package subscription
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"math"
 	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
@@ -22,11 +24,13 @@ type SubscriptionService interface {
 	DeleteSubscriptionOfferingByID(ctx context.Context, subscriptionOfferingId string) (*DefaultResponse, error)
 	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
 	GetOfferings(ctx context.Context) ([]*SubscriptionOffering, int, error)
+	InitializeTransaction(ctx context.Context, req TransactionInitializationRequest) (*TransactionInitializationResponse, error)
 }
 
 type SubscriptionProviderService interface {
 	CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error)
 	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
+	InitializeTransaction(ctx context.Context, req InitializePaystackTransaction) (*TransactionInitializationResponse, error)
 }
 
 type Service interface {
@@ -123,6 +127,48 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 	sub.SubscriptionPlanID = subReq.PlanId
 	sub.Status = 1
 	return ss.CreateSubscription(ctx, sub)
+}
+
+func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req TransactionInitializationRequest) (*TransactionInitializationResponse, error) {
+	claims, ok := ctx.Value(security.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, nil
+	}
+
+	validuser, err := ss.userRepo.GetById(ctx, claims.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	existingSub, err := ss.repo.GetSubscriptionPlanById(ctx, req.PlanID)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+
+	fee := math.Round((100 * existingSub.Fee * 100) / 100)
+	paystackRequest := InitializePaystackTransaction{
+		Email:  validuser.Email,
+		Amount: fmt.Sprintf("%v", fee),
+	}
+
+	transactionResponse, err := ss.subProvider.InitializeTransaction(ctx, paystackRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TransactionInitializationResponse{
+		Status:  transactionResponse.Status,
+		Message: transactionResponse.Message,
+		Data: struct {
+			AuthorizationUrl string `json:"authorization_url"`
+			AccessCode       string `json:"access_code"`
+			Reference        string `json:"reference"`
+		}(struct {
+			AuthorizationUrl string
+			AccessCode       string
+			Reference        string
+		}{AuthorizationUrl: transactionResponse.Data.AuthorizationUrl, AccessCode: transactionResponse.Data.AccessCode, Reference: transactionResponse.Data.Reference}),
+	}, nil
 }
 
 func (ss *subscriptionSvc) CreateSubscriptionPlanOffering(ctx context.Context, subReq *SubscriptionPlanOfferingRequest) (string, error) {

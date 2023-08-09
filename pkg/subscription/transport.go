@@ -17,6 +17,25 @@ type VerifySubRequest struct {
 	RefId  string `json:"ref_id"`
 }
 
+type InitializePaystackTransaction struct {
+	Email  string `json:"email"`
+	Amount string `json:"amount"`
+}
+
+type TransactionInitializationRequest struct {
+	PlanID string `json:"plan_id"`
+}
+
+type TransactionInitializationResponse struct {
+	Status  bool   `json:"status"`
+	Message string `json:"message"`
+	Data    struct {
+		AuthorizationUrl string `json:"authorization_url"`
+		AccessCode       string `json:"access_code"`
+		Reference        string `json:"reference"`
+	} `json:"data"`
+}
+
 type SubscriptionPlanRequest struct {
 	Type TypeEnum `json:"type,string,omitempty"`
 	Name string   `json:"name,omitempty"`
@@ -297,6 +316,29 @@ func verifySubscriptionHandler(wr http.ResponseWriter, r *http.Request, svc inte
 	}
 
 	http_helper.EncodeResult(wr, http_helper.DefaultResponse{Body: payload, Code: 200, Success: true}, http.StatusOK)
+}
+
+func InitializeTransactionPlanHandler(svc SubscriptionService) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(initializeTransactionPlanHandler, svc)
+}
+
+func initializeTransactionPlanHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
+	var request TransactionInitializationRequest
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, wr)
+		return
+	}
+
+	payload, err := svc.(SubscriptionService).InitializeTransaction(r.Context(), request)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, wr)
+		return
+	}
+
+	http_helper.EncodeResult(wr, payload, http.StatusOK)
 }
 
 func GetSubscriptionPlansHandler(svc SubscriptionService) http.HandlerFunc {

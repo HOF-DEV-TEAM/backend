@@ -214,6 +214,7 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	createSubscritionPlanOfferings := subscription.CreateSubscriptionPlanOfferingHandler(svc)
 	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
 	getSubscriptionOfferingsHandler := subscription.GetOfferingsHandler(svc)
+	initializeTransactionPlanHandler := subscription.InitializeTransactionPlanHandler(svc)
 	//getSubscriptionOfferingByIdHandler := subscription.GetSubscriptionOfferingByIdHandler(svc)
 
 	//Subscription routes
@@ -235,6 +236,9 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	//Plan Offering routes
 	subRouter.Get("/plan/offering", getSubscriptionPlanOfferings)
 	subRouter.Post("/plan/offering", createSubscritionPlanOfferings)
+
+	//transaction initialization
+	subRouter.Post("/transaction", initializeTransactionPlanHandler)
 
 	router.Mount("/subscription", subRouter)
 }

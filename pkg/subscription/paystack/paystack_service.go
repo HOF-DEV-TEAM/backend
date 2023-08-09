@@ -223,3 +223,13 @@ func (p *PaystackService) HandleCancelSubscription(ctx context.Context, eventRes
 
 	return nil
 }
+
+func (pc *PaystackService) InitializeTransaction(ctx context.Context, req subscription.InitializePaystackTransaction) (*subscription.TransactionInitializationResponse, error) {
+	result, err := pc.payStackClient.InitializeTransaction(ctx, &req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+}

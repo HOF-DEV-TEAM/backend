@@ -218,6 +218,57 @@ func (r *PayStackClientHttp) doVerifySubscription(ctx context.Context, subRef st
 	return r.httpCaller.DoGet(ctx, headerValues, url)
 }
 
+func (r *PayStackClientHttp) InitializeTransaction(ctx context.Context, req *subscription.InitializePaystackTransaction) (*subscription.TransactionInitializationResponse, error) {
+	resp, err := r.doInitializeTransaction(ctx, req)
+	if err != nil {
+		r.logger.Error("msg", zap.String("paystack initialising payment", err.Error()))
+		return nil, err
+	}
+	defer r.close(ctx, resp)
+
+	bytes, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		return nil, http_helper.ErrInvalidRequest
+	}
+
+	var response subscription.TransactionInitializationResponse
+
+	err = json.Unmarshal(bytes, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	r.logger.Info("msg", zap.String(response.Message, ""))
+
+	if !response.Status {
+		return nil, errors.New(response.Message)
+	}
+
+	return &response, nil
+}
+
+func (r *PayStackClientHttp) doInitializeTransaction(ctx context.Context, req *subscription.InitializePaystackTransaction) (*http.Response, error) {
+	url := fmt.Sprintf(
+		"%s/transaction/initialize",
+		r.config.Addr,
+	)
+
+	r.logger.Info("msg", zap.String("calling initialize transaction", url))
+	body, err := json.Marshal(req)
+
+	if err != nil {
+		return nil, http_helper.ErrInvalidRequest
+	}
+
+	headerValues, err := r.getHeaders(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.httpCaller.DoPost(ctx, headerValues, url, body)
+}
+
 func (r *PayStackClientHttp) doPostSubscriptionPlan(ctx context.Context, planInfo *subscription.SubscriptionPlanRequest) (*http.Response, error) {
 
 	url := fmt.Sprintf(
