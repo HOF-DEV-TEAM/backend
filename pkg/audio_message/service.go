@@ -309,11 +309,7 @@ func (svc *audioMessageService) HomePageDirectory(ctx context.Context) (*Homepag
 }
 
 func (svc *audioMessageService) UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error) {
-	deletedAt := sql.NullString{
-		String: time.Now().Format(time.RFC3339),
-		Valid:  true,
-	}
-	result, err := svc.repo.UpdateMeditationByID(ctx, status, meditationID, deletedAt)
+	result, err := svc.repo.UpdateMeditationByID(ctx, status, meditationID)
 	if err != nil {
 		return nil, err
 	}
