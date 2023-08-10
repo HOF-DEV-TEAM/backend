@@ -646,7 +646,7 @@ func (r audioMessageRepository) GetMeditation(ctx context.Context, meditationId 
 		return nil, err
 	}
 
-	row := getMeditationStmt.QueryRowContext(ctx, meditationId, "active")
+	row := getMeditationStmt.QueryRowContext(ctx, meditationId, "ACTIVE")
 	var meditation Meditation
 
 	if err := row.Scan(
@@ -669,7 +669,7 @@ func (r audioMessageRepository) GetMeditation(ctx context.Context, meditationId 
 }
 
 func (r audioMessageRepository) GetMeditations(ctx context.Context) ([]Meditation, error) {
-	meditationSQL := `SELECT * FROM meditation WHERE deleted_at IS NULL`
+	meditationSQL := `SELECT * FROM meditation WHERE status=$1`
 
 	var meditation []Meditation
 	getMeditationStmt, err := r.db.PrepareContext(ctx, meditationSQL)
@@ -682,7 +682,7 @@ func (r audioMessageRepository) GetMeditations(ctx context.Context) ([]Meditatio
 		return nil, err
 	}
 
-	rows, err := getMeditationStmt.QueryContext(ctx)
+	rows, err := getMeditationStmt.QueryContext(ctx, "ACTIVE")
 
 	defer rows.Close()
 
