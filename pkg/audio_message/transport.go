@@ -3,7 +3,9 @@ package audio_message
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
@@ -651,9 +653,28 @@ func GetMeditationHandler(svc Service) http.HandlerFunc {
 }
 
 func getMeditationHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
+	queryParam := r.URL.Query().Get("admin")
+
+	//if queryParam == "" {
+	//	http_helper.EncodeJSONError(r.Context(), fmt.Errorf("query parameter is not present"), w)
+	//	return
+	//}
+	var (
+		admin bool
+		err   error
+	)
+	if queryParam != "" {
+		admin, err = strconv.ParseBool(queryParam)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), fmt.Errorf("error parsing query parameter: %s", err), w)
+			return
+		}
+
+	}
+
 	medParam := chi.URLParam(r, "meditation_id")
 
-	result, err := svc.(Service).GetMeditation(r.Context(), medParam)
+	result, err := svc.(Service).GetMeditation(r.Context(), medParam, admin)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
@@ -667,7 +688,27 @@ func GetMeditationsHandler(svc Service) http.HandlerFunc {
 }
 
 func getMeditationsHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
-	result, err := svc.(Service).GetMeditations(r.Context())
+	queryParam := r.URL.Query().Get("admin")
+
+	//if queryParam == "" {
+	//	http_helper.EncodeJSONError(r.Context(), fmt.Errorf("query parameter is not present"), w)
+	//	return
+	//}
+
+	var (
+		admin bool
+		err   error
+	)
+	if queryParam != "" {
+		admin, err = strconv.ParseBool(queryParam)
+		if err != nil {
+			http_helper.EncodeJSONError(r.Context(), fmt.Errorf("error parsing query parameter: %s", err), w)
+			return
+		}
+
+	}
+
+	result, err := svc.(Service).GetMeditations(r.Context(), admin)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return

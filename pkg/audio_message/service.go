@@ -33,8 +33,8 @@ type Service interface {
 	CreateMeditation(ctx context.Context, meditation *Meditation) (string, error)
 	CreateMeditations(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error)
 	UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error)
-	GetMeditations(ctx context.Context) ([]Meditation, error)
-	GetMeditation(ctx context.Context, meditationId string) (*Meditation, error)
+	GetMeditations(ctx context.Context, admin bool) ([]Meditation, error)
+	GetMeditation(ctx context.Context, meditationId string, admin bool) (*Meditation, error)
 	DeleteMeditationByID(ctx context.Context, meditationId string) (*DefaultResponse, error)
 }
 
@@ -361,8 +361,8 @@ func (svc *audioMessageService) CreateMeditation(ctx context.Context, meditation
 	return result, nil
 }
 
-func (svc *audioMessageService) GetMeditations(ctx context.Context) ([]Meditation, error) {
-	meditation, err := svc.repo.GetMeditations(ctx)
+func (svc *audioMessageService) GetMeditations(ctx context.Context, admin bool) ([]Meditation, error) {
+	meditation, err := svc.repo.GetMeditations(ctx, admin)
 	if err == sql.ErrNoRows {
 		return nil, err
 	}
@@ -371,8 +371,8 @@ func (svc *audioMessageService) GetMeditations(ctx context.Context) ([]Meditatio
 
 }
 
-func (svc *audioMessageService) GetMeditation(ctx context.Context, meditationId string) (*Meditation, error) {
-	meditation, err := svc.repo.GetMeditation(ctx, meditationId)
+func (svc *audioMessageService) GetMeditation(ctx context.Context, meditationId string, admin bool) (*Meditation, error) {
+	meditation, err := svc.repo.GetMeditation(ctx, meditationId, admin)
 	if err == sql.ErrNoRows {
 		return nil, err
 	}

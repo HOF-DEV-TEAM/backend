@@ -134,8 +134,7 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 	if !ok {
 		return nil, nil
 	}
-
-	validuser, err := ss.userRepo.GetById(ctx, claims.ID)
+	validUser, err := ss.userRepo.GetById(ctx, claims.JWTClaimsMain.LoggedInUserId)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +146,7 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 
 	fee := math.Round((100 * existingSub.Fee * 100) / 100)
 	paystackRequest := InitializePaystackTransaction{
-		Email:  validuser.Email,
+		Email:  validUser.Email,
 		Amount: fmt.Sprintf("%v", fee),
 	}
 

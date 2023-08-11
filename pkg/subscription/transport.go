@@ -326,7 +326,6 @@ func initializeTransactionPlanHandler(wr http.ResponseWriter, r *http.Request, s
 	var request TransactionInitializationRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
-
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, wr)
 		return
