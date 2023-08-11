@@ -715,7 +715,7 @@ func (r audioMessageRepository) GetMeditations(ctx context.Context, admin bool) 
 		}
 
 	} else {
-		meditationSQL = `SELECT * FROM meditation WHERE status=$1 LIMIT 1;`
+		meditationSQL = `SELECT * FROM meditation WHERE status=$1`
 
 		getMeditationStmt, err = r.db.PrepareContext(ctx, meditationSQL)
 		if err != nil {
