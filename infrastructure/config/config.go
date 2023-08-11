@@ -11,7 +11,7 @@ import (
 )
 
 type ServerConfig struct {
-	ServerUrl        string `env:"SERVER_URL" envDefault:"https://app.hoftech.org"`
+	ServerUrl        string `env:"SERVER_URL" envDefault:"https://my-heritage-app-1e457dfa2e9c.herokuapp.com"`
 	AppEnv           string `env:"APP_ENV" envDefault:"dev" envWhitelisted:"true"`
 	HTTPPort         int    `env:"PORT" envDefault:"8080" envWhitelisted:"true"`
 	Database         DatabaseConfig
