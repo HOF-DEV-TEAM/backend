@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
@@ -81,7 +82,7 @@ func (pc *PaystackService) VerifySubscription(ctx context.Context, subReq subscr
 
 func (p *PaystackService) HandleInvoiceUpdate(ctx context.Context, eventResponse *EventResponse) error {
 	subData := eventResponse.Data.Subscription
-
+	log.Println("Invoice: ", subData)
 	//todo run both functions concurrently in a goroutine
 	user, err := p.userRepo.GetByCustomerCode(ctx, eventResponse.Data.Customer.CustomerCode)
 
@@ -130,6 +131,7 @@ func (p *PaystackService) HandleInvoiceUpdate(ctx context.Context, eventResponse
 
 func (p *PaystackService) HandleSubscriptionCreate(ctx context.Context, eventResponse *EventResponse) error {
 	subData := eventResponse.Data
+	log.Println("SubscriptionCreate: ", subData)
 
 	//todo run both functions concurrently in a goroutine
 	user, err := p.userRepo.GetByCustomerCode(ctx, eventResponse.Data.Customer.CustomerCode)
@@ -187,6 +189,7 @@ func (p *PaystackService) HandleSubscriptionCreate(ctx context.Context, eventRes
 
 func (p *PaystackService) HandleCancelSubscription(ctx context.Context, eventResponse *EventResponse) error {
 	subData := eventResponse.Data
+	log.Println("CancelSubscription: ", subData)
 
 	//todo run both functions concurrently in a goroutine
 	user, err := p.userRepo.GetByCustomerCode(ctx, eventResponse.Data.Customer.CustomerCode)

@@ -648,14 +648,23 @@ func (r *subscriptionRepo) CreateSubscriptionPlanOffering(ctx context.Context, o
 }
 
 func (r subscriptionRepo) DeleteSubscriptionOfferingByID(ctx context.Context, subscriptionOfferingId string) (*DefaultResponse, error) {
-	sqlQuery := `DELETE FROM subscription_offerings WHERE id=$1`
-	stmt, err := r.db.PrepareContext(ctx, sqlQuery)
-	if err != nil {
-		r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error preparing statement", err.Error()), zap.String("sqlQuery : ", sqlQuery))
 
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		r.log.Info("msg", zap.String("DeleteSubscriptionOfferingByID", "error starting transactions"), zap.String("error", err.Error()))
 		return nil, err
 	}
-	row := stmt.QueryRowContext(ctx, subscriptionOfferingId)
+	defer tx.Rollback()
+
+	// delete subscription plan offering
+	sqlQuery := `DELETE FROM subscription_plan_offerings WHERE subscription_offering_id=$1`
+	tmpSmt, err := tx.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Info("msg", zap.String("DeleteSubscriptionOfferingByID", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return nil, err
+	}
+
+	row := tmpSmt.QueryRowContext(ctx, subscriptionOfferingId)
 	if err := row.Scan(&subscriptionOfferingId); err != nil {
 		if err == sql.ErrNoRows {
 			r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error scanning row", err.Error()))
@@ -664,6 +673,30 @@ func (r subscriptionRepo) DeleteSubscriptionOfferingByID(ctx context.Context, su
 			return nil, err
 		}
 	}
+
+	// delete subscription offering
+	sqlQuery = `DELETE FROM subscription_offerings WHERE id=$1`
+	tmpSmt, err = tx.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		r.log.Info("msg", zap.String("DeleteSubscriptionOfferingByID", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
+		return nil, err
+	}
+
+	row = tmpSmt.QueryRowContext(ctx, subscriptionOfferingId)
+	if err := row.Scan(&subscriptionOfferingId); err != nil {
+		if err == sql.ErrNoRows {
+			r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error scanning row", err.Error()))
+		} else {
+			r.log.Error("DeleteSubscriptionOfferingByID", zap.String("error scanning row", err.Error()))
+			return nil, err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
 	return &DefaultResponse{
 		Success: true,
 		Message: "subscription offering deleted successfully",
