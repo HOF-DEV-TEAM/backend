@@ -600,20 +600,3 @@ func (s *UserService) VerifyEmail(ctx context.Context) error {
 	}
 	return nil
 }
-
-//{{template "base" .}}
-//{{define "content"}}
-//<tr>
-//<td align="center" valign="top">
-//<table border="0" cellpadding="0" id="emailBody"
-//style="background-color:white; width: 95%; margin: 5px 15px; padding: 40px 25px">
-//<tr style="width: 95%;">
-//<td align="center" valign="top">
-//<h3 style="width:100%; color:#072b52;direction:ltr;font-family:'Lora', Georgia, serif ;font-size:2rem;font-weight:normal;letter-spacing:1px;line-height:120%;text-align:center;margin-top:0;margin-bottom:0; padding: 50px 0 50px 0;">
-//Email Verification Successful</h3>
-//</td>
-//</tr>
-//</table>
-//</td>
-//</tr>
-//{{end}}
