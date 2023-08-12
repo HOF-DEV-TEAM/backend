@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
+	"log"
 	"net/http"
 )
 
@@ -330,7 +331,7 @@ func initializeTransactionPlanHandler(wr http.ResponseWriter, r *http.Request, s
 		http_helper.EncodeJSONError(r.Context(), err, wr)
 		return
 	}
-
+	log.Println("initializeTransactionPlanHandler request: ", request)
 	payload, err := svc.(SubscriptionService).InitializeTransaction(r.Context(), request)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, wr)

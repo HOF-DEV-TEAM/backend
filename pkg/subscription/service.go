@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -139,16 +140,21 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 		return nil, err
 	}
 
+	log.Println("InitializeTransaction validUser: ", validUser)
+
 	existingSub, err := ss.repo.GetSubscriptionPlanById(ctx, req.PlanID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
+	log.Println("InitializeTransaction existingSub: ", existingSub)
 	fee := math.Round((100 * existingSub.Fee * 100) / 100)
 	paystackRequest := InitializePaystackTransaction{
 		Email:  validUser.Email,
 		Amount: fmt.Sprintf("%v", fee),
 	}
+
+	log.Println("InitializeTransaction paystackRequest: ", paystackRequest)
 
 	transactionResponse, err := ss.subProvider.InitializeTransaction(ctx, paystackRequest)
 	if err != nil {
