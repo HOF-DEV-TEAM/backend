@@ -133,7 +133,8 @@ func (p *PaystackService) HandleInvoiceUpdate(ctx context.Context, eventResponse
 func (p *PaystackService) HandleSubscriptionCreate(ctx context.Context, eventResponse *EventResponse) error {
 	subData := eventResponse.Data
 	p.payStackClient.logger.Info("SubscriptionCreate: ", zap.Any("subdata", subData))
-	fmt.Println("SubscriptionCreate: ", subData)
+	fmt.Println("SubscriptionCreate PaystackSubscription: ", subData.PaystackSubscription)
+	fmt.Println("SubscriptionCreate PaystackCustomerSubscription: ", subData.PaystackCustomerSubscription)
 
 	//todo run both functions concurrently in a goroutine
 	user, err := p.userRepo.GetByCustomerCode(ctx, eventResponse.Data.Customer.CustomerCode)

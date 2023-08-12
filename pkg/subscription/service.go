@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"time"
 
@@ -141,14 +140,17 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 		return nil, err
 	}
 
-	log.Println("InitializeTransaction validUser: ", validUser)
-
 	plan, err := ss.repo.GetSubscriptionPlanById(ctx, req.PlanID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
+	var fee float64
+	if plan == nil {
+		return nil, errors.New("the plan doesn't exist or it is inactive")
+	}
 
-	fmt.Println("plan: ", plan)
+	fee = math.Round((100 * plan.Fee * 100) / 100)
+
 	existingSub, err := ss.repo.GetSubscription(ctx, &Subscription{
 		UserID: claims.JWTClaimsMain.LoggedInUserId,
 	})
@@ -160,18 +162,10 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 		return nil, errors.New("you have an active subscription")
 	}
 
-	var fee float64
-	if plan != nil {
-		fee = math.Round((100 * plan.Fee * 100) / 100)
-	}
-
-	log.Println("InitializeTransaction existingSub: ", existingSub)
 	paystackRequest := InitializePaystackTransaction{
 		Email:  validUser.Email,
 		Amount: fmt.Sprintf("%v", fee),
 	}
-
-	log.Println("InitializeTransaction paystackRequest: ", paystackRequest)
 
 	transactionResponse, err := ss.subProvider.InitializeTransaction(ctx, paystackRequest)
 	if err != nil {
