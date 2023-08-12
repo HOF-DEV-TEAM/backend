@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -142,13 +143,29 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 
 	log.Println("InitializeTransaction validUser: ", validUser)
 
-	existingSub, err := ss.repo.GetSubscriptionPlanById(ctx, req.PlanID)
+	plan, err := ss.repo.GetSubscriptionPlanById(ctx, req.PlanID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
+	fmt.Println("plan: ", plan)
+	existingSub, err := ss.repo.GetSubscription(ctx, &Subscription{
+		UserID: claims.JWTClaimsMain.LoggedInUserId,
+	})
+
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if existingSub != nil {
+		return nil, errors.New("you have an active subscription")
+	}
+
+	var fee float64
+	if plan != nil {
+		fee = math.Round((100 * plan.Fee * 100) / 100)
+	}
+
 	log.Println("InitializeTransaction existingSub: ", existingSub)
-	fee := math.Round((100 * existingSub.Fee * 100) / 100)
 	paystackRequest := InitializePaystackTransaction{
 		Email:  validUser.Email,
 		Amount: fmt.Sprintf("%v", fee),

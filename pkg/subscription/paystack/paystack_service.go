@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"go.uber.org/zap"
 	"log"
 	"time"
 
@@ -21,7 +22,7 @@ type PaystackService struct {
 	config         *security.SecurityConfig
 }
 
-func NewPaystackService(payStackClient *PayStackClientHttp, subRepo subscription.Repository, userRepo user.Repository, config *security.SecurityConfig) *PaystackService {
+func NewPaystackService(payStackClient *PayStackClientHttp, subRepo subscription.Repository, userRepo user.Repository, config *security.SecurityConfig, logger *zap.Logger) *PaystackService {
 	return &PaystackService{payStackClient: payStackClient, subRepo: subRepo, userRepo: userRepo, config: config}
 }
 
@@ -131,11 +132,11 @@ func (p *PaystackService) HandleInvoiceUpdate(ctx context.Context, eventResponse
 
 func (p *PaystackService) HandleSubscriptionCreate(ctx context.Context, eventResponse *EventResponse) error {
 	subData := eventResponse.Data
-	log.Println("SubscriptionCreate: ", subData)
+	p.payStackClient.logger.Info("SubscriptionCreate: ", zap.Any("subdata", subData))
+	fmt.Println("SubscriptionCreate: ", subData)
 
 	//todo run both functions concurrently in a goroutine
 	user, err := p.userRepo.GetByCustomerCode(ctx, eventResponse.Data.Customer.CustomerCode)
-
 	if err != nil || user == nil {
 		return err
 	}
@@ -149,7 +150,6 @@ func (p *PaystackService) HandleSubscriptionCreate(ctx context.Context, eventRes
 	sub := &subscription.Subscription{UserID: user.ID, SubCode: subData.SubscriptionCode}
 
 	subResult, err := p.subRepo.GetSubscription(ctx, sub)
-
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -179,6 +179,10 @@ func (p *PaystackService) HandleSubscriptionCreate(ctx context.Context, eventRes
 	newSub.DateAdded = now
 	newSub.UserID = user.ID
 	newSub.SubscriptionPlanID = subPlan.ID
+	newSub.NextPaymentDate = sql.NullString{
+		String: subData.PaystackSubscription.NextPaymentDate,
+		Valid:  true,
+	}
 	_, err = p.subRepo.CreateSubscription(ctx, newSub)
 
 	if err != nil {
