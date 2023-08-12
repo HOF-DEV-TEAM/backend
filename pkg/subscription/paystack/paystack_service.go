@@ -22,7 +22,7 @@ type PaystackService struct {
 	config         *security.SecurityConfig
 }
 
-func NewPaystackService(payStackClient *PayStackClientHttp, subRepo subscription.Repository, userRepo user.Repository, config *security.SecurityConfig, logger *zap.Logger) *PaystackService {
+func NewPaystackService(payStackClient *PayStackClientHttp, subRepo subscription.Repository, userRepo user.Repository, config *security.SecurityConfig) *PaystackService {
 	return &PaystackService{payStackClient: payStackClient, subRepo: subRepo, userRepo: userRepo, config: config}
 }
 
