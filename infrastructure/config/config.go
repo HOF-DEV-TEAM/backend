@@ -32,6 +32,7 @@ type AwsConfiguration struct {
 	Secret     string `env:"AWS_SECRET"  envDefault:"RTHkv64KXWRQOxh2cNGsfthZCzm15taBSIWGYNMn"`
 	Bucket     string `env:"AWS_BUCKET" envDefault:"hof-s3" envWhitelisted:"true"`
 	BucketPath string `env:"AWS_BUCKET_PATH" envDefault:"goninja/hof/"`
+	BaseURL    string `env:"AWS_BASE_URL"  envDefault:"https://s3.amazonaws.com/"`
 }
 
 type DatabaseConfig struct {
