@@ -51,3 +51,9 @@ type DefaultResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 } // @name DefaultResponse
+
+//<tr>
+//<img src="https://s3.amazonaws.com/goninja/hof/thisIsHome.jpeg"
+//" alt="welcome_to_the_faith_factory"
+//style="max-width:100%;">
+//</tr>
