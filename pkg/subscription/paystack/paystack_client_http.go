@@ -219,6 +219,7 @@ func (r *PayStackClientHttp) doVerifySubscription(ctx context.Context, subRef st
 }
 
 func (r *PayStackClientHttp) InitializeTransaction(ctx context.Context, req *subscription.InitializePaystackTransaction) (*subscription.TransactionInitializationResponse, error) {
+	req.Channels = []string{"card"}
 	resp, err := r.doInitializeTransaction(ctx, req)
 	if err != nil {
 		r.logger.Error("msg", zap.String("paystack initialising payment", err.Error()))

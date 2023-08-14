@@ -19,8 +19,9 @@ type VerifySubRequest struct {
 }
 
 type InitializePaystackTransaction struct {
-	Email  string `json:"email"`
-	Amount string `json:"amount"`
+	Email    string   `json:"email"`
+	Amount   string   `json:"amount"`
+	Channels []string `json:"channels"`
 }
 
 type TransactionInitializationRequest struct {
