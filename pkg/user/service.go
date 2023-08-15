@@ -548,13 +548,14 @@ func (s *UserService) SendEmailVerificationLink(ctx context.Context, email strin
 	if err != nil {
 		return err
 	}
+
 	expiresIn := verificationCliam.ExpiresAt.Sub(time.Now()).Minutes()
 	message := mailer.Message{
 		ID:     messageID,
 		Title:  "Verify Email",
 		Target: user.Email,
 		DataMap: map[string]string{
-			"User":             fmt.Sprintf("%s %s", user.FirstName, user.LastName),
+			"User":             strings.Title(fmt.Sprintf("%s %s", user.FirstName, user.LastName)),
 			"ExpiresIn":        fmt.Sprintf("%v", math.Ceil(expiresIn/5)*5),
 			"VerificationLink": fmt.Sprintf("%s/verify_email/%s", s.config.ServerUrl, tokenString),
 			"HofRoundLogo":     fmt.Sprintf("%s%sHoF_Logo_White.png", s.config.AwsConfiguration.BaseURL, s.config.AwsConfiguration.BucketPath),
