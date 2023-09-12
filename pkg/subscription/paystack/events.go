@@ -81,6 +81,7 @@ func (g *PaystackEvents) HandleEventRequest(req *http.Request) error {
 		return err
 	}
 
+	g.logger.Info("eventPayload", zap.Any("Paystack Payload", event))
 	ctx := req.Context()
 
 	switch event.Event {
