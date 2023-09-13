@@ -52,6 +52,7 @@ func (pc *PaystackService) VerifySubscription(ctx context.Context, subReq subscr
 		return nil, err
 	}
 
+	pc.payStackClient.logger.Info("subResponse: ", zap.Any("data", subResponse))
 	if subResponse.Data.Status == "success" {
 		//update customer code if not set
 		claims, ok := ctx.Value(pc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
@@ -131,11 +132,11 @@ func (p *PaystackService) HandleInvoiceUpdate(ctx context.Context, eventResponse
 }
 
 func (p *PaystackService) HandleSubscriptionCreate(ctx context.Context, eventResponse *EventResponse) error {
-	subData := eventResponse.Data
-	p.payStackClient.logger.Info("SubscriptionCreate: ", zap.Any("subdata", subData))
-	fmt.Println("SubscriptionCreate PaystackSubscription: ", subData.PaystackSubscription)
-	fmt.Println("SubscriptionCreate PaystackCustomerSubscription: ", subData.PaystackCustomerSubscription)
+	p.payStackClient.logger.Info("SubscriptionCreate: ", zap.Any("subdata", eventResponse))
+	fmt.Println("SubscriptionCreate PaystackSubscription: ", eventResponse.Event)
+	fmt.Println("SubscriptionCreate PaystackCustomerSubscription: ", eventResponse.Data)
 
+	subData := eventResponse.Data
 	//todo run both functions concurrently in a goroutine
 	user, err := p.userRepo.GetByCustomerCode(ctx, eventResponse.Data.Customer.CustomerCode)
 	if err != nil || user == nil {

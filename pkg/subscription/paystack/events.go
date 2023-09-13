@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/events"
 	"context"
 	"encoding/json"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -55,6 +56,10 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.SubsscriptionCreateEvent.Watch(e.svc.HandleSubscriptionCreate)
 
 	e.ChargeSuccessEvent.Watch(func(ctx context.Context, a *EventResponse) error {
+		fmt.Println("ChargeSuccess: ", zap.Any("subdata", a))
+		fmt.Println("ChargeSuccess: ", a.Event)
+		fmt.Println("ChargeSuccess PaystackCustomerSubscription: ", a.Data)
+
 		return nil
 	})
 
