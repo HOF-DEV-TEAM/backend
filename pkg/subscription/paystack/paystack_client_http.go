@@ -190,9 +190,13 @@ func (r *PayStackClientHttp) VerifySubscription(ctx context.Context, subRef stri
 
 	var response PaystackVerifySubscriptionResponse
 
-	json.Unmarshal(bytes, &response)
+	err = json.Unmarshal(bytes, &response)
+	if err != nil {
+		return nil, err
+	}
 
-	r.logger.Info("msg", zap.String(response.Message, ""))
+	r.logger.Info("VerifySubscription", zap.String(response.Message, ""))
+	r.logger.Info("VerifySubscription", zap.Any("response", response))
 
 	if !response.Status {
 		return nil, errors.New(response.Message)
