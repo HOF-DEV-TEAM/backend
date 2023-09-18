@@ -165,6 +165,7 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 	paystackRequest := InitializePaystackTransaction{
 		Email:  validUser.Email,
 		Amount: fmt.Sprintf("%v", fee),
+		Plan:   plan.Code,
 	}
 
 	transactionResponse, err := ss.subProvider.InitializeTransaction(ctx, paystackRequest)

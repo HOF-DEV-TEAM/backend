@@ -21,6 +21,7 @@ type VerifySubRequest struct {
 type InitializePaystackTransaction struct {
 	Email    string   `json:"email"`
 	Amount   string   `json:"amount"`
+	Plan     string   `json:"plan"`
 	Channels []string `json:"channels"`
 }
 
