@@ -39,7 +39,7 @@ func (app *application) buildRoutes() {
 		&app.config.Security,
 	)
 	subscriptionSvc := subscription.NewService(subProvider, subscriptionRepo, &app.config.Security, userRepo)
-	subEvents := paystack.New(subProvider, app.logger)
+	subEvents := paystack.New(subProvider, userRepo, subscriptionRepo, app.logger)
 	subEvents.Listen()
 
 	authService := auth.NewService(userRepo, subscriptionSvc, app.logger, &app.config.Security)
