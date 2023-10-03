@@ -64,18 +64,18 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.SubsscriptionCreateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
 		e.logger.Info("NewSubscriptionCreateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
 
-		paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.SubscriptionCreatedEvent.Data.Customer.CustomerCode)
+		paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
 		if err != nil || paystackUser == nil {
 			return err
 		}
 
-		subPlan, err := e.subRepo.GetPlan(ctx, a.Data.SubscriptionCreatedEvent.Data.Plan.PlanCode)
+		subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
 		//subplan exists at this point
 		if err != nil {
 			return err
 		}
 		//check if subscription exists locally
-		sub := &subscription.Subscription{UserID: paystackUser.ID, SubCode: a.Data.SubscriptionCreatedEvent.Data.SubscriptionCode}
+		sub := &subscription.Subscription{UserID: paystackUser.ID, SubCode: a.Data.PaystackCustomerSubscription.SubscriptionCode}
 
 		subResult, err := e.subRepo.GetSubscription(ctx, sub)
 		if err != nil && err != sql.ErrNoRows {
@@ -87,8 +87,8 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		}
 
 		newSub := &subscription.Subscription{
-			SubCode:         a.Data.SubscriptionCreatedEvent.Data.SubscriptionCode,
-			NextPaymentDate: parseDateTime(a.Data.SubscriptionCreatedEvent.Data.NextPaymentDate),
+			SubCode:         a.Data.PaystackCustomerSubscription.SubscriptionCode,
+			NextPaymentDate: parseDateTime(a.Data.PaystackCustomerSubscription.NextPaymentDate),
 			LastUpdated:     now,
 			Status:          1,
 		}
@@ -106,7 +106,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		newSub.UserID = paystackUser.ID
 		newSub.SubscriptionPlanID = subPlan.ID
 		newSub.NextPaymentDate = sql.NullString{
-			String: a.Data.SubscriptionCreatedEvent.Data.NextPaymentDate,
+			String: a.Data.PaystackCustomerSubscription.NextPaymentDate,
 			Valid:  true,
 		}
 		_, err = e.subRepo.CreateSubscription(ctx, newSub)
