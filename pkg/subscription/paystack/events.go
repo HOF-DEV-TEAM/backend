@@ -1,19 +1,14 @@
 package paystack
 
 import (
-	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
 	"bitbucket.org/hofng/hofApp/pkg/events"
 	"bitbucket.org/hofng/hofApp/pkg/subscription"
 	"bitbucket.org/hofng/hofApp/pkg/user"
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
-	"strconv"
-	"time"
 )
 
 type EventType string
@@ -67,81 +62,83 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.SubsscriptionCreateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
 		e.logger.Info("NewSubscriptionCreateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
 
-		claims, ok := ctx.Value(e.svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+		e.logger.Info("NewSubscriptionCreateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription.Customer))
 
-		if !ok {
-			return errors.New("invalid user")
-		}
+		//claims, ok := ctx.Value(e.svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+		//
+		//if !ok {
+		//	return errors.New("invalid user")
+		//}
 
-		userId := claims.JWTClaimsMain.LoggedInUserId
-		//customerId := subResponse.Data.Customer.ID
-		//customerCode := subResponse.Data.Customer.CustomerCode
-
-		_, err := e.userRepo.UpdatePaystack(ctx, &user.User{
-			ID:                   userId,
-			PaystackCustomerId:   sql.NullString{String: strconv.Itoa(a.Data.PaystackCustomerSubscription.Customer.ID), Valid: true},
-			PaystackCustomerCode: sql.NullString{String: a.Data.PaystackCustomerSubscription.Customer.CustomerCode, Valid: true},
-			IsVerified:           user.IsVerifiedEnum(1),
-		})
-
-		if err != nil {
-			return err
-		}
-
-		paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
-		if err != nil || paystackUser == nil {
-			e.logger.Error("GetByCustomerCode", zap.Any("all response", a.Data.PaystackCustomerSubscription), zap.Error(err))
-			return err
-		}
-
-		subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
-		//subplan exists at this point
-		if err != nil {
-			e.logger.Error("GetPlan", zap.Any("all response", a.Data.PaystackCustomerSubscription.Plan.PlanCode), zap.Error(err))
-			return err
-		}
-		//check if subscription exists locally
-		sub := &subscription.Subscription{UserID: paystackUser.ID, SubCode: a.Data.PaystackCustomerSubscription.SubscriptionCode}
-
-		subResult, err := e.subRepo.GetSubscription(ctx, sub)
-		if err != nil && err != sql.ErrNoRows {
-			e.logger.Error("GetSubscription", zap.Any("all response", sub), zap.Error(err))
-			return err
-		}
-		now := sql.NullString{
-			String: time.Now().Format(time.RFC3339),
-			Valid:  true,
-		}
-
-		newSub := &subscription.Subscription{
-			SubCode:         a.Data.PaystackCustomerSubscription.SubscriptionCode,
-			NextPaymentDate: parseDateTime(a.Data.PaystackCustomerSubscription.NextPaymentDate),
-			LastUpdated:     now,
-			Status:          1,
-		}
-
-		if subResult != nil {
-			//subscription already exists; update next payment date and subscription
-			_, err := e.subRepo.UpdateSubscription(ctx, paystackUser.ID, newSub)
-			if err != nil {
-				e.logger.Error("UpdateSubscription", zap.Any("all response", newSub), zap.Error(err))
-				return err
-			}
-			return nil
-		}
-		//create new sub
-		newSub.DateAdded = now
-		newSub.UserID = paystackUser.ID
-		newSub.SubscriptionPlanID = subPlan.ID
-		newSub.NextPaymentDate = sql.NullString{
-			String: a.Data.PaystackCustomerSubscription.NextPaymentDate,
-			Valid:  true,
-		}
-		_, err = e.subRepo.CreateSubscription(ctx, newSub)
-		if err != nil {
-			e.logger.Error("CreateSubscription", zap.Any("all response", newSub), zap.Error(err))
-			return err
-		}
+		//userId := claims.JWTClaimsMain.LoggedInUserId
+		////customerId := subResponse.Data.Customer.ID
+		////customerCode := subResponse.Data.Customer.CustomerCode
+		//
+		//_, err := e.userRepo.UpdatePaystack(ctx, &user.User{
+		//	ID:                   userId,
+		//	PaystackCustomerId:   sql.NullString{String: strconv.Itoa(a.Data.PaystackCustomerSubscription.Customer.ID), Valid: true},
+		//	PaystackCustomerCode: sql.NullString{String: a.Data.PaystackCustomerSubscription.Customer.CustomerCode, Valid: true},
+		//	IsVerified:           user.IsVerifiedEnum(1),
+		//})
+		//
+		//if err != nil {
+		//	return err
+		//}
+		//
+		//paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
+		//if err != nil || paystackUser == nil {
+		//	e.logger.Error("GetByCustomerCode", zap.Any("all response", a.Data.PaystackCustomerSubscription), zap.Error(err))
+		//	return err
+		//}
+		//
+		//subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
+		////subplan exists at this point
+		//if err != nil {
+		//	e.logger.Error("GetPlan", zap.Any("all response", a.Data.PaystackCustomerSubscription.Plan.PlanCode), zap.Error(err))
+		//	return err
+		//}
+		////check if subscription exists locally
+		//sub := &subscription.Subscription{UserID: paystackUser.ID, SubCode: a.Data.PaystackCustomerSubscription.SubscriptionCode}
+		//
+		//subResult, err := e.subRepo.GetSubscription(ctx, sub)
+		//if err != nil && err != sql.ErrNoRows {
+		//	e.logger.Error("GetSubscription", zap.Any("all response", sub), zap.Error(err))
+		//	return err
+		//}
+		//now := sql.NullString{
+		//	String: time.Now().Format(time.RFC3339),
+		//	Valid:  true,
+		//}
+		//
+		//newSub := &subscription.Subscription{
+		//	SubCode:         a.Data.PaystackCustomerSubscription.SubscriptionCode,
+		//	NextPaymentDate: parseDateTime(a.Data.PaystackCustomerSubscription.NextPaymentDate),
+		//	LastUpdated:     now,
+		//	Status:          1,
+		//}
+		//
+		//if subResult != nil {
+		//	//subscription already exists; update next payment date and subscription
+		//	_, err := e.subRepo.UpdateSubscription(ctx, paystackUser.ID, newSub)
+		//	if err != nil {
+		//		e.logger.Error("UpdateSubscription", zap.Any("all response", newSub), zap.Error(err))
+		//		return err
+		//	}
+		//	return nil
+		//}
+		////create new sub
+		//newSub.DateAdded = now
+		//newSub.UserID = paystackUser.ID
+		//newSub.SubscriptionPlanID = subPlan.ID
+		//newSub.NextPaymentDate = sql.NullString{
+		//	String: a.Data.PaystackCustomerSubscription.NextPaymentDate,
+		//	Valid:  true,
+		//}
+		//_, err = e.subRepo.CreateSubscription(ctx, newSub)
+		//if err != nil {
+		//	e.logger.Error("CreateSubscription", zap.Any("all response", newSub), zap.Error(err))
+		//	return err
+		//}
 		return nil
 	})
 
