@@ -62,7 +62,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	//e.SubsscriptionCreateEvent.Watch(e.svc.HandleSubscriptionCreate)
 
 	e.SubsscriptionCreateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
-		e.logger.Info("SubscriptionCreateEvent", zap.Any("all response", a.Data.SubscriptionCreatedEvent))
+		e.logger.Info("NewSubscriptionCreateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
 
 		paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.SubscriptionCreatedEvent.Data.Customer.CustomerCode)
 		if err != nil || paystackUser == nil {
