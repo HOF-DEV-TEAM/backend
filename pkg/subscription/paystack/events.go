@@ -62,7 +62,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.SubsscriptionCreateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
 		e.logger.Info("NewSubscriptionCreateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
 
-		e.logger.Info("NewSubscriptionCreateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription.Customer))
+		e.logger.Info("Paystackcustomer", zap.Any("all response", a.Data.PaystackCustomerSubscription.Customer))
 
 		//claims, ok := ctx.Value(e.svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
 		//
@@ -85,21 +85,27 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		//	return err
 		//}
 		//
-		//paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
-		//if err != nil || paystackUser == nil {
-		//	e.logger.Error("GetByCustomerCode", zap.Any("all response", a.Data.PaystackCustomerSubscription), zap.Error(err))
-		//	return err
-		//}
-		//
-		//subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
-		////subplan exists at this point
-		//if err != nil {
-		//	e.logger.Error("GetPlan", zap.Any("all response", a.Data.PaystackCustomerSubscription.Plan.PlanCode), zap.Error(err))
-		//	return err
-		//}
-		////check if subscription exists locally
+
+		user, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
+		if err != nil || user == nil {
+			e.logger.Error("GetByCustomerCode", zap.Any("all response", a.Data.PaystackCustomerSubscription), zap.Error(err))
+			return err
+		}
+
+		e.logger.Info("paystack_user", zap.Any("all response", user))
+
+		subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
+		//subplan exists at this point
+		if err != nil {
+			e.logger.Error("GetPlan", zap.Any("all response", a.Data.PaystackCustomerSubscription.Plan.PlanCode), zap.Error(err))
+			return err
+		}
+
+		e.logger.Info("subPlan", zap.Any("all response", subPlan))
+
+		//check if subscription exists locally
 		//sub := &subscription.Subscription{UserID: paystackUser.ID, SubCode: a.Data.PaystackCustomerSubscription.SubscriptionCode}
-		//
+
 		//subResult, err := e.subRepo.GetSubscription(ctx, sub)
 		//if err != nil && err != sql.ErrNoRows {
 		//	e.logger.Error("GetSubscription", zap.Any("all response", sub), zap.Error(err))
