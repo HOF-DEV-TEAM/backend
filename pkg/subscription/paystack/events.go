@@ -58,6 +58,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.SubsscriptionCreateEvent = events.NewObservable[*EventResponse, EventType](SubscriptionCreateEvent)
 
 	e.InvoiceUpdateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
+		e.logger.Info("InvoiceUpdateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
 		storeUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
 
 		if err != nil || storeUser == nil {
@@ -104,6 +105,8 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	})
 
 	e.NotRenewEvent.Watch(func(ctx context.Context, a *EventResponse) error {
+		e.logger.Info("NotRenewEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
+
 		user, err := e.userRepo.GetByCustomerCode(ctx, a.Data.Customer.CustomerCode)
 
 		if err != nil || user == nil {
