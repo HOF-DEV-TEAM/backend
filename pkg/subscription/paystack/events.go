@@ -86,13 +86,13 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		//}
 		//
 
-		user, err := e.userRepo.GetByEmail(ctx, a.Data.PaystackCustomerSubscription.Customer.Email)
-		if err != nil || user == nil {
+		storeUser, err := e.userRepo.GetByEmail(ctx, a.Data.PaystackCustomerSubscription.Customer.Email)
+		if err != nil || storeUser == nil {
 			e.logger.Error("GetByCustomerCode", zap.Any("all response", a.Data.PaystackCustomerSubscription), zap.Error(err))
 			return err
 		}
 
-		e.logger.Info("paystack_user", zap.Any("all response", user))
+		e.logger.Info("paystack_user", zap.Any("all response", storeUser))
 
 		subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
 		//subplan exists at this point
