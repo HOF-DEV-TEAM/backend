@@ -194,8 +194,6 @@ func (p *PaystackService) HandleSubscriptionCreate(ctx context.Context, eventRes
 
 func (p *PaystackService) HandleCancelSubscription(ctx context.Context, eventResponse *EventResponse) error {
 	subData := eventResponse.Data
-	log.Println("CancelSubscription: ", subData)
-
 	//todo run both functions concurrently in a goroutine
 	user, err := p.userRepo.GetByCustomerCode(ctx, eventResponse.Data.Customer.CustomerCode)
 
