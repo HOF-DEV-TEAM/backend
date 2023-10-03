@@ -66,12 +66,14 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 
 		paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
 		if err != nil || paystackUser == nil {
+			e.logger.Error("GetByCustomerCode", zap.Any("all response", a.Data.PaystackCustomerSubscription), zap.Error(err))
 			return err
 		}
 
 		subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
 		//subplan exists at this point
 		if err != nil {
+			e.logger.Error("GetPlan", zap.Any("all response", a.Data.PaystackCustomerSubscription.Plan.PlanCode), zap.Error(err))
 			return err
 		}
 		//check if subscription exists locally
@@ -79,6 +81,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 
 		subResult, err := e.subRepo.GetSubscription(ctx, sub)
 		if err != nil && err != sql.ErrNoRows {
+			e.logger.Error("GetSubscription", zap.Any("all response", sub), zap.Error(err))
 			return err
 		}
 		now := sql.NullString{
@@ -97,6 +100,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 			//subscription already exists; update next payment date and subscription
 			_, err := e.subRepo.UpdateSubscription(ctx, paystackUser.ID, newSub)
 			if err != nil {
+				e.logger.Error("UpdateSubscription", zap.Any("all response", newSub), zap.Error(err))
 				return err
 			}
 			return nil
@@ -111,6 +115,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		}
 		_, err = e.subRepo.CreateSubscription(ctx, newSub)
 		if err != nil {
+			e.logger.Error("CreateSubscription", zap.Any("all response", newSub), zap.Error(err))
 			return err
 		}
 		return nil
