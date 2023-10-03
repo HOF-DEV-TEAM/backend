@@ -46,7 +46,7 @@ type PaystackEvents struct {
 }
 
 func New(svc *PaystackService, userRepo user.Repository, subRepo subscription.Repository, logger *zap.Logger) *PaystackEvents {
-	return &PaystackEvents{svc: svc, logger: logger}
+	return &PaystackEvents{svc: svc, userRepo: userRepo, subRepo: subRepo, logger: logger}
 }
 
 func (e *PaystackEvents) Listen() *PaystackEvents {
