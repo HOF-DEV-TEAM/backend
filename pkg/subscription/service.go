@@ -127,7 +127,8 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 
 	sub.SubscriptionPlanID = subReq.PlanId
 	sub.Status = 1
-	return ss.CreateSubscription(ctx, sub)
+	//return ss.CreateSubscription(ctx, sub)
+	return sub, nil
 }
 
 func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req TransactionInitializationRequest) (*TransactionInitializationResponse, error) {

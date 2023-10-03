@@ -117,6 +117,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 			String: time.Now().Format(time.RFC3339),
 			Valid:  true,
 		}
+		e.logger.Info("subResult", zap.Any("all response", subResult))
 
 		newSub := &subscription.Subscription{
 			SubCode:         a.Data.PaystackCustomerSubscription.SubscriptionCode,
@@ -134,6 +135,9 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 			}
 			return nil
 		}
+
+		e.logger.Info("subResult", zap.Any("all response", subResult))
+
 		//create new sub
 		newSub.DateAdded = now
 		newSub.UserID = storeUser.ID
