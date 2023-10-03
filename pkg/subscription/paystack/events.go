@@ -52,7 +52,13 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 
 	e.InvoiceUpdateEvent.Watch(e.svc.HandleInvoiceUpdate)
 	e.NotRenewEvent.Watch(e.svc.HandleCancelSubscription)
-	e.SubsscriptionCreateEvent.Watch(e.svc.HandleSubscriptionCreate)
+	//e.SubsscriptionCreateEvent.Watch(e.svc.HandleSubscriptionCreate)
+
+	e.SubsscriptionCreateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
+		e.logger.Info("SubsscriptionCreateEvent", zap.Any("sub response", a.Data.Subscription))
+		e.logger.Info("SubsscriptionCreateEvent", zap.Any("all response", *a))
+		return nil
+	})
 
 	e.ChargeSuccessEvent.Watch(func(ctx context.Context, a *EventResponse) error {
 		e.logger.Info("ChargeSuccess", zap.Any("sub response", a.Data.Subscription))
