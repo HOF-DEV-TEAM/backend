@@ -5,12 +5,10 @@ import (
 	"bitbucket.org/hofng/hofApp/pkg/subscription"
 	"bitbucket.org/hofng/hofApp/pkg/user"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
-	"time"
 )
 
 type EventType string
@@ -18,7 +16,6 @@ type EventType string
 type SubscriptionEventResponse struct {
 	Subscription PaystackSubscription `json:"subscription"`
 	PaystackCustomerSubscription
-	SubscriptionCreatedEvent
 }
 
 type EventResponse struct {
@@ -64,55 +61,55 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.SubsscriptionCreateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
 		e.logger.Info("NewSubscriptionCreateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
 
-		paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
-		if err != nil || paystackUser == nil {
-			return err
-		}
-
-		subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
-		//subplan exists at this point
-		if err != nil {
-			return err
-		}
-		//check if subscription exists locally
-		sub := &subscription.Subscription{UserID: paystackUser.ID, SubCode: a.Data.PaystackCustomerSubscription.SubscriptionCode}
-
-		subResult, err := e.subRepo.GetSubscription(ctx, sub)
-		if err != nil && err != sql.ErrNoRows {
-			return err
-		}
-		now := sql.NullString{
-			String: time.Now().Format(time.RFC3339),
-			Valid:  true,
-		}
-
-		newSub := &subscription.Subscription{
-			SubCode:         a.Data.PaystackCustomerSubscription.SubscriptionCode,
-			NextPaymentDate: parseDateTime(a.Data.PaystackCustomerSubscription.NextPaymentDate),
-			LastUpdated:     now,
-			Status:          1,
-		}
-
-		if subResult != nil {
-			//subscription already exists; update next payment date and subscription
-			_, err := e.subRepo.UpdateSubscription(ctx, paystackUser.ID, newSub)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-		//create new sub
-		newSub.DateAdded = now
-		newSub.UserID = paystackUser.ID
-		newSub.SubscriptionPlanID = subPlan.ID
-		newSub.NextPaymentDate = sql.NullString{
-			String: a.Data.PaystackCustomerSubscription.NextPaymentDate,
-			Valid:  true,
-		}
-		_, err = e.subRepo.CreateSubscription(ctx, newSub)
-		if err != nil {
-			return err
-		}
+		//paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
+		//if err != nil || paystackUser == nil {
+		//	return err
+		//}
+		//
+		//subPlan, err := e.subRepo.GetPlan(ctx, a.Data.PaystackCustomerSubscription.Plan.PlanCode)
+		////subplan exists at this point
+		//if err != nil {
+		//	return err
+		//}
+		////check if subscription exists locally
+		//sub := &subscription.Subscription{UserID: paystackUser.ID, SubCode: a.Data.PaystackCustomerSubscription.SubscriptionCode}
+		//
+		//subResult, err := e.subRepo.GetSubscription(ctx, sub)
+		//if err != nil && err != sql.ErrNoRows {
+		//	return err
+		//}
+		//now := sql.NullString{
+		//	String: time.Now().Format(time.RFC3339),
+		//	Valid:  true,
+		//}
+		//
+		//newSub := &subscription.Subscription{
+		//	SubCode:         a.Data.PaystackCustomerSubscription.SubscriptionCode,
+		//	NextPaymentDate: parseDateTime(a.Data.PaystackCustomerSubscription.NextPaymentDate),
+		//	LastUpdated:     now,
+		//	Status:          1,
+		//}
+		//
+		//if subResult != nil {
+		//	//subscription already exists; update next payment date and subscription
+		//	_, err := e.subRepo.UpdateSubscription(ctx, paystackUser.ID, newSub)
+		//	if err != nil {
+		//		return err
+		//	}
+		//	return nil
+		//}
+		////create new sub
+		//newSub.DateAdded = now
+		//newSub.UserID = paystackUser.ID
+		//newSub.SubscriptionPlanID = subPlan.ID
+		//newSub.NextPaymentDate = sql.NullString{
+		//	String: a.Data.PaystackCustomerSubscription.NextPaymentDate,
+		//	Valid:  true,
+		//}
+		//_, err = e.subRepo.CreateSubscription(ctx, newSub)
+		//if err != nil {
+		//	return err
+		//}
 		return nil
 	})
 
@@ -123,53 +120,6 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	})
 
 	return e
-}
-
-type SubscriptionCreatedEvent struct {
-	Event string `json:"event"`
-	Data  struct {
-		Domain           string      `json:"domain"`
-		Status           string      `json:"status"`
-		SubscriptionCode string      `json:"subscription_code"`
-		Amount           int         `json:"amount"`
-		CronExpression   string      `json:"cron_expression"`
-		NextPaymentDate  string      `json:"next_payment_date"`
-		OpenInvoice      interface{} `json:"open_invoice"`
-		CreatedAt        string      `json:"createdAt"`
-		Plan             struct {
-			Name         string      `json:"name"`
-			PlanCode     string      `json:"plan_code"`
-			Description  interface{} `json:"description"`
-			Amount       int         `json:"amount"`
-			Interval     string      `json:"interval"`
-			SendInvoices bool        `json:"send_invoices"`
-			SendSms      bool        `json:"send_sms"`
-			Currency     string      `json:"currency"`
-		} `json:"plan"`
-		Authorization struct {
-			AuthorizationCode string `json:"authorization_code"`
-			Bin               string `json:"bin"`
-			Last4             string `json:"last4"`
-			ExpMonth          string `json:"exp_month"`
-			ExpYear           string `json:"exp_year"`
-			CardType          string `json:"card_type"`
-			Bank              string `json:"bank"`
-			CountryCode       string `json:"country_code"`
-			Brand             string `json:"brand"`
-			AccountName       string `json:"account_name"`
-		} `json:"authorization"`
-		Customer struct {
-			FirstName    string `json:"first_name"`
-			LastName     string `json:"last_name"`
-			Email        string `json:"email"`
-			CustomerCode string `json:"customer_code"`
-			Phone        string `json:"phone"`
-			Metadata     struct {
-			} `json:"metadata"`
-			RiskAction string `json:"risk_action"`
-		} `json:"customer"`
-		CreatedAt1 string `json:"created_at"`
-	} `json:"data"`
 }
 
 func parseEvent(r *http.Request) (*EventResponse, error) {
