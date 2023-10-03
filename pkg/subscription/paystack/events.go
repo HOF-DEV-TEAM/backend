@@ -1,15 +1,18 @@
 package paystack
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
 	"bitbucket.org/hofng/hofApp/pkg/events"
 	"bitbucket.org/hofng/hofApp/pkg/subscription"
 	"bitbucket.org/hofng/hofApp/pkg/user"
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -63,6 +66,27 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 
 	e.SubsscriptionCreateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
 		e.logger.Info("NewSubscriptionCreateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
+
+		claims, ok := ctx.Value(e.svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+
+		if !ok {
+			return errors.New("invalid user")
+		}
+
+		userId := claims.JWTClaimsMain.LoggedInUserId
+		//customerId := subResponse.Data.Customer.ID
+		//customerCode := subResponse.Data.Customer.CustomerCode
+
+		_, err := e.userRepo.UpdatePaystack(ctx, &user.User{
+			ID:                   userId,
+			PaystackCustomerId:   sql.NullString{String: strconv.Itoa(a.Data.PaystackCustomerSubscription.Customer.ID), Valid: true},
+			PaystackCustomerCode: sql.NullString{String: a.Data.PaystackCustomerSubscription.Customer.CustomerCode, Valid: true},
+			IsVerified:           user.IsVerifiedEnum(1),
+		})
+
+		if err != nil {
+			return err
+		}
 
 		paystackUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
 		if err != nil || paystackUser == nil {
