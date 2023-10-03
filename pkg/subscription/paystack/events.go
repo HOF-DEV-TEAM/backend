@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"time"
 )
 
 type EventType string
@@ -14,6 +15,7 @@ type EventType string
 type SubscriptionEventResponse struct {
 	Subscription PaystackSubscription `json:"subscription"`
 	PaystackCustomerSubscription
+	SubscriptionCreatedEvent
 }
 
 type EventResponse struct {
@@ -55,6 +57,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	//e.SubsscriptionCreateEvent.Watch(e.svc.HandleSubscriptionCreate)
 
 	e.SubsscriptionCreateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
+
 		e.logger.Info("SubsscriptionCreateEvent", zap.Any("sub response", a.Data.Subscription))
 		e.logger.Info("SubsscriptionCreateEvent", zap.Any("all response", *a))
 		return nil
@@ -67,6 +70,53 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	})
 
 	return e
+}
+
+type SubscriptionCreatedEvent struct {
+	Event string `json:"event"`
+	Data  struct {
+		Domain           string      `json:"domain"`
+		Status           string      `json:"status"`
+		SubscriptionCode string      `json:"subscription_code"`
+		Amount           int         `json:"amount"`
+		CronExpression   string      `json:"cron_expression"`
+		NextPaymentDate  time.Time   `json:"next_payment_date"`
+		OpenInvoice      interface{} `json:"open_invoice"`
+		CreatedAt        time.Time   `json:"createdAt"`
+		Plan             struct {
+			Name         string      `json:"name"`
+			PlanCode     string      `json:"plan_code"`
+			Description  interface{} `json:"description"`
+			Amount       int         `json:"amount"`
+			Interval     string      `json:"interval"`
+			SendInvoices bool        `json:"send_invoices"`
+			SendSms      bool        `json:"send_sms"`
+			Currency     string      `json:"currency"`
+		} `json:"plan"`
+		Authorization struct {
+			AuthorizationCode string `json:"authorization_code"`
+			Bin               string `json:"bin"`
+			Last4             string `json:"last4"`
+			ExpMonth          string `json:"exp_month"`
+			ExpYear           string `json:"exp_year"`
+			CardType          string `json:"card_type"`
+			Bank              string `json:"bank"`
+			CountryCode       string `json:"country_code"`
+			Brand             string `json:"brand"`
+			AccountName       string `json:"account_name"`
+		} `json:"authorization"`
+		Customer struct {
+			FirstName    string `json:"first_name"`
+			LastName     string `json:"last_name"`
+			Email        string `json:"email"`
+			CustomerCode string `json:"customer_code"`
+			Phone        string `json:"phone"`
+			Metadata     struct {
+			} `json:"metadata"`
+			RiskAction string `json:"risk_action"`
+		} `json:"customer"`
+		CreatedAt1 time.Time `json:"created_at"`
+	} `json:"data"`
 }
 
 func parseEvent(r *http.Request) (*EventResponse, error) {
