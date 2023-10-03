@@ -229,11 +229,9 @@ func (r userRepository) getUser(ctx context.Context, field string, value string)
 		&user.IsVerified,
 		&user.PaystackCustomerCode,
 	)
-
 	if err == sql.ErrNoRows {
 		return nil, err
 	}
-
 	if err != nil {
 		r.log.Info("msg",
 			zap.String("error querying", ""),

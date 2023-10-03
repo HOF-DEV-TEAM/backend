@@ -86,7 +86,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		//}
 		//
 
-		user, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
+		user, err := e.userRepo.GetByEmail(ctx, a.Data.PaystackCustomerSubscription.Customer.Email)
 		if err != nil || user == nil {
 			e.logger.Error("GetByCustomerCode", zap.Any("all response", a.Data.PaystackCustomerSubscription), zap.Error(err))
 			return err
