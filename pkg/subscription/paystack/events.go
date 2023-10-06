@@ -231,7 +231,7 @@ type SubscriptionCreatedEvent struct {
 			Description  interface{} `json:"description"`
 			Amount       int         `json:"amount"`
 			Interval     string      `json:"interval"`
-			SendInvoices bool        `json:"send_invoices"`
+			SendInvoices interface{} `json:"send_invoices"`
 			SendSms      bool        `json:"send_sms"`
 			Currency     string      `json:"currency"`
 		} `json:"plan"`
