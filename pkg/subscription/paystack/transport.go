@@ -41,6 +41,20 @@ type PaystackPlan struct {
 	UpdatedAt    string                `json:"updatedAt"`
 }
 
+type PaystackTransactionPlan struct {
+	Name         string                `json:"name"`
+	Interval     subscription.FreqEnum `json:"interval,string,omit_empty"`
+	Currency     string                `json:"currency"`
+	PlanCode     string                `json:"plan_code"`
+	Amount       float64               `json:"amount"`
+	SendInvoices bool                  `json:"send_invoices"`
+	SendSms      bool                  `json:"send_sms"`
+	IsArchived   bool                  `json:"is_archived"`
+	ID           int                   `json:"id"`
+	CreatedAt    string                `json:"createdAt"`
+	UpdatedAt    string                `json:"updatedAt"`
+}
+
 type PaystackPlanResponse struct {
 	PaystackResponse
 	Data PaystackPlan `json:"data"`
@@ -68,8 +82,8 @@ type PaystackCustomerSubscriptionResponse struct {
 }
 
 type VerifyPlanResponse struct {
-	Plan     PaystackPlan     `json:"plan_object"`
-	Customer PaystackCustomer `json:"customer"`
+	Plan     PaystackTransactionPlan `json:"plan_object"`
+	Customer PaystackCustomer        `json:"customer"`
 	PaystackSubscription
 }
 
