@@ -313,7 +313,7 @@ type InvoiceUpdatedEvent struct {
 	} `json:"data"`
 }
 
-func parseEvent(r *http.Request) (*EventResponse, error) {
+func parseEvent(g *PaystackEvents, r *http.Request) (*EventResponse, error) {
 	bytes, errRead := io.ReadAll(r.Body)
 
 	if errRead != nil {
@@ -324,6 +324,8 @@ func parseEvent(r *http.Request) (*EventResponse, error) {
 
 	err := json.Unmarshal(bytes, &event)
 	if err != nil {
+
+		g.logger.Error("msg", zap.String("paystackSubEvent", err.Error()))
 		return nil, err
 	}
 
@@ -331,7 +333,7 @@ func parseEvent(r *http.Request) (*EventResponse, error) {
 }
 
 func (g *PaystackEvents) HandleEventRequest(req *http.Request) error {
-	event, err := parseEvent(req)
+	event, err := parseEvent(g, req)
 	if err != nil {
 		return err
 	}
