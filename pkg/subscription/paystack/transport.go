@@ -34,7 +34,7 @@ type PaystackPlan struct {
 	PlanCode     string                `json:"plan_code"`
 	Amount       float64               `json:"amount"`
 	SendInvoices int                   `json:"send_invoices"`
-	SendSms      bool                  `json:"send_sms"`
+	SendSms      int                   `json:"send_sms"`
 	IsArchived   bool                  `json:"is_archived"`
 	ID           int                   `json:"id"`
 	CreatedAt    string                `json:"createdAt"`
