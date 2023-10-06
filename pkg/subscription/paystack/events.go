@@ -19,6 +19,7 @@ type SubscriptionEventResponse struct {
 	Subscription PaystackSubscription `json:"subscription"`
 	PaystackCustomerSubscription
 	SubscriptionCreatedEvent
+	InvoiceUpdatedEvent
 }
 
 type EventResponse struct {
@@ -260,6 +261,58 @@ type SubscriptionCreatedEvent struct {
 	} `json:"data"`
 }
 
+type InvoiceUpdatedEvent struct {
+	Event string `json:"event"`
+	Data  struct {
+		Domain        string      `json:"domain"`
+		InvoiceCode   string      `json:"invoice_code"`
+		Amount        int         `json:"amount"`
+		PeriodStart   time.Time   `json:"period_start"`
+		PeriodEnd     time.Time   `json:"period_end"`
+		Status        string      `json:"status"`
+		Paid          bool        `json:"paid"`
+		PaidAt        time.Time   `json:"paid_at"`
+		Description   interface{} `json:"description"`
+		Authorization struct {
+			AuthorizationCode string `json:"authorization_code"`
+			Bin               string `json:"bin"`
+			Last4             string `json:"last4"`
+			ExpMonth          string `json:"exp_month"`
+			ExpYear           string `json:"exp_year"`
+			CardType          string `json:"card_type"`
+			Bank              string `json:"bank"`
+			CountryCode       string `json:"country_code"`
+			Brand             string `json:"brand"`
+			AccountName       string `json:"account_name"`
+		} `json:"authorization"`
+		Subscription struct {
+			Status           string      `json:"status"`
+			SubscriptionCode string      `json:"subscription_code"`
+			Amount           int         `json:"amount"`
+			CronExpression   string      `json:"cron_expression"`
+			NextPaymentDate  time.Time   `json:"next_payment_date"`
+			OpenInvoice      interface{} `json:"open_invoice"`
+		} `json:"subscription"`
+		Customer struct {
+			FirstName    string `json:"first_name"`
+			LastName     string `json:"last_name"`
+			Email        string `json:"email"`
+			CustomerCode string `json:"customer_code"`
+			Phone        string `json:"phone"`
+			Metadata     struct {
+			} `json:"metadata"`
+			RiskAction string `json:"risk_action"`
+		} `json:"customer"`
+		Transaction struct {
+			Reference string `json:"reference"`
+			Status    string `json:"status"`
+			Amount    int    `json:"amount"`
+			Currency  string `json:"currency"`
+		} `json:"transaction"`
+		CreatedAt time.Time `json:"created_at"`
+	} `json:"data"`
+}
+
 func parseEvent(r *http.Request) (*EventResponse, error) {
 	bytes, errRead := io.ReadAll(r.Body)
 
@@ -269,7 +322,10 @@ func parseEvent(r *http.Request) (*EventResponse, error) {
 
 	var event EventResponse
 
-	json.Unmarshal(bytes, &event)
+	err := json.Unmarshal(bytes, &event)
+	if err != nil {
+		return nil, err
+	}
 
 	return &event, nil
 }
