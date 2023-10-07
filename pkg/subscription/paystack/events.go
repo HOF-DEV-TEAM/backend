@@ -32,6 +32,7 @@ const (
 	InvoiceUpdateEvent      = EventType("invoice.update")
 	NotRenewEvent           = EventType("subscription.not_renew")
 	SubscriptionCreateEvent = EventType("subscription.create")
+	InvoicePaymentFailed    = EventType("invoice.payment_failed")
 )
 
 // concrete implementation of events interface
@@ -44,6 +45,7 @@ type PaystackEvents struct {
 	ChargeSuccessEvent       *events.Observable[*EventResponse, EventType]
 	NotRenewEvent            *events.Observable[*EventResponse, EventType]
 	SubsscriptionCreateEvent *events.Observable[*EventResponse, EventType]
+	InvoicePaymentFailed     *events.Observable[*EventResponse, EventType]
 }
 
 func New(svc *PaystackService, userRepo user.Repository, subRepo subscription.Repository, logger *zap.Logger) *PaystackEvents {
@@ -56,6 +58,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.InvoiceUpdateEvent = events.NewObservable[*EventResponse, EventType](InvoiceUpdateEvent)
 	e.ChargeSuccessEvent = events.NewObservable[*EventResponse, EventType](ChargeSuccessEvent)
 	e.NotRenewEvent = events.NewObservable[*EventResponse, EventType](NotRenewEvent)
+	e.InvoicePaymentFailed = events.NewObservable[*EventResponse, EventType](InvoicePaymentFailed)
 	e.SubsscriptionCreateEvent = events.NewObservable[*EventResponse, EventType](SubscriptionCreateEvent)
 
 	e.InvoiceUpdateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
@@ -211,6 +214,44 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		return nil
 	})
 
+	e.InvoicePaymentFailed.Watch(func(ctx context.Context, a *EventResponse) error {
+		e.logger.Info("InvoicePaymentFailed", zap.Any("all response", a.Data.PaystackCustomerSubscription))
+
+		user, err := e.userRepo.GetByCustomerCode(ctx, a.Data.Customer.CustomerCode)
+
+		if err != nil || user == nil {
+			return err
+		}
+
+		sub := &subscription.Subscription{UserID: user.ID, SubCode: a.Data.SubscriptionCode}
+
+		subResult, err := e.subRepo.GetSubscription(ctx, sub)
+
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+
+		newSub := &subscription.Subscription{
+			NextPaymentDate: sql.NullString{Valid: true},
+			LastUpdated: sql.NullString{
+				String: time.Now().Format(time.RFC3339),
+				Valid:  true,
+			},
+			Status: 2,
+		}
+
+		if subResult != nil {
+			//subscription already exists; update next payment date and subscription
+			_, err := e.subRepo.UpdateSubscription(ctx, user.ID, newSub)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		return nil
+	})
+
 	return e
 }
 
@@ -350,6 +391,8 @@ func (g *PaystackEvents) HandleEventRequest(req *http.Request) error {
 		return g.NotRenewEvent.Set(ctx, event)
 	case SubscriptionCreateEvent:
 		return g.SubsscriptionCreateEvent.Set(ctx, event)
+	case InvoicePaymentFailed:
+		return g.InvoicePaymentFailed.Set(ctx, event)
 	}
 
 	return nil
