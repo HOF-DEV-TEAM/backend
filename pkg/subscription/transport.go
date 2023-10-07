@@ -39,6 +39,16 @@ type TransactionInitializationResponse struct {
 	} `json:"data"`
 }
 
+type DisableSubscriptionRequest struct {
+	Code  string `json:"code"`
+	Token string `json:"token"`
+}
+
+type DisableSubscriptionPayload struct {
+	Status  bool   `json:"status"`
+	Message string `json:"message"`
+}
+
 type SubscriptionPlanRequest struct {
 	Type TypeEnum `json:"type,string,omitempty"`
 	Name string   `json:"name,omitempty"`
@@ -335,6 +345,23 @@ func initializeTransactionPlanHandler(wr http.ResponseWriter, r *http.Request, s
 	}
 	log.Println("initializeTransactionPlanHandler request: ", request)
 	payload, err := svc.(SubscriptionService).InitializeTransaction(r.Context(), request)
+	if err != nil {
+		http_helper.EncodeJSONError(r.Context(), err, wr)
+		return
+	}
+
+	http_helper.EncodeResult(wr, payload, http.StatusOK)
+}
+
+func DisableSubscriptionHandler(svc SubscriptionService) http.HandlerFunc {
+	return http_helper.NewHTTPHandler(disableSubscriptionHandler, svc)
+}
+
+func disableSubscriptionHandler(wr http.ResponseWriter, r *http.Request, svc interface{}) {
+	subCode := chi.URLParam(r, "code")
+
+	log.Println("disableSubscription request")
+	payload, err := svc.(SubscriptionService).DisableSubscription(r.Context(), subCode)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, wr)
 		return

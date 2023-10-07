@@ -346,3 +346,63 @@ func (r *PayStackClientHttp) doPostCustomer(ctx context.Context, customer *Payst
 
 	return r.httpCaller.DoPost(ctx, headerValues, url, body)
 }
+
+func (r *PayStackClientHttp) DisableSubscription(ctx context.Context, code string) (*subscription.DisableSubscriptionPayload, error) {
+	subscriptionResponse, err := r.GetSubscription(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &subscription.DisableSubscriptionRequest{
+		Code:  code,
+		Token: subscriptionResponse.Data.EmailToken,
+	}
+	resp, err := r.doDisableSubscription(ctx, req)
+	if err != nil {
+		r.logger.Error("msg", zap.String("paystack initialising payment", err.Error()))
+		return nil, err
+	}
+	defer r.close(ctx, resp)
+
+	bytes, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		return nil, http_helper.ErrInvalidRequest
+	}
+
+	var response subscription.DisableSubscriptionPayload
+
+	err = json.Unmarshal(bytes, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	r.logger.Info("msg", zap.String(response.Message, ""))
+
+	if !response.Status {
+		return nil, errors.New(response.Message)
+	}
+
+	return &response, nil
+}
+
+func (r *PayStackClientHttp) doDisableSubscription(ctx context.Context, req *subscription.DisableSubscriptionRequest) (*http.Response, error) {
+	url := fmt.Sprintf(
+		"%s/subscription/disable",
+		r.config.Addr,
+	)
+
+	r.logger.Info("msg", zap.String("calling disable subscription", url))
+	body, err := json.Marshal(req)
+
+	if err != nil {
+		return nil, http_helper.ErrInvalidRequest
+	}
+
+	headerValues, err := r.getHeaders(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.httpCaller.DoPost(ctx, headerValues, url, body)
+}

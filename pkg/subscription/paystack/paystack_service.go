@@ -82,6 +82,24 @@ func (pc *PaystackService) VerifySubscription(ctx context.Context, subReq subscr
 	return nil, err
 }
 
+func (pc *PaystackService) InitializeTransaction(ctx context.Context, req subscription.InitializePaystackTransaction) (*subscription.TransactionInitializationResponse, error) {
+	result, err := pc.payStackClient.InitializeTransaction(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+}
+
+func (pc *PaystackService) DisableSubscription(ctx context.Context, code string) (*subscription.DisableSubscriptionPayload, error) {
+	result, err := pc.payStackClient.DisableSubscription(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+}
+
 func (p *PaystackService) HandleInvoiceUpdate(ctx context.Context, eventResponse *EventResponse) error {
 	subData := eventResponse.Data.Subscription
 	log.Println("Invoice: ", subData)
@@ -228,14 +246,4 @@ func (p *PaystackService) HandleCancelSubscription(ctx context.Context, eventRes
 	}
 
 	return nil
-}
-
-func (pc *PaystackService) InitializeTransaction(ctx context.Context, req subscription.InitializePaystackTransaction) (*subscription.TransactionInitializationResponse, error) {
-	result, err := pc.payStackClient.InitializeTransaction(ctx, &req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, err
 }

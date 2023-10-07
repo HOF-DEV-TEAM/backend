@@ -26,12 +26,14 @@ type SubscriptionService interface {
 	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
 	GetOfferings(ctx context.Context) ([]*SubscriptionOffering, int, error)
 	InitializeTransaction(ctx context.Context, req TransactionInitializationRequest) (*TransactionInitializationResponse, error)
+	DisableSubscription(ctx context.Context, code string) (*DisableSubscriptionPayload, error)
 }
 
 type SubscriptionProviderService interface {
 	CreateSubscriptionPlan(ctx context.Context, subscriptionPlan *SubscriptionPlanRequest) (*SubscriptionPlan, error)
 	VerifySubscription(ctx context.Context, subReq VerifySubRequest) (*Subscription, error)
 	InitializeTransaction(ctx context.Context, req InitializePaystackTransaction) (*TransactionInitializationResponse, error)
+	DisableSubscription(ctx context.Context, code string) (*DisableSubscriptionPayload, error)
 }
 
 type Service interface {
@@ -187,6 +189,16 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 			Reference        string
 		}{AuthorizationUrl: transactionResponse.Data.AuthorizationUrl, AccessCode: transactionResponse.Data.AccessCode, Reference: transactionResponse.Data.Reference}),
 	}, nil
+}
+
+func (ss *subscriptionSvc) DisableSubscription(ctx context.Context, code string) (*DisableSubscriptionPayload, error) {
+
+	response, err := ss.subProvider.DisableSubscription(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
 
 func (ss *subscriptionSvc) CreateSubscriptionPlanOffering(ctx context.Context, subReq *SubscriptionPlanOfferingRequest) (string, error) {

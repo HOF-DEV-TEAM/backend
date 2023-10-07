@@ -215,11 +215,13 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	verifySubscriptionHandler := subscription.VerifySubscriptionHandler(svc)
 	getSubscriptionOfferingsHandler := subscription.GetOfferingsHandler(svc)
 	initializeTransactionPlanHandler := subscription.InitializeTransactionPlanHandler(svc)
+	disableSubscriptionHandler := subscription.DisableSubscriptionHandler(svc)
 	//getSubscriptionOfferingByIdHandler := subscription.GetSubscriptionOfferingByIdHandler(svc)
 
 	//Subscription routes
 	subRouter.Get("/", getSubscriptions)
 	subRouter.Post("/verify", verifySubscriptionHandler)
+	subRouter.Delete("/disable", disableSubscriptionHandler)
 
 	//Plan routes
 	subRouter.Get("/plan", getSubscriptionPlansHandler)

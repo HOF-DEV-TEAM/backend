@@ -66,6 +66,7 @@ type PaystackSubscription struct {
 	CreatedAt        string `json:"createdAt"`
 	UpdatedAt        string `json:"updatedAt"`
 	SubscriptionCode string `json:"subscription_code"`
+	EmailToken       string `json:"email_token"`
 	//to verify transaction status //success or failure
 	Status string `json:"status"`
 }

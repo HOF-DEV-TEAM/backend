@@ -318,6 +318,7 @@ type Subscription struct {
 	SubscriptionPlanID string         `sql:"subscription_plan_id" validate:"required" json:"subscription_plan_id"`
 	NextPaymentDate    sql.NullString `sql:"next_payment_date" json:"next_payment_date"`
 	SubCode            string         `sql:"sub_code" json:"sub_code"`
+	EmailToken         string         `sql:"email_token" json:"email_token"`
 	DateAdded          sql.NullString `sql:"date_added" json:"date_added"`
 	LastUpdated        sql.NullString `sql:"last_updated" json:"last_updated"`
 	DeletedAt          sql.NullString `sql:"deleted_at"`
