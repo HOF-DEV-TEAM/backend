@@ -221,7 +221,7 @@ func buildSubscriptionEndpoints(router chi.Router, svc subscription.Service) {
 	//Subscription routes
 	subRouter.Get("/", getSubscriptions)
 	subRouter.Post("/verify", verifySubscriptionHandler)
-	subRouter.Delete("/disable", disableSubscriptionHandler)
+	subRouter.Delete("/disable/{code}", disableSubscriptionHandler)
 
 	//Plan routes
 	subRouter.Get("/plan", getSubscriptionPlansHandler)
