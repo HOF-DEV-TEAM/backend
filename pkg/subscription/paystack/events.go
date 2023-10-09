@@ -126,12 +126,12 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		}
 
 		newSub := &subscription.Subscription{
-			NextPaymentDate: sql.NullString{Valid: true},
+			//NextPaymentDate: sql.NullString{Valid: true},
 			LastUpdated: sql.NullString{
 				String: time.Now().Format(time.RFC3339),
 				Valid:  true,
 			},
-			Status: 2,
+			Status: 3,
 		}
 
 		if subResult != nil {
@@ -232,7 +232,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		}
 
 		newSub := &subscription.Subscription{
-			NextPaymentDate: sql.NullString{Valid: true},
+			//NextPaymentDate: sql.NullString{Valid: true},
 			LastUpdated: sql.NullString{
 				String: time.Now().Format(time.RFC3339),
 				Valid:  true,

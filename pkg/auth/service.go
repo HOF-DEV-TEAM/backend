@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/security"
@@ -30,6 +31,27 @@ type authService struct {
 
 func NewService(userRepo user.Repository, subService subscription.Service, log *zap.Logger, config *security.SecurityConfig) Service {
 	return &authService{log: log, userRepo: userRepo, subService: subService, config: config}
+}
+
+func (svc *authService) checkTheNextPaymentDate(dateString string, status int) (int, error) {
+	//dateString := "2023-10-09T23:14:00.000Z"
+
+	nextPaymentDate, err := time.Parse(time.RFC3339, dateString)
+	if err != nil {
+		svc.log.Error("parse date", zap.Any("error", "error parsing date"), zap.Error(err))
+		return 2, fmt.Errorf("error parsing date: %s", err)
+	}
+
+	currentTime := time.Now()
+
+	subStatus := 1
+	// Compare the dates
+	if (currentTime.After(nextPaymentDate) && status == 3) || (currentTime.After(nextPaymentDate) && status == 1) {
+		svc.log.Error("Subscription cancelled and Next payment date has elapsed")
+		subStatus = 2
+	}
+
+	return subStatus, nil
 }
 
 func (svc *authService) createSession(ctx context.Context, user *user.User) (*UserSession, error) {
@@ -62,6 +84,13 @@ func (svc *authService) createSession(ctx context.Context, user *user.User) (*Us
 	if err != nil {
 		return nil, err
 	}
+
+	subStatus, dateErr := svc.checkTheNextPaymentDate(sub.NextPaymentDate.String, sub.Status)
+	if err != nil {
+		return nil, dateErr
+	}
+
+	sub.Status = subStatus
 
 	var subJSON *subscription.SubscriptionJSON
 
