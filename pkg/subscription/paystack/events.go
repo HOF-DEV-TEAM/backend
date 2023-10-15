@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -209,8 +210,53 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	})
 
 	e.ChargeSuccessEvent.Watch(func(ctx context.Context, a *EventResponse) error {
-		e.logger.Info("ChargeSuccess", zap.Any("sub response", a.Data.Subscription))
-		e.logger.Info("ChargeSuccess", zap.Any("all response", *a))
+		e.logger.Info("ChargeSuccessEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
+		storeUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
+
+		if err != nil || storeUser == nil {
+			return err
+		}
+
+		//get additional information from paystack
+		existingSub, err := e.svc.payStackClient.GetSubscription(ctx, string(rune(a.Data.PaystackCustomerSubscription.ID)))
+		fmt.Println("existingSub", existingSub)
+		fmt.Println("error", err)
+		switch {
+		case err == nil && existingSub != nil:
+			//check if subscription exists locally
+			sub := &subscription.Subscription{UserID: storeUser.ID}
+
+			subResult, err := e.subRepo.GetSubscription(ctx, sub)
+			if err != nil && err != sql.ErrNoRows {
+				e.logger.Error("Subscription does not exist", zap.String("New Sub", "this is a new subscription entirely"))
+				return err
+			}
+
+			if subResult != nil {
+				now := sql.NullString{
+					String: time.Now().Format(time.RFC3339),
+					Valid:  true,
+				}
+
+				newSub := &subscription.Subscription{
+					SubCode:         a.Data.PaystackCustomerSubscription.SubscriptionCode,
+					NextPaymentDate: parseDateTime(existingSub.Data.NextPaymentDate),
+					LastUpdated:     now,
+					Status:          1,
+				}
+
+				//subscription already exists; update next payment date and subscription
+				_, err := e.subRepo.UpdateSubscription(ctx, storeUser.ID, newSub)
+				if err != nil {
+					return err
+				}
+			}
+
+		case err != nil:
+			return err
+
+		}
+
 		return nil
 	})
 

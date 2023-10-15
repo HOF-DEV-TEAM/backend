@@ -62,6 +62,7 @@ type PaystackPlanResponse struct {
 
 // paystack subscription
 type PaystackSubscription struct {
+	ID               int    `json:"id,omitempty"`
 	NextPaymentDate  string `json:"next_payment_date"`
 	CreatedAt        string `json:"createdAt"`
 	UpdatedAt        string `json:"updatedAt"`
