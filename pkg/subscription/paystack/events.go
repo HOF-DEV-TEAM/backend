@@ -212,7 +212,6 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.ChargeSuccessEvent.Watch(func(ctx context.Context, a *EventResponse) error {
 		e.logger.Info("ChargeSuccessEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
 		storeUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
-
 		if err != nil || storeUser == nil {
 			return err
 		}

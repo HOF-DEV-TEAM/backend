@@ -90,6 +90,7 @@ type SubscriptionPlanOfferingResponse struct {
 type SubscriptionJSON struct {
 	ID                 string   `json:"id"`
 	Status             bool     `json:"status"`
+	SubStatusCode      int      `json:"sub_status_code"`
 	UserID             string   `json:"user_id"`
 	SubscriptionPlanID string   `json:"subscription_plan_id"`
 	NextPaymentDate    string   `json:"next_payment_date"`
@@ -107,6 +108,7 @@ func (sub *Subscription) ToJSON() *SubscriptionJSON {
 	return &SubscriptionJSON{
 		ID:                 sub.ID,
 		Status:             sub.Status == 1,
+		SubStatusCode:      sub.Status,
 		UserID:             sub.UserID,
 		NextPaymentDate:    sub.NextPaymentDate.String,
 		LastUpdated:        sub.LastUpdated.String,

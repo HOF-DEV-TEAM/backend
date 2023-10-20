@@ -58,7 +58,6 @@ func (svc *authService) createSession(ctx context.Context, user *user.User) (*Us
 	//authenticate from paystack
 
 	sub, err := svc.subService.GetSubscription(ctx, user.ID)
-
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -85,16 +84,21 @@ func (svc *authService) createSession(ctx context.Context, user *user.User) (*Us
 		return nil, err
 	}
 
-	subStatus, dateErr := svc.checkTheNextPaymentDate(sub.NextPaymentDate.String, sub.Status)
-	if err != nil {
-		return nil, dateErr
-	}
-
-	sub.Status = subStatus
-
 	var subJSON *subscription.SubscriptionJSON
+	var status = 2
 
 	if sub != nil {
+		status, err = svc.checkTheNextPaymentDate(sub.NextPaymentDate.String, sub.Status)
+		if err != nil {
+			return nil, err
+		}
+
+		sub.Status = status
+
+		subJSON = sub.ToJSON()
+	} else {
+		sub = &subscription.Subscription{}
+		sub.Status = status
 		subJSON = sub.ToJSON()
 	}
 
