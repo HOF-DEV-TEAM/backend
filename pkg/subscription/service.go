@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -72,8 +73,8 @@ func (ss *subscriptionSvc) CreateSubscriptionPlan(ctx context.Context, subscript
 	subscriptionPlan.Type = dummyType
 
 	plan, err := ss.subProvider.CreateSubscriptionPlan(ctx, subscriptionPlan)
-
 	if err != nil {
+		log.Println("CreateSubscriptionPlanError", err)
 		return nil, err
 	}
 
