@@ -46,7 +46,11 @@ func (svc *authService) checkTheNextPaymentDate(dateString string, status int) (
 
 	subStatus := 1
 	// Compare the dates
-	if (currentTime.After(nextPaymentDate) && status == 3) || (currentTime.After(nextPaymentDate) && status == 1) {
+	if currentTime.Before(nextPaymentDate) && status == 3 {
+		subStatus = 1
+	}
+
+	if (currentTime.After(nextPaymentDate) && status == 3) || (currentTime.After(nextPaymentDate) && status == 1) || (currentTime.After(nextPaymentDate) && status == 2) {
 		svc.log.Error("Subscription cancelled and Next payment date has elapsed")
 		subStatus = 2
 	}
