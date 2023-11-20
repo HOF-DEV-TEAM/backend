@@ -169,8 +169,17 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
+	currentTime := time.Now()
+	nextPaymentDate, err := time.Parse(time.RFC3339, existingSub.NextPaymentDate.String)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing date: %s", err)
+	}
+
 	if existingSub != nil {
-		return nil, errors.New("you have an active subscription")
+		if (currentTime.After(nextPaymentDate) && existingSub.Status == 3) || (currentTime.After(nextPaymentDate) && existingSub.Status == 1) || (currentTime.After(nextPaymentDate) && existingSub.Status == 2) {
+			return nil, errors.New("you have an active subscription")
+		}
+
 	}
 
 	paystackRequest := InitializePaystackTransaction{
