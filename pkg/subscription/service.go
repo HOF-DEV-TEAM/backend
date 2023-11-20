@@ -165,17 +165,18 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 	existingSub, err := ss.repo.GetSubscription(ctx, &Subscription{
 		UserID: claims.JWTClaimsMain.LoggedInUserId,
 	})
-
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
-	currentTime := time.Now()
-	nextPaymentDate, err := time.Parse(time.RFC3339, existingSub.NextPaymentDate.String)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing date: %s", err)
-	}
 
 	if existingSub != nil {
+		log.Println("existing sub on intialization", existingSub)
+
+		currentTime := time.Now()
+		nextPaymentDate, err := time.Parse(time.RFC3339, existingSub.NextPaymentDate.String)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing date: %s", err)
+		}
 
 		if currentTime.Before(nextPaymentDate) && existingSub.Status == 3 || currentTime.Before(nextPaymentDate) && existingSub.Status == 1 {
 			return nil, errors.New("you have an active subscription")
@@ -195,6 +196,11 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 	}
 
 	log.Println("transactionResponse", transactionResponse)
+
+	if transactionResponse == nil {
+		log.Println("transactionResponse", transactionResponse)
+		return nil, errors.New("response empty")
+	}
 
 	return &TransactionInitializationResponse{
 		Status:  transactionResponse.Status,
