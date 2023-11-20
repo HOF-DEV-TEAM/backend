@@ -106,6 +106,7 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 		return nil, nil
 	}
 
+	log.Println("VerifySubRequest", subReq)
 	existingSub, err := ss.repo.GetSubscription(ctx, &Subscription{
 		UserID: claims.JWTClaimsMain.LoggedInUserId,
 	})
@@ -129,6 +130,7 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 	sub.UserID = claims.JWTClaimsMain.LoggedInUserId
 
 	log.Println("UpdateSubscription Verify", sub)
+
 	if existingSub != nil {
 		_, err := ss.repo.UpdateSubscription(ctx, sub.UserID, sub)
 
