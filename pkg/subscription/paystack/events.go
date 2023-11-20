@@ -183,6 +183,8 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		}
 
 		if subResult != nil {
+			e.logger.Error("UpdateSubscription1", zap.Any("subresult", subResult), zap.Error(err))
+
 			//subscription already exists; update next payment date and subscription
 			_, err := e.subRepo.UpdateSubscription(ctx, storeUser.ID, newSub)
 			if err != nil {
@@ -200,6 +202,8 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 			String: a.Data.PaystackCustomerSubscription.NextPaymentDate,
 			Valid:  true,
 		}
+
+		e.logger.Error("UpdateSubscription2", zap.Any("subresult", newSub), zap.Error(err))
 		_, err = e.subRepo.CreateSubscription(ctx, newSub)
 		if err != nil {
 			e.logger.Error("CreateSubscription", zap.Any("all response", newSub), zap.Error(err))
@@ -247,6 +251,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 						LastUpdated:     now,
 						Status:          1,
 					}
+					e.logger.Error("ChargeSuccessEvent1", zap.Any("subresult", newSub), zap.Error(err))
 
 					//subscription already exists; update next payment date and subscription
 					_, err := e.subRepo.UpdateSubscription(ctx, storeUser.ID, newSub)
