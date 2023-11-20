@@ -176,7 +176,8 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 	}
 
 	if existingSub != nil {
-		if (currentTime.After(nextPaymentDate) && existingSub.Status == 3) || (currentTime.After(nextPaymentDate) && existingSub.Status == 1) || (currentTime.After(nextPaymentDate) && existingSub.Status == 2) {
+
+		if currentTime.Before(nextPaymentDate) && existingSub.Status == 3 || currentTime.Before(nextPaymentDate) && existingSub.Status == 1 {
 			return nil, errors.New("you have an active subscription")
 		}
 
