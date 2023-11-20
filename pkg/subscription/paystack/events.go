@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -191,7 +192,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 				e.logger.Error("UpdateSubscription", zap.Any("all response", newSub), zap.Error(err))
 				return err
 			}
-			return nil
+			return errors.New("subscription updated successfully")
 		}
 
 		//create new sub
