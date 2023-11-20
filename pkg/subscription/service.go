@@ -194,6 +194,8 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 		return nil, err
 	}
 
+	log.Println("transactionResponse", transactionResponse)
+
 	return &TransactionInitializationResponse{
 		Status:  transactionResponse.Status,
 		Message: transactionResponse.Message,
