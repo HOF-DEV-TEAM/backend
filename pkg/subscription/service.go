@@ -106,20 +106,27 @@ func (ss *subscriptionSvc) VerifySubscription(ctx context.Context, subReq Verify
 		return nil, nil
 	}
 
-	sub, err := ss.subProvider.VerifySubscription(ctx, subReq)
-
-	if err != nil {
-		return nil, err
-	}
-
-	sub.UserID = claims.JWTClaimsMain.LoggedInUserId
-
-	existingSub, err := ss.repo.GetSubscription(ctx, sub)
-
+	existingSub, err := ss.repo.GetSubscription(ctx, &Subscription{
+		UserID: claims.JWTClaimsMain.LoggedInUserId,
+	})
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
+	if existingSub != nil && existingSub.Status == 3 {
+		return existingSub, nil
+	}
+
+	sub, err := ss.subProvider.VerifySubscription(ctx, subReq)
+	if err != nil {
+		return nil, err
+	}
+
+	existingSub, err = ss.repo.GetSubscription(ctx, sub)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	sub.UserID = claims.JWTClaimsMain.LoggedInUserId
 	if existingSub != nil {
 		_, err := ss.repo.UpdateSubscription(ctx, sub.UserID, sub)
 
