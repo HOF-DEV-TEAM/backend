@@ -244,6 +244,7 @@ func (r subscriptionRepo) UpdateSubscription(ctx context.Context, userId string,
 
 	sqlQuery := `UPDATE subscriptions SET ` + setQuery + " WHERE status != 0 AND " + whereQuery + " RETURNING id"
 
+	r.log.Info("UpdateSubscription", zap.Any("UpdateSubQuery", sqlQuery))
 	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&subId)
 	if err != nil {
 		r.log.Error("UpdateSubscription", zap.String("error scanning row", err.Error()))
