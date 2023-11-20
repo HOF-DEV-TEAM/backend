@@ -164,13 +164,16 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 		}
 
 		//check if subscription exists locally
-		sub := &subscription.Subscription{UserID: storeUser.ID, SubCode: a.Data.PaystackCustomerSubscription.SubscriptionCode}
+		sub := &subscription.Subscription{UserID: storeUser.ID}
 
 		subResult, err := e.subRepo.GetSubscription(ctx, sub)
 		if err != nil && err != sql.ErrNoRows {
 			e.logger.Error("GetSubscription", zap.Any("all response", sub), zap.Error(err))
 			return err
 		}
+
+		e.logger.Info("GetSubscription1", zap.Any("subresult", subResult), zap.Error(err))
+
 		now := sql.NullString{
 			String: time.Now().Format(time.RFC3339),
 			Valid:  true,
