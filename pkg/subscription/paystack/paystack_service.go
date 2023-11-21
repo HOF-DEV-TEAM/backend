@@ -74,6 +74,8 @@ func (pc *PaystackService) VerifySubscription(ctx context.Context, subReq subscr
 			return nil, err
 		}
 
+		log.Println("verify subResponse", subResponse)
+
 		sub := subResponse.Data.ToSubscription()
 
 		return &sub, nil
