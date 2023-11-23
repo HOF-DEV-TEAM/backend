@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"context"
 	"database/sql"
 	"errors"
@@ -221,11 +222,73 @@ func (ss *subscriptionSvc) InitializeTransaction(ctx context.Context, req Transa
 	}, nil
 }
 
+func (ss *subscriptionSvc) checkTheNextPaymentDate(dateString string, status int) (int, error) {
+	//dateString := "2023-10-09T23:14:00.000Z"
+
+	nextPaymentDate, err := time.Parse(time.RFC3339, dateString)
+	if err != nil {
+		return 2, fmt.Errorf("error parsing date: %s", err)
+	}
+
+	currentTime := time.Now()
+
+	subStatus := 1
+	// Compare the dates
+	if currentTime.Before(nextPaymentDate) && status == 3 {
+		subStatus = 3
+	}
+
+	if (currentTime.After(nextPaymentDate) && status == 3) || (currentTime.After(nextPaymentDate) && status == 1) || (currentTime.After(nextPaymentDate) && status == 2) {
+		subStatus = 2
+	}
+
+	return subStatus, nil
+}
+
 func (ss *subscriptionSvc) DisableSubscription(ctx context.Context, code string) (*DisableSubscriptionPayload, error) {
 
 	response, err := ss.subProvider.DisableSubscription(ctx, code)
 	if err != nil {
 		return nil, err
+	}
+
+	if response.Status {
+		claims, ok := ctx.Value(ss.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+		if !ok {
+			return nil, http_helper.ErrInvalidAccount
+		}
+
+		userID := claims.JWTClaimsMain.LoggedInUserId
+		storedUser, err := ss.userRepo.GetById(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		sub, err := ss.repo.GetSubscription(ctx, &Subscription{UserID: userID})
+		if err != nil && err != sql.ErrNoRows {
+			return nil, err
+		}
+
+		var subJSON *SubscriptionJSON
+		var status = 3
+
+		if sub != nil {
+			status, err = ss.checkTheNextPaymentDate(sub.NextPaymentDate.String, sub.Status)
+			if err != nil {
+				return nil, err
+			}
+
+			sub.Status = status
+
+			subJSON = sub.ToJSON()
+		} else {
+			sub = &Subscription{}
+			sub.Status = status
+			subJSON = sub.ToJSON()
+		}
+
+		response.User = storedUser
+		response.Subscription = subJSON
+
 	}
 
 	return response, nil

@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
+	"bitbucket.org/hofng/hofApp/pkg/user"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"log"
@@ -45,8 +46,10 @@ type DisableSubscriptionRequest struct {
 }
 
 type DisableSubscriptionPayload struct {
-	Status  bool   `json:"status"`
-	Message string `json:"message"`
+	Status       bool              `json:"status"`
+	Message      string            `json:"message"`
+	User         *user.User        `json:"user,omitempty"`
+	Subscription *SubscriptionJSON `json:"subscription,omitempty"`
 }
 
 type SubscriptionPlanRequest struct {
