@@ -48,7 +48,7 @@ type DisableSubscriptionRequest struct {
 type DisableSubscriptionPayload struct {
 	Status       bool              `json:"status"`
 	Message      string            `json:"message"`
-	User         *user.User        `json:"user,omitempty"`
+	User         *user.UserJSON    `json:"user,omitempty"`
 	Subscription *SubscriptionJSON `json:"subscription,omitempty"`
 }
 

@@ -272,7 +272,7 @@ func (ss *subscriptionSvc) DisableSubscription(ctx context.Context, code string)
 		var status = 3
 
 		if sub != nil {
-			status, err = ss.checkTheNextPaymentDate(sub.NextPaymentDate.String, sub.Status)
+			status, err = ss.checkTheNextPaymentDate(sub.NextPaymentDate.String, status)
 			if err != nil {
 				return nil, err
 			}
@@ -282,11 +282,11 @@ func (ss *subscriptionSvc) DisableSubscription(ctx context.Context, code string)
 			subJSON = sub.ToJSON()
 		} else {
 			sub = &Subscription{}
-			sub.Status = status
+			sub.Status = 2
 			subJSON = sub.ToJSON()
 		}
 
-		response.User = storedUser
+		response.User = storedUser.ToJSON()
 		response.Subscription = subJSON
 
 	}
