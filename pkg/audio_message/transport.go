@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"bitbucket.org/hofng/hofApp/infrastructure/library/http_helper"
 	"bitbucket.org/hofng/hofApp/infrastructure/library/urlqueryhelper"
@@ -23,6 +24,7 @@ type AudioMessageJSON struct {
 	DateAdded    string `json:"date_added,omitempty"`
 	LastUpdated  string `json:"last_updated,omitempty"`
 	DateReleased string `json:"date_released"`
+	IsFree       bool   `json:"is_free"`
 } //	@name	AudioMessageJSON
 
 type AudioSeriesJSON struct {
@@ -72,6 +74,7 @@ func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 		ImageUrl:    am.ImageUrl,
 		AudioUrl:    am.AudioUrl,
 		Description: am.Description,
+		IsFree:      am.IsFree,
 	}
 
 	if am.SeriesID != "" {
@@ -79,6 +82,11 @@ func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 	}
 	if am.DateReleased != "" {
 		result.DateReleased = sql.NullString{Valid: true, String: am.DateReleased}
+	}
+
+	result.DateAdded = sql.NullString{
+		Valid:  true,
+		String: time.Now().Format(time.RFC3339),
 	}
 
 	return result
@@ -94,6 +102,11 @@ func (audioSeries *AudioSeriesJSON) ToAudioSeries() *AudioSeries {
 	}
 	if audioSeries.DateReleased != "" {
 		result.DateReleased = sql.NullString{Valid: true, String: audioSeries.DateReleased}
+	}
+
+	result.DateAdded = sql.NullString{
+		Valid:  true,
+		String: time.Now().Format(time.RFC3339),
 	}
 
 	return result
@@ -203,6 +216,7 @@ func NewJSONAudioMessage(audioMessage *AudioMessage) *AudioMessageJSON {
 		SeriesID:     audioMessage.SeriesID.String,
 		Description:  audioMessage.Description,
 		DateReleased: audioMessage.DateReleased.String,
+		IsFree:       audioMessage.IsFree,
 	}
 }
 

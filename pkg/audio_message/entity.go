@@ -14,6 +14,7 @@ type AudioMessage struct {
 	Description  string         `sql:"description"`
 	DeletedAt    sql.NullString `sql:"deleted_at"`
 	DateReleased sql.NullString `sql:"date_released"`
+	IsFree       bool           `sql:"is_free"`
 }
 
 type AudioSeries struct {

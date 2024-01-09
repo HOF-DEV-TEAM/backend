@@ -69,8 +69,9 @@ func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMes
 		"date_added," +
 		"last_updated," +
 		"series_id," +
-		"date_released" +
-		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) " +
+		"date_released," +
+		"is_free" +
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) " +
 		"RETURNING id"
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -101,6 +102,7 @@ func (r audioMessageRepository) CreateAudioMessage(ctx context.Context, audioMes
 		audioMessage.LastUpdated,
 		audioMessage.SeriesID,
 		audioMessage.DateReleased,
+		audioMessage.IsFree,
 	).Scan(&createdAudioMessageId)
 
 	if err != nil {
@@ -177,7 +179,7 @@ func (r audioMessageRepository) CreateAudioSeries(ctx context.Context, audioSeri
 }
 
 func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSeries, int, error) {
-	const SQL = "SELECT * FROM audio_series WHERE deleted_at IS NULL"
+	const SQL = "SELECT * FROM audio_series WHERE deleted_at IS NULL ORDER BY date_released ASC"
 
 	var audioSeries []*AudioSeries
 	getAudioSeriesStmt, err := r.db.PrepareContext(ctx, SQL)
@@ -272,6 +274,7 @@ func (r audioMessageRepository) getAudioMessages(ctx context.Context, query stri
 			&as.SeriesID,
 			&as.DeletedAt,
 			&as.DateReleased,
+			&as.IsFree,
 		); err != nil {
 			r.log.Error("msg",
 				zap.String("error querying", ""),
@@ -306,7 +309,7 @@ func buildQuery(query string, filter *Filter) (string, []interface{}, error) {
 // TODO: implement pagination
 func (r audioMessageRepository) GetAudioMessages(ctx context.Context, search *Filter) ([]*AudioMessage, int, error) {
 	var sqlStmt string
-	sqlStmt = "SELECT * FROM audio_messages WHERE deleted_at IS NULL"
+	sqlStmt = "SELECT * FROM audio_messages WHERE deleted_at IS NULL ORDER BY date_released ASC"
 
 	query, queryParams, err := buildQuery(sqlStmt, search)
 
@@ -337,6 +340,7 @@ func (r audioMessageRepository) GetAudioMessageByID(ctx context.Context, message
 		&audioMessage.SeriesID,
 		&audioMessage.DeletedAt,
 		&audioMessage.DateReleased,
+		&audioMessage.IsFree,
 	)
 	if err != nil {
 		r.log.Error("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))

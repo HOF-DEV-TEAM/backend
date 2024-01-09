@@ -193,10 +193,10 @@ func (s *UserService) ForgotPassword(request ForgotPasswordPayload) error {
 		Title:  "Password Reset OTP",
 		Target: otpResponse.Target,
 		DataMap: map[string]string{
-			"User":              otpResponse.User,
+			"User":              strings.TrimSpace(strings.ToUpper(otpResponse.User)),
 			"OTP":               otpResponse.OTP,
 			"ExpiresIn":         fmt.Sprintf("%v", math.Ceil(expiresIn/5)*5),
-			"HofRoundLogo":      fmt.Sprintf("%s/HoF_Logo_White.png", bucketPath),
+			"HofRoundLogo":      fmt.Sprintf("%s%sHoF_Logo_White.png", s.config.AwsConfiguration.BaseURL, s.config.AwsConfiguration.BucketPath),
 			"ThisIsHome1":       fmt.Sprintf("%s/home1.jpg", bucketPath),
 			"ThisIsHome2":       fmt.Sprintf("%s/home2.jpg", bucketPath),
 			"ThisIsHome3":       fmt.Sprintf("%s/home3.jpg", bucketPath),

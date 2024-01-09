@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bitbucket.org/hofng/hofApp/pkg/globalParameters/entity"
 	"encoding/json"
 	"net/http"
 
@@ -25,10 +26,11 @@ type LoginWithDeviceRequest struct {
 }
 
 type UserSession struct {
-	User         *user.UserJSON                 `json:"user"`
-	Subscription *subscription.SubscriptionJSON `json:"subscription"`
-	Token        string                         `json:"token"`
-	RefreshToken string                         `json:"refresh_token"`
+	User            *user.UserJSON                 `json:"user"`
+	Subscription    *subscription.SubscriptionJSON `json:"subscription"`
+	GlobalVariables *entity.GlobalParameters       `json:"global_variables,omitempty"`
+	Token           string                         `json:"token"`
+	RefreshToken    string                         `json:"refresh_token"`
 } //	@name	UserSession
 
 // SignInHandler godoc

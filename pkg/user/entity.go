@@ -145,16 +145,18 @@ type FavBody struct {
 }
 
 type FavMessage struct {
-	ID          uuid.UUID `json:"id"`
-	UserID      uuid.UUID `json:"user_id"`
-	Fav         bool      `json:"fav"`
-	MessageID   uuid.UUID `json:"message_id"`
-	SeriesID    uuid.UUID `json:"series_id"`
-	Title       string    `json:"title"`
-	Author      string    `json:"author"`
-	ImageUrl    string    `json:"image_url"`
-	AudioUrl    string    `json:"audio_url"`
-	Description string    `json:"description"`
+	ID           uuid.UUID      `json:"id"`
+	UserID       uuid.UUID      `json:"user_id"`
+	Fav          bool           `json:"fav"`
+	MessageID    uuid.UUID      `json:"message_id"`
+	SeriesID     uuid.UUID      `json:"series_id"`
+	Title        string         `json:"title"`
+	Author       string         `json:"author"`
+	ImageUrl     string         `json:"image_url"`
+	AudioUrl     string         `json:"audio_url"`
+	Description  string         `json:"description"`
+	DateReleased sql.NullString `sql:"date_released"`
+	IsFree       bool           `sql:"is_free"`
 }
 
 type OTPRequest struct {

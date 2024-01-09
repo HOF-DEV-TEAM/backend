@@ -36,7 +36,7 @@ type UserJSON struct {
 	Gender           string         `json:"gender,omitempty"`
 	IsVerified       IsVerifiedEnum `json:"is_verified"`
 	Devices          []Device       `json:"devices,omitempty"`
-	LatestAppVersion VersionManager `json:"latest_app_version"`
+	LatestAppVersion VersionManager `json:"latest_app_version,omitempty"`
 	NewJWTToken      string         `json:"newToken,omitempty"`
 } //	@name	UserJSON
 
@@ -63,16 +63,18 @@ type FavBodyJSON struct {
 } //	@name	FavBodyJSON
 
 type FavMessageJSON struct {
-	ID          uuid.UUID `json:"id"`
-	UserID      uuid.UUID `json:"user_id"`
-	Fav         bool      `json:"fav"`
-	MessageID   uuid.UUID `json:"message_id"`
-	SeriesID    uuid.UUID `json:"series_id"`
-	Title       string    `json:"title"`
-	Author      string    `json:"author"`
-	ImageUrl    string    `json:"image_url"`
-	AudioUrl    string    `json:"audio_url"`
-	Description string    `json:"description"`
+	ID           uuid.UUID `json:"id"`
+	UserID       uuid.UUID `json:"user_id"`
+	Fav          bool      `json:"fav"`
+	MessageID    uuid.UUID `json:"message_id"`
+	SeriesID     uuid.UUID `json:"series_id"`
+	Title        string    `json:"title"`
+	Author       string    `json:"author"`
+	ImageUrl     string    `json:"image_url"`
+	AudioUrl     string    `json:"audio_url"`
+	Description  string    `json:"description"`
+	DateReleased string    `sql:"date_released"`
+	IsFree       bool      `sql:"is_free"`
 } //	@name	FavMessageJSON
 
 type PageResponse struct {
@@ -352,16 +354,18 @@ func NewJSONFavourite(fav *Favourites) *FavouriteJSON {
 
 func NewJSONFavMessage(fav *FavMessage) *FavMessageJSON {
 	return &FavMessageJSON{
-		ID:          fav.ID,
-		Fav:         fav.Fav,
-		UserID:      fav.UserID,
-		MessageID:   fav.MessageID,
-		SeriesID:    fav.SeriesID,
-		Title:       fav.Title,
-		Author:      fav.Author,
-		ImageUrl:    fav.ImageUrl,
-		AudioUrl:    fav.AudioUrl,
-		Description: fav.Description,
+		ID:           fav.ID,
+		Fav:          fav.Fav,
+		UserID:       fav.UserID,
+		MessageID:    fav.MessageID,
+		SeriesID:     fav.SeriesID,
+		Title:        fav.Title,
+		Author:       fav.Author,
+		ImageUrl:     fav.ImageUrl,
+		AudioUrl:     fav.AudioUrl,
+		Description:  fav.Description,
+		DateReleased: fav.DateReleased.String,
+		IsFree:       fav.IsFree,
 	}
 }
 

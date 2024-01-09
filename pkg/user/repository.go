@@ -571,6 +571,8 @@ func (r userRepository) GetFavourites(ctx context.Context, userId uuid.UUID) ([]
 			&as.ImageUrl,
 			&as.AudioUrl,
 			&as.Description,
+			&as.DateReleased,
+			&as.IsFree,
 		); err != nil {
 			r.log.Error("msg",
 				zap.String("error querying", ""),
