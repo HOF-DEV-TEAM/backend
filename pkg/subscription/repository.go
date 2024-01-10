@@ -271,6 +271,7 @@ func (r subscriptionRepo) getPlan(ctx context.Context, subPlan *SubscriptionPlan
 		FROM subscription_plans
 		WHERE deleted_at IS NULL AND %s;`
 
+	r.log.Info("subscriptionPlanQuery", zap.String("query", query))
 	var err error
 	// first call, prepare statement for reuse
 	if r.getPlanStmt == nil {
