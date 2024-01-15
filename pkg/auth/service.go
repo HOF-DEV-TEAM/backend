@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bitbucket.org/hofng/hofApp/pkg/globalParameters"
 	"context"
 	"crypto/md5"
 	"database/sql"
@@ -23,14 +24,15 @@ type Service interface {
 }
 
 type authService struct {
-	userRepo   user.Repository
-	subService subscription.Service
-	log        *zap.Logger
-	config     *security.SecurityConfig
+	userRepo        user.Repository
+	subService      subscription.Service
+	globalVariables globalParameters.Service
+	log             *zap.Logger
+	config          *security.SecurityConfig
 }
 
-func NewService(userRepo user.Repository, subService subscription.Service, log *zap.Logger, config *security.SecurityConfig) Service {
-	return &authService{log: log, userRepo: userRepo, subService: subService, config: config}
+func NewService(userRepo user.Repository, subService subscription.Service, globalVariables globalParameters.Service, log *zap.Logger, config *security.SecurityConfig) Service {
+	return &authService{log: log, userRepo: userRepo, subService: subService, globalVariables: globalVariables, config: config}
 }
 
 func (svc *authService) checkTheNextPaymentDate(dateString string, status int) (int, error) {
@@ -66,6 +68,11 @@ func (svc *authService) createSession(ctx context.Context, user *user.User) (*Us
 		return nil, err
 	}
 
+	globalVariables, err := svc.globalVariables.GetGlobalVariables(context.Background())
+	if err != nil {
+		svc.log.Error("GetGlobalVariables", zap.Error(err))
+		return nil, err
+	}
 	// recover claims from JWT
 	claims, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
 
@@ -83,7 +90,6 @@ func (svc *authService) createSession(ctx context.Context, user *user.User) (*Us
 	}
 
 	refreshToken, err := claims.CreateRefreshToken(svc.config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +113,11 @@ func (svc *authService) createSession(ctx context.Context, user *user.User) (*Us
 	}
 
 	return &UserSession{
-		User:         user.ToJSON(),
-		Subscription: subJSON,
-		Token:        updatedJWTToken,
-		RefreshToken: refreshToken,
+		User:            user.ToJSON(),
+		Subscription:    subJSON,
+		GlobalVariables: globalVariables,
+		Token:           updatedJWTToken,
+		RefreshToken:    refreshToken,
 	}, nil
 }
 

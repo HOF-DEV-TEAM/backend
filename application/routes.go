@@ -1,6 +1,7 @@
 package application
 
 import (
+	"bitbucket.org/hofng/hofApp/pkg/globalParameters"
 	"errors"
 	"net/http"
 	"os"
@@ -42,7 +43,10 @@ func (app *application) buildRoutes() {
 	subEvents := paystack.New(subProvider, userRepo, subscriptionRepo, app.logger)
 	subEvents.Listen()
 
-	authService := auth.NewService(userRepo, subscriptionSvc, app.logger, &app.config.Security)
+	globalRepo := globalParameters.NewRepository(app.db, app.logger)
+	globalService := globalParameters.NewService(globalRepo, app.logger, &app.config.Security)
+
+	authService := auth.NewService(userRepo, subscriptionSvc, globalService, app.logger, &app.config.Security)
 
 	// TODO - group routing better
 	//setup routes
@@ -84,6 +88,7 @@ func (app *application) buildRoutes() {
 		buildAudioSeriesEndpoints(r, audioMessageService)
 		buildUploadEndpoints(r, uploaderService)
 		buildSubscriptionEndpoints(r, subscriptionSvc)
+		buildGlobalVariablesEndpoints(r, globalService)
 	})
 
 	//unprotected routes
@@ -279,4 +284,14 @@ func buildAppVersionEndpoints(svc *user.UserService) http.Handler {
 	appVersionRouter.Get("/version/{version_id}", getAppVersionHandler)
 
 	return appVersionRouter
+}
+
+func buildGlobalVariablesEndpoints(router chi.Router, svc globalParameters.Service) http.Handler {
+	updateGlobalVariablesHandler := globalParameters.UpdateGlobalVariablesHandler(svc)
+	getGlobalVariablesHandler := globalParameters.GetGlobalVariablesHandler(svc)
+
+	router.Put("/admin/global", updateGlobalVariablesHandler)
+	router.Get("/admin/global", getGlobalVariablesHandler)
+
+	return router
 }

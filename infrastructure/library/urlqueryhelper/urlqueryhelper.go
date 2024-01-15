@@ -1,14 +1,15 @@
 package urlqueryhelper
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/gofrs/uuid"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/gofrs/uuid"
+	"time"
 )
 
 func Bind(structValue interface{}, r *http.Request) error {
@@ -29,7 +30,7 @@ func Bind(structValue interface{}, r *http.Request) error {
 		case reflect.String:
 			value.SetString(val)
 		default:
-			return errors.New("Does not support type of struct")
+			return errors.New("does not support type of struct")
 		}
 	}
 	return nil
@@ -61,7 +62,6 @@ func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 		value := values.Field(i)
 		goTag := fieldProperties.Tag.Get("sql")
 		goType := fieldProperties.Type.Kind()
-
 		var val string
 		switch goType {
 		case reflect.String:
@@ -85,12 +85,42 @@ func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 					val = v.String()
 				}
 			}
+
+		case reflect.Bool:
+			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
+				boolVal := value.Interface().(bool)
+				val = strconv.FormatBool(boolVal)
+			}
+
 		case reflect.Ptr:
 			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
 				boolValue := value.Interface().(*bool)
 				val = strconv.FormatBool(*boolValue)
 			}
 
+		case reflect.Struct:
+			if !reflect.DeepEqual(value.Interface(), reflect.Zero(value.Type()).Interface()) {
+				if value.Kind() == reflect.Struct && fieldProperties.Type != reflect.TypeOf(time.Time{}) {
+					innerVal := fmt.Sprintf("%s: %s, ", fieldProperties.Name, handler.SetQueryHelper(value.Interface()))
+					if fieldProperties.Type == reflect.TypeOf(sql.NullString{}) {
+						switch {
+						case strings.Contains(innerVal, "LastUpdated: ="):
+							innerVal = strings.Replace(innerVal, "LastUpdated: =", "", 1)
+							innerVal = strings.Replace(innerVal, ",='true',", "", 1)
+						case strings.Contains(innerVal, "DeletedAt: ="):
+							innerVal = strings.Replace(innerVal, "DeletedAt: =", "", 1)
+							innerVal = strings.Replace(innerVal, ",='true',", "", 1)
+						}
+
+						val = strings.Trim(innerVal, "' ")
+
+					}
+
+				} else {
+					val = fmt.Sprintf("%s: %v, ", fieldProperties.Name, value.Interface())
+				}
+
+			}
 		}
 
 		if val != "" {
@@ -100,7 +130,10 @@ func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 		}
 
 	}
+	setQuery = strings.TrimSuffix(setQuery, ",")
+
 	setQuery = strings.TrimSuffix(setQuery, ", ")
+
 	return setQuery
 }
 

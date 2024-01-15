@@ -77,8 +77,12 @@ func (svc *audioMessageService) validateAudioSeriesStruct(audioSeries *AudioSeri
 
 func (svc *audioMessageService) CreateAudioMessage(ctx context.Context, audioMessage *AudioMessage) (*AudioMessage, error) {
 
-	err := svc.validateStruct(audioMessage)
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
 
+	err := svc.validateStruct(audioMessage)
 	if err != nil {
 		tErr, ok := err.(validator.ValidationErrors)
 
@@ -119,9 +123,12 @@ func (svc *audioMessageService) CreateAudioMessage(ctx context.Context, audioMes
 }
 
 func (svc *audioMessageService) CreateAudioSeries(ctx context.Context, audioSeries *AudioSeries) (*AudioSeries, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
 
 	err := svc.validateAudioSeriesStruct(audioSeries)
-
 	if err != nil {
 		tErr, ok := err.(validator.ValidationErrors)
 
@@ -161,8 +168,13 @@ func (svc *audioMessageService) CreateAudioSeries(ctx context.Context, audioSeri
 
 func (svc *audioMessageService) GetAudioSeries(ctx context.Context) (GetAudiosSeriesResponse, error) {
 	result := GetAudiosSeriesResponse{}
-	audioSeries, count, err := svc.repo.GetAudioSeries(ctx)
 
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return result, http_helper.ErrUnauthorized
+	}
+
+	audioSeries, count, err := svc.repo.GetAudioSeries(ctx)
 	if err == sql.ErrNoRows {
 		return result, err
 	}
@@ -183,8 +195,12 @@ func (svc *audioMessageService) GetAudioSeries(ctx context.Context) (GetAudiosSe
 func (svc *audioMessageService) GetAudioMessages(ctx context.Context, search *Filter) (GetAudiosMessagesResponse, error) {
 	result := GetAudiosMessagesResponse{}
 
-	audioMessages, count, err := svc.repo.GetAudioMessages(ctx, search)
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return result, http_helper.ErrUnauthorized
+	}
 
+	audioMessages, count, err := svc.repo.GetAudioMessages(ctx, search)
 	if err == sql.ErrNoRows {
 		return result, err
 	}
@@ -203,6 +219,11 @@ func (svc *audioMessageService) GetAudioMessages(ctx context.Context, search *Fi
 }
 
 func (svc *audioMessageService) GetAudioMessageByID(ctx context.Context, messageId string) (*AudioMessageJSON, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
+
 	id, err := uuid.FromString(messageId)
 	if err != nil {
 		return nil, err
@@ -216,6 +237,11 @@ func (svc *audioMessageService) GetAudioMessageByID(ctx context.Context, message
 }
 
 func (svc *audioMessageService) GetAudioSeriesByID(ctx context.Context, seriesId string) (*AudioSeriesJSON, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
+
 	id, err := uuid.FromString(seriesId)
 	if err != nil {
 		return nil, err
@@ -231,6 +257,11 @@ func (svc *audioMessageService) GetAudioSeriesByID(ctx context.Context, seriesId
 }
 
 func (svc *audioMessageService) UpdateAudioMessagesByID(ctx context.Context, message AudioMessage, messageId string) (uuid.UUID, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return uuid.Nil, http_helper.ErrUnauthorized
+	}
+
 	id, err := uuid.FromString(messageId)
 	if err != nil {
 		return uuid.Nil, err
@@ -238,6 +269,7 @@ func (svc *audioMessageService) UpdateAudioMessagesByID(ctx context.Context, mes
 
 	message.LastUpdated = sql.NullString{
 		String: time.Now().Format(time.RFC3339),
+		Valid:  true,
 	}
 	result, err := svc.repo.UpdateAudioMessagesByID(ctx, message, id)
 	if err != nil {
@@ -246,13 +278,20 @@ func (svc *audioMessageService) UpdateAudioMessagesByID(ctx context.Context, mes
 
 	return result, nil
 }
+
 func (svc *audioMessageService) UpdateAudioSeriesByID(ctx context.Context, series AudioSeries, seriesId string) (uuid.UUID, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return uuid.Nil, http_helper.ErrUnauthorized
+	}
+
 	id, err := uuid.FromString(seriesId)
 	if err != nil {
 		return uuid.Nil, err
 	}
 	series.LastUpdated = sql.NullString{
 		String: time.Now().Format(time.RFC3339),
+		Valid:  true,
 	}
 	result, err := svc.repo.UpdateAudioSeriesByID(ctx, series, id)
 	if err != nil {
@@ -263,6 +302,11 @@ func (svc *audioMessageService) UpdateAudioSeriesByID(ctx context.Context, serie
 }
 
 func (svc *audioMessageService) DeleteAudioMessagesByID(ctx context.Context, messageId string) (uuid.UUID, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return uuid.Nil, http_helper.ErrUnauthorized
+	}
+
 	id, err := uuid.FromString(messageId)
 	if err != nil {
 		return uuid.Nil, err
@@ -281,6 +325,11 @@ func (svc *audioMessageService) DeleteAudioMessagesByID(ctx context.Context, mes
 }
 
 func (svc *audioMessageService) DeleteAudioSeriesByID(ctx context.Context, seriesId string) (uuid.UUID, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return uuid.Nil, http_helper.ErrUnauthorized
+	}
+
 	id, err := uuid.FromString(seriesId)
 	if err != nil {
 		return uuid.Nil, err
@@ -299,6 +348,11 @@ func (svc *audioMessageService) DeleteAudioSeriesByID(ctx context.Context, serie
 }
 
 func (svc *audioMessageService) HomePageDirectory(ctx context.Context) (*Homepage, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
+
 	homePage, err := svc.repo.HomePageDirectory(ctx)
 	if err == sql.ErrNoRows {
 		return nil, err
@@ -309,6 +363,11 @@ func (svc *audioMessageService) HomePageDirectory(ctx context.Context) (*Homepag
 }
 
 func (svc *audioMessageService) UpdateMeditationByID(ctx context.Context, status string, meditationID string) (*string, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
+
 	result, err := svc.repo.UpdateMeditationByID(ctx, status, meditationID)
 	if err != nil {
 		return nil, err
@@ -318,6 +377,11 @@ func (svc *audioMessageService) UpdateMeditationByID(ctx context.Context, status
 }
 
 func (svc *audioMessageService) CreateMeditations(ctx context.Context, meditation []*Meditation) (*MeditationResponse, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
+
 	var med []*Meditation
 	for _, m := range meditation {
 		m.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.RFC3339)}
@@ -342,6 +406,11 @@ func (svc *audioMessageService) CreateMeditations(ctx context.Context, meditatio
 }
 
 func (svc *audioMessageService) CreateMeditation(ctx context.Context, meditation *Meditation) (string, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return "", http_helper.ErrUnauthorized
+	}
+
 	meditation.DateAdded = sql.NullString{Valid: true, String: time.Now().Format(time.RFC3339)}
 
 	result, err := svc.repo.CreateMeditation(ctx, meditation)
@@ -362,6 +431,11 @@ func (svc *audioMessageService) CreateMeditation(ctx context.Context, meditation
 }
 
 func (svc *audioMessageService) GetMeditations(ctx context.Context, admin bool) ([]Meditation, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
+
 	meditation, err := svc.repo.GetMeditations(ctx, admin)
 	if err == sql.ErrNoRows {
 		return nil, err
@@ -372,6 +446,11 @@ func (svc *audioMessageService) GetMeditations(ctx context.Context, admin bool) 
 }
 
 func (svc *audioMessageService) GetMeditation(ctx context.Context, meditationId string, admin bool) (*Meditation, error) {
+	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
+	if !ok {
+		return nil, http_helper.ErrUnauthorized
+	}
+
 	meditation, err := svc.repo.GetMeditation(ctx, meditationId, admin)
 	if err == sql.ErrNoRows {
 		return nil, err
@@ -384,7 +463,7 @@ func (svc *audioMessageService) GetMeditation(ctx context.Context, meditationId 
 func (svc *audioMessageService) DeleteMeditationByID(ctx context.Context, meditationId string) (*DefaultResponse, error) {
 	_, ok := ctx.Value(svc.config.JWTClaimsContextKey).(*security.JWTClaim[any])
 	if !ok {
-		return nil, http_helper.ErrInvalidAccount
+		return nil, http_helper.ErrUnauthorized
 	}
 
 	result, err := svc.repo.DeleteMeditationByID(ctx, meditationId)

@@ -65,7 +65,6 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 	e.InvoiceUpdateEvent.Watch(func(ctx context.Context, a *EventResponse) error {
 		e.logger.Info("InvoiceUpdateEvent", zap.Any("all response", a.Data.PaystackCustomerSubscription))
 		storeUser, err := e.userRepo.GetByCustomerCode(ctx, a.Data.PaystackCustomerSubscription.Customer.CustomerCode)
-
 		if err != nil || storeUser == nil {
 			return err
 		}
@@ -152,6 +151,7 @@ func (e *PaystackEvents) Listen() *PaystackEvents {
 
 		storeUser, err := e.userRepo.GetByEmail(ctx, a.Data.PaystackCustomerSubscription.Customer.Email)
 		if err != nil || storeUser == nil {
+			//e.userRepo.UpdatePaystack()
 			e.logger.Error("GetByCustomerCode", zap.Any("all response", a.Data.PaystackCustomerSubscription), zap.Error(err))
 			return err
 		}

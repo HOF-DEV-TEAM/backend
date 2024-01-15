@@ -32,6 +32,7 @@ func ParseJWTError(err error) (error, bool) {
 
 var (
 	ErrUnauthorized          = errors.New("unauthorized")
+	ErrTokenInvalid          = errors.New("token contains an invalid number of segments")
 	ErrNoTokenFound          = errors.New("no token found")
 	ErrUnauthorizedRequest   = errors.New("unauthorized request. please check your credentials")
 	ErrNotFound              = errors.New("not found")
@@ -49,6 +50,7 @@ var (
 )
 
 func CodeFrom(err error) int {
+	fmt.Println(err)
 	if _, ok := ParseJWTError(err); ok {
 		return http.StatusUnauthorized
 	}
@@ -61,9 +63,10 @@ func CodeFrom(err error) int {
 	case ErrNameRequired, ErrEmailRequired, ErrInvalidRequest,
 		ErrPasswordRequired, ErrRemovePassword, ErrPasswordLength, ErrEmptyLoginCredentials:
 		return http.StatusBadRequest
-	case ErrUnauthorized, ErrUserPwd:
+	case ErrUnauthorized, ErrUserPwd, ErrTokenInvalid:
 		return http.StatusUnauthorized
 	default:
+		fmt.Println(err)
 		return http.StatusInternalServerError
 	}
 }
@@ -101,5 +104,9 @@ func EncodeJSONError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(CodeFrom(err))
-	json.NewEncoder(w).Encode(errorResponse{Err: err.Error()})
+	err = json.NewEncoder(w).Encode(errorResponse{Err: err.Error()})
+	if err != nil {
+		return
+	}
+	return
 }

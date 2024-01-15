@@ -22,7 +22,6 @@ func (config *SecurityConfig) ValidateJWT(tokenString string) (*jwt.Token, JWTCl
 
 func (claims *JWTClaim[T]) Parse(ctx context.Context, config *SecurityConfig) error {
 	tokenString, err := config.FromContext(ctx)
-
 	if err != nil {
 		return http_helper.ErrUnauthorized
 	}
@@ -36,7 +35,7 @@ func (claims *JWTClaim[T]) Parse(ctx context.Context, config *SecurityConfig) er
 	})
 
 	if err != nil {
-		return err
+		return http_helper.ErrTokenInvalid
 	}
 
 	if !token.Valid {
@@ -71,9 +70,9 @@ func (config *SecurityConfig) Authenticator(next http.Handler) http.Handler {
 		claims := &JWTClaim[any]{}
 
 		err := claims.Parse(ctx, config)
-
 		if err != nil {
 			http_helper.EncodeJSONError(ctx, err, w)
+			return
 		}
 
 		newCtx := context.WithValue(ctx, JWTClaimsContextKey, claims)

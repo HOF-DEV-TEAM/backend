@@ -306,18 +306,17 @@ func CreateAudioMessageHandler(svc Service) http.HandlerFunc {
 func createAudioMessageHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var audioMessage AudioMessageJSON
 	err := json.NewDecoder(r.Body).Decode(&audioMessage)
-
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
 
 	result, err := svc.(Service).CreateAudioMessage(r.Context(), audioMessage.ToAudioMessage())
-
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
+
 	payload := NewJSONAudioMessage(result)
 
 	http_helper.EncodeResult(w, payload, http.StatusOK)
