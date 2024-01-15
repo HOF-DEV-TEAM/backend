@@ -110,6 +110,15 @@ func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 						case strings.Contains(innerVal, "DeletedAt: ="):
 							innerVal = strings.Replace(innerVal, "DeletedAt: =", "", 1)
 							innerVal = strings.Replace(innerVal, ",='true',", "", 1)
+						case strings.Contains(innerVal, "DateAdded: ="):
+							innerVal = strings.Replace(innerVal, "DateAdded: =", "", 1)
+							innerVal = strings.Replace(innerVal, ",='true',", "", 1)
+						case strings.Contains(innerVal, "SeriesID: ="):
+							innerVal = strings.Replace(innerVal, "SeriesID: =", "", 1)
+							innerVal = strings.Replace(innerVal, ",='true',", "", 1)
+						case strings.Contains(innerVal, "DateReleased: ="):
+							innerVal = strings.Replace(innerVal, "DateReleased: =", "", 1)
+							innerVal = strings.Replace(innerVal, ",='true',", "", 1)
 						}
 
 						val = strings.Trim(innerVal, "' ")
