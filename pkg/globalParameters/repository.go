@@ -79,8 +79,8 @@ func (r globalRepository) GetGlobalVariables(ctx context.Context) (*GlobalParame
 	err = stmt.QueryRowContext(ctx).Scan(
 		&globalParameter.ID,
 		&globalParameter.ActivateSubscription,
-		&globalParameter.LastUpdated,
 		&globalParameter.DateCreated,
+		&globalParameter.LastUpdated,
 	)
 	if err != nil {
 		r.log.Error("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
