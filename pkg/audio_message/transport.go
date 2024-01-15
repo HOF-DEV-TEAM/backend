@@ -92,6 +92,26 @@ func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 	return result
 }
 
+func (am *AudioMessageJSON) ToAudioMessageUpdate() *AudioMessage {
+	result := &AudioMessage{
+		Title:       am.Title,
+		Author:      am.Author,
+		ImageUrl:    am.ImageUrl,
+		AudioUrl:    am.AudioUrl,
+		Description: am.Description,
+		IsFree:      am.IsFree,
+	}
+
+	if am.SeriesID != "" {
+		result.SeriesID = sql.NullString{Valid: true, String: am.SeriesID}
+	}
+	if am.DateReleased != "" {
+		result.DateReleased = sql.NullString{Valid: true, String: am.DateReleased}
+	}
+
+	return result
+}
+
 func (audioSeries *AudioSeriesJSON) ToAudioSeries() *AudioSeries {
 	result := &AudioSeries{
 		Title:       audioSeries.Title,
@@ -107,6 +127,20 @@ func (audioSeries *AudioSeriesJSON) ToAudioSeries() *AudioSeries {
 	result.DateAdded = sql.NullString{
 		Valid:  true,
 		String: time.Now().Format(time.RFC3339),
+	}
+
+	return result
+}
+func (audioSeries *AudioSeriesJSON) ToAudioSeriesUpdate() *AudioSeries {
+	result := &AudioSeries{
+		Title:       audioSeries.Title,
+		Author:      audioSeries.Author,
+		ImageUrl:    audioSeries.ImageUrl,
+		Description: audioSeries.Description,
+		OfTheMonth:  audioSeries.OfTheMonth,
+	}
+	if audioSeries.DateReleased != "" {
+		result.DateReleased = sql.NullString{Valid: true, String: audioSeries.DateReleased}
 	}
 
 	return result
@@ -502,7 +536,7 @@ func updateAudioMessagesByIDHandler(w http.ResponseWriter, r *http.Request, svc 
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	message := messageJSON.ToAudioMessage()
+	message := messageJSON.ToAudioMessageUpdate()
 	result, err := svc.(Service).UpdateAudioMessagesByID(r.Context(), *message, messageIdParam)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
@@ -537,7 +571,7 @@ func updateAudioSeriesByIDHandler(w http.ResponseWriter, r *http.Request, svc in
 		http_helper.EncodeJSONError(r.Context(), err, w)
 		return
 	}
-	series := seriesJSON.ToAudioSeries()
+	series := seriesJSON.ToAudioSeriesUpdate()
 	result, err := svc.(Service).UpdateAudioSeriesByID(r.Context(), *series, seriesIdParam)
 	if err != nil {
 		http_helper.EncodeJSONError(r.Context(), err, w)
