@@ -85,7 +85,6 @@ func (r globalRepository) GetGlobalVariables(ctx context.Context) (*GlobalParame
 	if err != nil {
 		r.log.Error("msg", zap.String("error retrieving data", ""), zap.String("error", err.Error()), zap.String("query", sqlQuery))
 		return nil, http_helper.ErrNotFound
-
 	}
 	return &globalParameter, nil
 }
