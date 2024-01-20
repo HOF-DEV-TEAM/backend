@@ -389,6 +389,7 @@ func (r audioMessageRepository) UpdateAudioMessagesByID(ctx context.Context, mes
 	setQuery := r.queryHandler.SetQueryHelper(message)
 	sqlQuery := `UPDATE audio_messages SET ` + setQuery + " WHERE " + whereQuery + " RETURNING id"
 
+	fmt.Println("=====>>>>", sqlQuery)
 	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&messageId)
 	if err != nil {
 		r.log.Error("UpdateAudioMessagesByID", zap.String("error scanning row", err.Error()))
