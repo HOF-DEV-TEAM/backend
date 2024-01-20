@@ -74,7 +74,7 @@ func (am *AudioMessageJSON) ToAudioMessage() *AudioMessage {
 		ImageUrl:    am.ImageUrl,
 		AudioUrl:    am.AudioUrl,
 		Description: am.Description,
-		IsFree:      am.IsFree,
+		IsFree:      &am.IsFree,
 	}
 
 	if am.SeriesID != "" {
@@ -99,7 +99,7 @@ func (am *AudioMessageJSON) ToAudioMessageUpdate() *AudioMessage {
 		ImageUrl:    am.ImageUrl,
 		AudioUrl:    am.AudioUrl,
 		Description: am.Description,
-		IsFree:      am.IsFree,
+		IsFree:      &am.IsFree,
 	}
 
 	if am.SeriesID != "" {
@@ -250,7 +250,7 @@ func NewJSONAudioMessage(audioMessage *AudioMessage) *AudioMessageJSON {
 		SeriesID:     audioMessage.SeriesID.String,
 		Description:  audioMessage.Description,
 		DateReleased: audioMessage.DateReleased.String,
-		IsFree:       audioMessage.IsFree,
+		IsFree:       *audioMessage.IsFree,
 	}
 }
 
