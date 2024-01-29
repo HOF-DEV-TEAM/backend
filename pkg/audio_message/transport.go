@@ -251,6 +251,7 @@ func NewJSONAudioMessage(audioMessage *AudioMessage) *AudioMessageJSON {
 		Description:  audioMessage.Description,
 		DateReleased: audioMessage.DateReleased.String,
 		IsFree:       *audioMessage.IsFree,
+		DateAdded:    audioMessage.DateAdded.String,
 	}
 }
 
@@ -263,6 +264,7 @@ func NewJSONAudioSeries(audioSeries *AudioSeries) *AudioSeriesJSON {
 		Description:  audioSeries.Description,
 		DateReleased: audioSeries.DateReleased.String,
 		OfTheMonth:   audioSeries.OfTheMonth,
+		DateAdded:    audioSeries.DateAdded.String,
 	}
 }
 

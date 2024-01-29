@@ -102,6 +102,10 @@ func (s *UserService) SignUp(ctx context.Context, user *SignUpUser, devices []De
 		Password:  password,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
+		DateAdded: sql.NullString{
+			Valid:  true,
+			String: time.Now().Format(time.RFC3339),
+		},
 	}
 
 	deviceManager := &DeviceManager{Devices: devices}

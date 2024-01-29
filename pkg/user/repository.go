@@ -90,8 +90,9 @@ func (r userRepository) CreateUser(ctx context.Context, user *User) (*User, erro
 		"address," +
 		"gender," +
 		"password_hash," +
-		"is_verified" +
-		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) " +
+		"is_verified," +
+		"date_added" +
+		") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) " +
 		"RETURNING id"
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -124,6 +125,7 @@ func (r userRepository) CreateUser(ctx context.Context, user *User) (*User, erro
 		user.Gender,
 		user.PasswordHash,
 		user.IsVerified,
+		user.DateAdded,
 	).Scan(&createdUserId)
 
 	if err != nil {
