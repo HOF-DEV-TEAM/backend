@@ -56,12 +56,14 @@ func (handler queryHandler) SetQueryHelper(structValue interface{}) string {
 	values := reflect.ValueOf(structValue)
 
 	fieldNumbers := values.NumField()
+
 	var setQuery string
 	for i := 0; i < fieldNumbers; i++ {
 		fieldProperties := fields.Field(i)
 		value := values.Field(i)
 		goTag := fieldProperties.Tag.Get("sql")
 		goType := fieldProperties.Type.Kind()
+
 		var val string
 		switch goType {
 		case reflect.String:
@@ -152,6 +154,7 @@ func (handler queryHandler) WhereQueryHelper(structValue interface{}) string {
 	values := reflect.ValueOf(structValue)
 
 	fieldNumbers := values.NumField()
+
 	var whereQuery string
 	for i := 0; i < fieldNumbers; i++ {
 		fieldProperties := fields.Field(i)

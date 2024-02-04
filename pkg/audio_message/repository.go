@@ -232,7 +232,6 @@ func (r audioMessageRepository) GetAudioSeries(ctx context.Context) ([]*AudioSer
 func (r audioMessageRepository) getAudioMessages(ctx context.Context, query string, queryParams []interface{}) ([]*AudioMessage, int, error) {
 	var audioMessages []*AudioMessage
 	getAudioMessagesStmt, err := r.db.PrepareContext(ctx, query)
-
 	if err != nil {
 		r.log.Info("msg",
 			zap.String("error querying", ""),
@@ -241,6 +240,8 @@ func (r audioMessageRepository) getAudioMessages(ctx context.Context, query stri
 		)
 		return audioMessages, 0, err
 	}
+
+	//SELECT * FROM audio_messages WHERE deleted_at IS NULL AND series_id='686735fc-271e-46ec-9d1f-e11d6d5c69f5' ORDER BY date_released ASC
 
 	rows, err := getAudioMessagesStmt.QueryContext(ctx, queryParams...)
 
@@ -309,13 +310,14 @@ func buildQuery(query string, filter *Filter) (string, []interface{}, error) {
 // TODO: implement pagination
 func (r audioMessageRepository) GetAudioMessages(ctx context.Context, search *Filter) ([]*AudioMessage, int, error) {
 	var sqlStmt string
-	sqlStmt = "SELECT * FROM audio_messages WHERE deleted_at IS NULL ORDER BY date_released ASC"
+	sqlStmt = "SELECT * FROM audio_messages WHERE deleted_at IS NULL"
 
 	query, queryParams, err := buildQuery(sqlStmt, search)
-
 	if err != nil {
 		return []*AudioMessage{}, 0, err
 	}
+
+	query += " ORDER BY date_released ASC"
 
 	return r.getAudioMessages(ctx, query, queryParams)
 }
@@ -389,7 +391,6 @@ func (r audioMessageRepository) UpdateAudioMessagesByID(ctx context.Context, mes
 	setQuery := r.queryHandler.SetQueryHelper(message)
 	sqlQuery := `UPDATE audio_messages SET ` + setQuery + " WHERE " + whereQuery + " RETURNING id"
 
-	fmt.Println("=====>>>>", sqlQuery)
 	err := r.db.QueryRowContext(ctx, sqlQuery).Scan(&messageId)
 	if err != nil {
 		r.log.Error("UpdateAudioMessagesByID", zap.String("error scanning row", err.Error()))

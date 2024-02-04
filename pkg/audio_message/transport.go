@@ -416,8 +416,11 @@ func GetAudioMessagesHandler(svc Service) http.HandlerFunc {
 
 func getAudioMessagesHandler(w http.ResponseWriter, r *http.Request, svc interface{}) {
 	var search Filter
-	urlqueryhelper.Bind(&search, r)
 
+	err := urlqueryhelper.Bind(&search, r)
+	if err != nil {
+		return
+	}
 	result, err := svc.(Service).GetAudioMessages(r.Context(), &search)
 
 	if err != nil {
