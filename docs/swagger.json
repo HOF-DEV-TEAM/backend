@@ -1,181 +1,48 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "This is the entire doc",
-        "title": "HOF BACKEND API",
-        "termsOfService": "http://swagger.io/terms/",
+        "description": "Heritage of Faith Church — audio content and subscription platform.",
+        "title": "HOF Backend API",
+        "termsOfService": "https://hofng.org/terms",
         "contact": {
-            "name": "HOF Engineering",
-            "email": "hof.org"
+            "name": "HOF Dev Team",
+            "email": "dev@hofng.org"
         },
         "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+            "name": "MIT",
+            "url": "https://opensource.org/licenses/MIT"
         },
-        "version": "1.0"
+        "version": "2.0"
     },
-    "host": "localhost:3000",
-    "basePath": "/hof",
+    "host": "localhost:8080",
+    "basePath": "/",
     "paths": {
-        "/audio_message": {
-            "post": {
-                "description": "The endpoint takes an AudioMessageJSON requests and creates a new audio message",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Audio Message"
-                ],
-                "summary": "Create Audio Message",
-                "parameters": [
-                    {
-                        "description": "create audio message request body",
-                        "name": "AudioMessageJSON",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/audio_message.AudioMessageJSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/delete/{message_id}": {
-            "delete": {
-                "description": "The endpoint takes nothing as the request body and update the audio message by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Audio Message"
-                ],
-                "summary": "Delete Audio Message by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audio message id",
-                        "name": "message_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/delete/{series_id}": {
-            "delete": {
-                "description": "The endpoint takes nothing as the request body and deletes the favourite by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Favourites"
-                ],
-                "summary": "Delete favourite by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "message id",
-                        "name": "message_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/fav": {
-            "post": {
-                "description": "The endpoint takes a FavouriteJSON requests and creates a new favourite",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Favourites"
-                ],
-                "summary": "Create Favourites",
-                "parameters": [
-                    {
-                        "description": "create favourites request body",
-                        "name": "FavouriteJSON",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/user.FavouriteJSON"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/user.FavouriteJSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/favourites": {
+        "/admin/global": {
             "get": {
-                "description": "Retrieves all favourite/liked messages",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get global application parameters",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -183,28 +50,99 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Favourites"
+                    "admin"
                 ],
-                "summary": "Get Favourites",
+                "summary": "Update global application parameters",
+                "parameters": [
+                    {
+                        "description": "Parameters",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.UpdateGlobalParamsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/session/authenticate": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh a session using refresh token",
+                "parameters": [
+                    {
+                        "description": "Tokens",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.AuthenticateRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.GetFavouritesResponse"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse"
                         }
+                    }
+                }
+            }
+        },
+        "/session/device/{email}": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Register a device for the user identified by email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User email",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    {
+                        "description": "Device info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput"
                         }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
                     }
                 }
             }
         },
         "/session/forgot_password": {
             "post": {
-                "description": "User can request for a password change with the input payload",
                 "consumes": [
                     "application/json"
                 ],
@@ -212,33 +150,29 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Password"
+                    "users"
                 ],
-                "summary": "User forgets their password",
+                "summary": "Initiate password reset",
                 "parameters": [
                     {
-                        "description": "Forgot password",
-                        "name": "ForgotPasswordPayload",
+                        "description": "Email",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.ForgotPasswordPayload"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.ForgotPasswordRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/user.OTPResponse"
-                        }
+                        "description": "OK"
                     }
                 }
             }
         },
         "/session/sign_in": {
             "post": {
-                "description": "Authenticates a user and returns a session",
                 "consumes": [
                     "application/json"
                 ],
@@ -246,17 +180,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Sessions"
+                    "auth"
                 ],
-                "summary": "Create a new session",
+                "summary": "Sign in with email and password",
                 "parameters": [
                     {
-                        "description": "Sign in user",
-                        "name": "LoginWithDeviceRequest",
+                        "description": "Login credentials",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginWithDeviceRequest"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.LoginRequest"
                         }
                     }
                 ],
@@ -264,7 +198,40 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.UserSession"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/sign_in/admin": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Admin sign in",
+                "parameters": [
+                    {
+                        "description": "Admin credentials",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.AdminLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse"
                         }
                     }
                 }
@@ -272,7 +239,6 @@
         },
         "/session/sign_up": {
             "post": {
-                "description": "Creates a new user with the input payload",
                 "consumes": [
                     "application/json"
                 ],
@@ -280,33 +246,62 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Sessions"
+                    "users"
                 ],
-                "summary": "Signs up a new user",
+                "summary": "Create a new user account",
                 "parameters": [
                     {
-                        "description": "Create user",
-                        "name": "SignUpUserRequestJSON",
+                        "description": "Sign up payload",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.SignUpUserRequestJSON"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SignUpRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User"
+                        }
+                    }
+                }
+            }
+        },
+        "/session/verify_email": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Send an email verification link",
+                "parameters": [
+                    {
+                        "description": "Email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/user.UserJSON"
-                        }
+                        "description": "OK"
                     }
                 }
             }
         },
         "/session/verify_token": {
-            "post": {
-                "description": "The endpoint verifies the OTP input from the user",
+            "put": {
                 "consumes": [
                     "application/json"
                 ],
@@ -314,17 +309,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Password"
+                    "users"
                 ],
-                "summary": "Verify password reset OTP",
+                "summary": "Verify a password reset OTP",
                 "parameters": [
                     {
-                        "description": "Verify OTP",
-                        "name": "VerifyOTP",
+                        "description": "OTP",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.VerifyOTP"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.VerifyOTPRequest"
                         }
                     }
                 ],
@@ -332,15 +327,65 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.UserSession"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User"
                         }
                     }
                 }
             }
         },
-        "/update/{message_id}": {
+        "/upload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "upload"
+                ],
+                "summary": "Upload a file to S3",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "S3 object key",
+                        "name": "key",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/app_version/admin/update": {
             "put": {
-                "description": "The endpoint takes an AudioMessageJSON requests and update the audio message",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -348,14 +393,46 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Audio Message"
+                    "app-version"
                 ],
-                "summary": "Update Audio Message by ID",
+                "summary": "Update the promoted app version (admin)",
+                "parameters": [
+                    {
+                        "description": "Version",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AppVersionUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/app_version/version/{version_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "app-version"
+                ],
+                "summary": "Get the current app version record",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "audio message id",
-                        "name": "message_id",
+                        "description": "Version UUID",
+                        "name": "version_id",
                         "in": "path",
                         "required": true
                     }
@@ -364,51 +441,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/update/{series_id}": {
-            "put": {
-                "description": "The endpoint takes an AudioSeriesJSON requests and update the audio series",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Audio Series"
-                ],
-                "summary": "Update Audio Series by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audio series id",
-                        "name": "series_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/http_helper.errorResponse"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.AppVersion"
                         }
                     }
                 }
@@ -416,7 +449,11 @@
         },
         "/user/change_password": {
             "post": {
-                "description": "Create new password with the input payload",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -424,25 +461,205 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Password"
+                    "users"
                 ],
-                "summary": "Change user password",
+                "summary": "Change password for the authenticated user",
                 "parameters": [
                     {
-                        "description": "Change password",
-                        "name": "ChangePasswordPayload",
+                        "description": "Passwords",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.ChangePasswordPayload"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.ChangePasswordRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/devices/all": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List all registered devices for the authenticated user",
+                "responses": {
+                    "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http_helper.DefaultResponse"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.DeviceRecord"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/devices/delete/{identifier}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Remove a registered device",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device identifier",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/devices/update/{identifier}/{status}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Change a device's active/inactive status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device identifier",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Status (ACTIVE|INACTIVE)",
+                        "name": "status",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/favourite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "favourites"
+                ],
+                "summary": "Bookmark an audio message",
+                "parameters": [
+                    {
+                        "description": "Message to bookmark",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AddFavouriteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/user/favourite/delete/{message_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "favourites"
+                ],
+                "summary": "Remove an audio message from favourites",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Message UUID",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/favourite/favs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "favourites"
+                ],
+                "summary": "List the authenticated user's favourites",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.FavouriteMessage"
+                            }
                         }
                     }
                 }
@@ -450,7 +667,6 @@
         },
         "/user/reset_password": {
             "post": {
-                "description": "Create new password with the input payload",
                 "consumes": [
                     "application/json"
                 ],
@@ -458,71 +674,182 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Password"
+                    "users"
                 ],
-                "summary": "Reset user password",
+                "summary": "Set a new password after OTP verification",
                 "parameters": [
                     {
-                        "description": "Reset password",
-                        "name": "ResetPasswordPayload",
+                        "description": "New password",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.ResetPasswordPayload"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.ResetPasswordRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/roles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get roles for the authenticated user",
+                "responses": {
+                    "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/http_helper.DefaultResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.Role"
+                            }
                         }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Assign roles to a user (admin)",
+                "parameters": [
+                    {
+                        "description": "Roles",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AssignRolesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/update": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update the authenticated user's profile",
+                "parameters": [
+                    {
+                        "description": "Profile fields",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/verify_email/{token}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Complete email verification via link token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT from email link",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
         }
     },
     "definitions": {
-        "audio_message.AudioMessageJSON": {
+        "bitbucket_org_hofng_hofApp_internal_application_auth.AdminLoginRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
-                "audio_url": {
+                "email": {
                     "type": "string"
                 },
-                "author": {
-                    "type": "string"
-                },
-                "date_added": {
-                    "type": "string"
-                },
-                "date_released": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "last_updated": {
-                    "type": "string"
-                },
-                "series_id": {
-                    "type": "string"
-                },
-                "title": {
+                "password": {
                     "type": "string"
                 }
             }
         },
-        "auth.LoginWithDeviceRequest": {
+        "bitbucket_org_hofng_hofApp_internal_application_auth.AuthenticateRequest": {
             "type": "object",
             "required": [
-                "device_identifier",
+                "refresh_token",
+                "token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_auth.LoginRequest": {
+            "type": "object",
+            "required": [
                 "email",
                 "password"
             ],
@@ -538,79 +865,123 @@
                 }
             }
         },
-        "auth.UserSession": {
+        "bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse": {
             "type": "object",
             "properties": {
                 "refresh_token": {
                     "type": "string"
                 },
                 "subscription": {
-                    "$ref": "#/definitions/subscription.SubscriptionJSON"
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SubscriptionDTO"
                 },
                 "token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/user.UserJSON"
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.UserDTO"
                 }
             }
         },
-        "http_helper.DefaultResponse": {
+        "bitbucket_org_hofng_hofApp_internal_application_auth.SubscriptionDTO": {
             "type": "object",
             "properties": {
-                "body": {},
-                "code": {
-                    "type": "integer"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "http_helper.errorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "subscription.SubscriptionJSON": {
-            "type": "object",
-            "properties": {
-                "currency": {
+                "next_payment_date": {
                     "type": "string"
                 },
-                "fee": {
-                    "type": "number"
+                "plan_name": {
+                    "type": "string"
                 },
-                "freq": {
+                "status": {
                     "type": "integer"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_auth.UserDTO": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "next_payment_date": {
+                "is_verified": {
+                    "type": "integer"
+                },
+                "last_name": {
                     "type": "string"
                 },
-                "plan_code": {
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.UpdateGlobalParamsRequest": {
+            "type": "object",
+            "properties": {
+                "activate_subscription": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.AddFavouriteRequest": {
+            "type": "object",
+            "required": [
+                "message_id"
+            ],
+            "properties": {
+                "message_id": {
                     "type": "string"
                 },
-                "status": {
+                "series_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.AppVersionUpdateRequest": {
+            "type": "object",
+            "required": [
+                "id",
+                "version"
+            ],
+            "properties": {
+                "force": {
                     "type": "boolean"
                 },
-                "subscription_plan_id": {
+                "id": {
                     "type": "string"
                 },
-                "type": {
-                    "type": "integer"
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.AssignRolesRequest": {
+            "type": "object",
+            "required": [
+                "roles",
+                "user_id"
+            ],
+            "properties": {
+                "roles": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "user_id": {
                     "type": "string"
                 }
             }
         },
-        "user.ChangePasswordPayload": {
+        "bitbucket_org_hofng_hofApp_internal_application_user.ChangePasswordRequest": {
             "type": "object",
             "required": [
                 "confirm_new_password",
@@ -624,7 +995,6 @@
                     "minLength": 6
                 },
                 "email": {
-                    "description": "The ULID of ChangePasswordPayload",
                     "type": "string"
                 },
                 "new_password": {
@@ -636,29 +1006,20 @@
                 }
             }
         },
-        "user.Device": {
+        "bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput": {
             "type": "object",
+            "required": [
+                "identifier"
+            ],
             "properties": {
                 "brand": {
-                    "type": "string"
-                },
-                "dateAdded": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "string"
                 },
                 "identifier": {
                     "type": "string"
                 },
-                "lastUpdated": {
-                    "type": "string"
-                },
                 "os": {
                     "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/user.DeviceStatus"
                 },
                 "version": {
                     "type": "string"
@@ -668,38 +1029,199 @@
                 }
             }
         },
-        "user.DeviceStatus": {
+        "bitbucket_org_hofng_hofApp_internal_application_user.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "password_confirm"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "password_confirm": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.SignUpRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "first_name",
+                "last_name",
+                "password"
+            ],
+            "properties": {
+                "device": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.UpdateProfileRequest": {
+            "type": "object",
+            "required": [
+                "first_name",
+                "last_name"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "mobile": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.VerifyOTPRequest": {
+            "type": "object",
+            "required": [
+                "otp",
+                "target"
+            ],
+            "properties": {
+                "otp": {
+                    "type": "string"
+                },
+                "target": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_domain_user.AppVersion": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "force": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_domain_user.Device": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "date_added": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "os": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.DeviceStatus"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "who": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_domain_user.DeviceRecord": {
+            "type": "object",
+            "properties": {
+                "devices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.Device"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "userID": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_domain_user.DeviceStatus": {
             "type": "string",
             "enum": [
                 "ACTIVE",
                 "INACTIVE"
             ],
             "x-enum-varnames": [
-                "ACTIVE_DEVICE_STATUS",
-                "INACTIVE_DEVICE_STATUS"
+                "DeviceStatusActive",
+                "DeviceStatusInactive"
             ]
         },
-        "user.FavBodyJSON": {
-            "type": "object",
-            "properties": {
-                "date_added": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "fav": {
-                    "type": "boolean"
-                },
-                "message_id": {
-                    "type": "string"
-                },
-                "series_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "user.FavMessageJSON": {
+        "bitbucket_org_hofng_hofApp_internal_domain_user.FavouriteMessage": {
             "type": "object",
             "properties": {
                 "audio_url": {
@@ -714,16 +1236,16 @@
                 "fav": {
                     "type": "boolean"
                 },
-                "id": {
+                "favourite_id": {
                     "type": "string"
                 },
                 "image_url": {
                     "type": "string"
                 },
-                "message_id": {
-                    "type": "string"
+                "is_free": {
+                    "type": "boolean"
                 },
-                "series_id": {
+                "message_id": {
                     "type": "string"
                 },
                 "title": {
@@ -734,132 +1256,74 @@
                 }
             }
         },
-        "user.FavouriteJSON": {
+        "bitbucket_org_hofng_hofApp_internal_domain_user.PasswordVersion": {
+            "type": "string",
+            "enum": [
+                "bcrypt",
+                "md5"
+            ],
+            "x-enum-comments": {
+                "PasswordVersionMD5": "legacy only"
+            },
+            "x-enum-descriptions": [
+                "",
+                "legacy only"
+            ],
+            "x-enum-varnames": [
+                "PasswordVersionBcrypt",
+                "PasswordVersionMD5"
+            ]
+        },
+        "bitbucket_org_hofng_hofApp_internal_domain_user.Role": {
             "type": "object",
             "properties": {
-                "fav": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/user.FavBodyJSON"
-                    }
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
-                "user_id": {
+                "name": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.RoleName"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }
         },
-        "user.ForgotPasswordPayload": {
-            "type": "object",
-            "required": [
-                "email"
+        "bitbucket_org_hofng_hofApp_internal_domain_user.RoleName": {
+            "type": "string",
+            "enum": [
+                "steward",
+                "member",
+                "church_friend",
+                "team_lead",
+                "church_admin"
             ],
-            "properties": {
-                "email": {
-                    "description": "The ULID of ForgotPasswordPayload",
-                    "type": "string"
-                }
-            }
+            "x-enum-varnames": [
+                "RoleSteward",
+                "RoleMember",
+                "RoleChurchFriend",
+                "RoleTeamLead",
+                "RoleChurchAdmin"
+            ]
         },
-        "user.GetFavouritesResponse": {
-            "type": "object",
-            "properties": {
-                "favourites": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/user.FavMessageJSON"
-                    }
-                },
-                "pagination": {
-                    "$ref": "#/definitions/user.PageResponse"
-                }
-            }
-        },
-        "user.OTPResponse": {
-            "type": "object",
-            "properties": {
-                "expireTimeInSeconds": {
-                    "type": "integer"
-                },
-                "otp": {
-                    "type": "string"
-                },
-                "target": {
-                    "type": "string"
-                }
-            }
-        },
-        "user.PageResponse": {
-            "type": "object",
-            "properties": {
-                "totalResults": {
-                    "type": "integer"
-                }
-            }
-        },
-        "user.ResetPasswordPayload": {
-            "type": "object",
-            "required": [
-                "email",
-                "password",
-                "password_confirm"
-            ],
-            "properties": {
-                "email": {
-                    "description": "The ULID of ResetPasswordPayload",
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string",
-                    "minLength": 6
-                },
-                "password_confirm": {
-                    "type": "string",
-                    "minLength": 6
-                }
-            }
-        },
-        "user.SignUpUserRequestJSON": {
-            "type": "object",
-            "properties": {
-                "devices": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/user.Device"
-                    }
-                },
-                "email": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "user.UserJSON": {
+        "bitbucket_org_hofng_hofApp_internal_domain_user.User": {
             "type": "object",
             "properties": {
                 "address": {
                     "type": "string"
                 },
-                "devices": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/user.Device"
-                    }
+                "createdAt": {
+                    "type": "string"
                 },
                 "email": {
                     "type": "string"
                 },
-                "first_name": {
+                "firstName": {
                     "type": "string"
                 },
                 "gender": {
@@ -868,70 +1332,64 @@
                 "id": {
                     "type": "string"
                 },
-                "is_verified": {
-                    "type": "integer"
+                "isVerified": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.VerificationStatus"
                 },
-                "last_name": {
+                "lastName": {
                     "type": "string"
-                },
-                "latest_app_version": {
-                    "$ref": "#/definitions/user.VersionManager"
                 },
                 "mobile": {
-                    "type": "string"
-                },
-                "newToken": {
                     "type": "string"
                 },
                 "password": {
                     "type": "string"
                 },
-                "username": {
+                "passwordVersion": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.PasswordVersion"
+                },
+                "paystackCustomerCode": {
+                    "type": "string"
+                },
+                "paystackCustomerID": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.Role"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "userName": {
                     "type": "string"
                 }
             }
         },
-        "user.UserSession": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/user.UserJSON"
-                }
-            }
-        },
-        "user.VerifyOTP": {
-            "type": "object",
-            "properties": {
-                "otp": {
-                    "type": "string"
-                },
-                "target": {
-                    "type": "string"
-                }
-            }
-        },
-        "user.VersionManager": {
-            "type": "object",
-            "properties": {
-                "date_added": {
-                    "type": "string"
-                },
-                "force": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "last_updated": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
+        "bitbucket_org_hofng_hofApp_internal_domain_user.VerificationStatus": {
+            "type": "integer",
+            "format": "int32",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-varnames": [
+                "Unverified",
+                "PhoneVerified",
+                "EmailVerified",
+                "EmailAndPhoneVerified"
+            ]
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and the JWT access token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

@@ -1,29 +1,26 @@
-basePath: /hof
+basePath: /
 definitions:
-  audio_message.AudioMessageJSON:
+  bitbucket_org_hofng_hofApp_internal_application_auth.AdminLoginRequest:
     properties:
-      audio_url:
+      email:
         type: string
-      author:
+      password:
         type: string
-      date_added:
-        type: string
-      date_released:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      image_url:
-        type: string
-      last_updated:
-        type: string
-      series_id:
-        type: string
-      title:
-        type: string
+    required:
+    - email
+    - password
     type: object
-  auth.LoginWithDeviceRequest:
+  bitbucket_org_hofng_hofApp_internal_application_auth.AuthenticateRequest:
+    properties:
+      refresh_token:
+        type: string
+      token:
+        type: string
+    required:
+    - refresh_token
+    - token
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_auth.LoginRequest:
     properties:
       device_identifier:
         type: string
@@ -32,64 +29,91 @@ definitions:
       password:
         type: string
     required:
-    - device_identifier
     - email
     - password
     type: object
-  auth.UserSession:
+  bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse:
     properties:
       refresh_token:
         type: string
       subscription:
-        $ref: '#/definitions/subscription.SubscriptionJSON'
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SubscriptionDTO'
       token:
         type: string
       user:
-        $ref: '#/definitions/user.UserJSON'
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.UserDTO'
     type: object
-  http_helper.DefaultResponse:
+  bitbucket_org_hofng_hofApp_internal_application_auth.SubscriptionDTO:
     properties:
-      body: {}
-      code:
-        type: integer
-      success:
-        type: boolean
-    type: object
-  http_helper.errorResponse:
-    properties:
-      error:
-        type: string
-    type: object
-  subscription.SubscriptionJSON:
-    properties:
-      currency:
-        type: string
-      fee:
-        type: number
-      freq:
-        type: integer
-      id:
-        type: string
       next_payment_date:
         type: string
-      plan_code:
+      plan_name:
         type: string
       status:
-        type: boolean
-      subscription_plan_id:
-        type: string
-      type:
         type: integer
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_auth.UserDTO:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      is_verified:
+        type: integer
+      last_name:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.UpdateGlobalParamsRequest:
+    properties:
+      activate_subscription:
+        type: boolean
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_user.AddFavouriteRequest:
+    properties:
+      message_id:
+        type: string
+      series_id:
+        type: string
+    required:
+    - message_id
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_user.AppVersionUpdateRequest:
+    properties:
+      force:
+        type: boolean
+      id:
+        type: string
+      version:
+        type: string
+    required:
+    - id
+    - version
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_user.AssignRolesRequest:
+    properties:
+      roles:
+        items:
+          type: string
+        minItems: 1
+        type: array
       user_id:
         type: string
+    required:
+    - roles
+    - user_id
     type: object
-  user.ChangePasswordPayload:
+  bitbucket_org_hofng_hofApp_internal_application_user.ChangePasswordRequest:
     properties:
       confirm_new_password:
         minLength: 6
         type: string
       email:
-        description: The ULID of ChangePasswordPayload
         type: string
       new_password:
         minLength: 6
@@ -102,117 +126,31 @@ definitions:
     - new_password
     - old_password
     type: object
-  user.Device:
+  bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput:
     properties:
       brand:
         type: string
-      dateAdded:
-        type: string
-      id:
-        type: string
       identifier:
-        type: string
-      lastUpdated:
         type: string
       os:
         type: string
-      status:
-        $ref: '#/definitions/user.DeviceStatus'
       version:
         type: string
       who:
         type: string
+    required:
+    - identifier
     type: object
-  user.DeviceStatus:
-    enum:
-    - ACTIVE
-    - INACTIVE
-    type: string
-    x-enum-varnames:
-    - ACTIVE_DEVICE_STATUS
-    - INACTIVE_DEVICE_STATUS
-  user.FavBodyJSON:
-    properties:
-      date_added:
-        type: string
-      deleted_at:
-        type: string
-      fav:
-        type: boolean
-      message_id:
-        type: string
-      series_id:
-        type: string
-    type: object
-  user.FavMessageJSON:
-    properties:
-      audio_url:
-        type: string
-      author:
-        type: string
-      description:
-        type: string
-      fav:
-        type: boolean
-      id:
-        type: string
-      image_url:
-        type: string
-      message_id:
-        type: string
-      series_id:
-        type: string
-      title:
-        type: string
-      user_id:
-        type: string
-    type: object
-  user.FavouriteJSON:
-    properties:
-      fav:
-        items:
-          $ref: '#/definitions/user.FavBodyJSON'
-        type: array
-      id:
-        type: string
-      user_id:
-        type: string
-    type: object
-  user.ForgotPasswordPayload:
+  bitbucket_org_hofng_hofApp_internal_application_user.ForgotPasswordRequest:
     properties:
       email:
-        description: The ULID of ForgotPasswordPayload
         type: string
     required:
     - email
     type: object
-  user.GetFavouritesResponse:
-    properties:
-      favourites:
-        items:
-          $ref: '#/definitions/user.FavMessageJSON'
-        type: array
-      pagination:
-        $ref: '#/definitions/user.PageResponse'
-    type: object
-  user.OTPResponse:
-    properties:
-      expireTimeInSeconds:
-        type: integer
-      otp:
-        type: string
-      target:
-        type: string
-    type: object
-  user.PageResponse:
-    properties:
-      totalResults:
-        type: integer
-    type: object
-  user.ResetPasswordPayload:
+  bitbucket_org_hofng_hofApp_internal_application_user.ResetPasswordRequest:
     properties:
       email:
-        description: The ULID of ResetPasswordPayload
         type: string
       password:
         minLength: 6
@@ -225,12 +163,17 @@ definitions:
     - password
     - password_confirm
     type: object
-  user.SignUpUserRequestJSON:
+  bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest:
     properties:
-      devices:
-        items:
-          $ref: '#/definitions/user.Device'
-        type: array
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_user.SignUpRequest:
+    properties:
+      device:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput'
       email:
         type: string
       first_name:
@@ -238,299 +181,591 @@ definitions:
       last_name:
         type: string
       password:
+        minLength: 6
         type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
     type: object
-  user.UserJSON:
+  bitbucket_org_hofng_hofApp_internal_application_user.UpdateProfileRequest:
     properties:
       address:
-        type: string
-      devices:
-        items:
-          $ref: '#/definitions/user.Device'
-        type: array
-      email:
         type: string
       first_name:
         type: string
       gender:
         type: string
-      id:
-        type: string
-      is_verified:
-        type: integer
       last_name:
         type: string
-      latest_app_version:
-        $ref: '#/definitions/user.VersionManager'
       mobile:
-        type: string
-      newToken:
-        type: string
-      password:
         type: string
       username:
         type: string
+    required:
+    - first_name
+    - last_name
     type: object
-  user.UserSession:
-    properties:
-      token:
-        type: string
-      user:
-        $ref: '#/definitions/user.UserJSON'
-    type: object
-  user.VerifyOTP:
+  bitbucket_org_hofng_hofApp_internal_application_user.VerifyOTPRequest:
     properties:
       otp:
         type: string
       target:
         type: string
+    required:
+    - otp
+    - target
     type: object
-  user.VersionManager:
+  bitbucket_org_hofng_hofApp_internal_domain_user.AppVersion:
     properties:
-      date_added:
+      createdAt:
         type: string
       force:
         type: boolean
       id:
         type: string
-      last_updated:
+      updatedAt:
         type: string
       version:
         type: string
     type: object
-host: localhost:3000
+  bitbucket_org_hofng_hofApp_internal_domain_user.Device:
+    properties:
+      brand:
+        type: string
+      date_added:
+        type: string
+      id:
+        type: string
+      identifier:
+        type: string
+      last_updated:
+        type: string
+      os:
+        type: string
+      status:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.DeviceStatus'
+      version:
+        type: string
+      who:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_domain_user.DeviceRecord:
+    properties:
+      devices:
+        items:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.Device'
+        type: array
+      id:
+        type: string
+      userID:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_domain_user.DeviceStatus:
+    enum:
+    - ACTIVE
+    - INACTIVE
+    type: string
+    x-enum-varnames:
+    - DeviceStatusActive
+    - DeviceStatusInactive
+  bitbucket_org_hofng_hofApp_internal_domain_user.FavouriteMessage:
+    properties:
+      audio_url:
+        type: string
+      author:
+        type: string
+      description:
+        type: string
+      fav:
+        type: boolean
+      favourite_id:
+        type: string
+      image_url:
+        type: string
+      is_free:
+        type: boolean
+      message_id:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_domain_user.PasswordVersion:
+    enum:
+    - bcrypt
+    - md5
+    type: string
+    x-enum-comments:
+      PasswordVersionMD5: legacy only
+    x-enum-descriptions:
+    - ""
+    - legacy only
+    x-enum-varnames:
+    - PasswordVersionBcrypt
+    - PasswordVersionMD5
+  bitbucket_org_hofng_hofApp_internal_domain_user.Role:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.RoleName'
+      updatedAt:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_domain_user.RoleName:
+    enum:
+    - steward
+    - member
+    - church_friend
+    - team_lead
+    - church_admin
+    type: string
+    x-enum-varnames:
+    - RoleSteward
+    - RoleMember
+    - RoleChurchFriend
+    - RoleTeamLead
+    - RoleChurchAdmin
+  bitbucket_org_hofng_hofApp_internal_domain_user.User:
+    properties:
+      address:
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      gender:
+        type: string
+      id:
+        type: string
+      isVerified:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.VerificationStatus'
+      lastName:
+        type: string
+      mobile:
+        type: string
+      password:
+        type: string
+      passwordVersion:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.PasswordVersion'
+      paystackCustomerCode:
+        type: string
+      paystackCustomerID:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.Role'
+        type: array
+      updatedAt:
+        type: string
+      userName:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_domain_user.VerificationStatus:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    format: int32
+    type: integer
+    x-enum-varnames:
+    - Unverified
+    - PhoneVerified
+    - EmailVerified
+    - EmailAndPhoneVerified
+host: localhost:8080
 info:
   contact:
-    email: hof.org
-    name: HOF Engineering
-  description: This is the entire doc
+    email: dev@hofng.org
+    name: HOF Dev Team
+  description: Heritage of Faith Church — audio content and subscription platform.
   license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: HOF BACKEND API
-  version: "1.0"
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://hofng.org/terms
+  title: HOF Backend API
+  version: "2.0"
 paths:
-  /audio_message:
-    post:
-      consumes:
-      - application/json
-      description: The endpoint takes an AudioMessageJSON requests and creates a new
-        audio message
-      parameters:
-      - description: create audio message request body
-        in: body
-        name: AudioMessageJSON
-        required: true
-        schema:
-          $ref: '#/definitions/audio_message.AudioMessageJSON'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/audio_message.AudioMessageJSON'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Create Audio Message
-      tags:
-      - Audio Message
-  /delete/{message_id}:
-    delete:
-      consumes:
-      - application/json
-      description: The endpoint takes nothing as the request body and update the audio
-        message by ID
-      parameters:
-      - description: audio message id
-        in: path
-        name: message_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Delete Audio Message by ID
-      tags:
-      - Audio Message
-  /delete/{series_id}:
-    delete:
-      consumes:
-      - application/json
-      description: The endpoint takes nothing as the request body and deletes the
-        favourite by ID
-      parameters:
-      - description: message id
-        in: path
-        name: message_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Delete favourite by ID
-      tags:
-      - Favourites
-  /fav:
-    post:
-      consumes:
-      - application/json
-      description: The endpoint takes a FavouriteJSON requests and creates a new favourite
-      parameters:
-      - description: create favourites request body
-        in: body
-        name: FavouriteJSON
-        required: true
-        schema:
-          $ref: '#/definitions/user.FavouriteJSON'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/user.FavouriteJSON'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Create Favourites
-      tags:
-      - Favourites
-  /favourites:
+  /admin/global:
     get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Get global application parameters
+      tags:
+      - admin
+    put:
       consumes:
       - application/json
-      description: Retrieves all favourite/liked messages
+      parameters:
+      - description: Parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.UpdateGlobalParamsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Update global application parameters
+      tags:
+      - admin
+  /session/authenticate:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tokens
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.AuthenticateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.GetFavouritesResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Get Favourites
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse'
+      summary: Refresh a session using refresh token
       tags:
-      - Favourites
+      - auth
+  /session/device/{email}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User email
+        in: path
+        name: email
+        required: true
+        type: string
+      - description: Device info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      summary: Register a device for the user identified by email
+      tags:
+      - devices
   /session/forgot_password:
     post:
       consumes:
       - application/json
-      description: User can request for a password change with the input payload
       parameters:
-      - description: Forgot password
+      - description: Email
         in: body
-        name: ForgotPasswordPayload
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/user.ForgotPasswordPayload'
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.ForgotPasswordRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/user.OTPResponse'
-      summary: User forgets their password
+      summary: Initiate password reset
       tags:
-      - Password
+      - users
   /session/sign_in:
     post:
       consumes:
       - application/json
-      description: Authenticates a user and returns a session
       parameters:
-      - description: Sign in user
+      - description: Login credentials
         in: body
-        name: LoginWithDeviceRequest
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/auth.LoginWithDeviceRequest'
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.UserSession'
-      summary: Create a new session
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse'
+      summary: Sign in with email and password
       tags:
-      - Sessions
+      - auth
+  /session/sign_in/admin:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Admin credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.AdminLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse'
+      summary: Admin sign in
+      tags:
+      - auth
   /session/sign_up:
     post:
       consumes:
       - application/json
-      description: Creates a new user with the input payload
       parameters:
-      - description: Create user
+      - description: Sign up payload
         in: body
-        name: SignUpUserRequestJSON
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/user.SignUpUserRequestJSON'
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SignUpRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
-            $ref: '#/definitions/user.UserJSON'
-      summary: Signs up a new user
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User'
+      summary: Create a new user account
       tags:
-      - Sessions
-  /session/verify_token:
+      - users
+  /session/verify_email:
     post:
       consumes:
       - application/json
-      description: The endpoint verifies the OTP input from the user
       parameters:
-      - description: Verify OTP
+      - description: Email
         in: body
-        name: VerifyOTP
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/user.VerifyOTP'
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Send an email verification link
+      tags:
+      - users
+  /session/verify_token:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: OTP
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.VerifyOTPRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.UserSession'
-      summary: Verify password reset OTP
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User'
+      summary: Verify a password reset OTP
       tags:
-      - Password
-  /update/{message_id}:
+      - users
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: S3 object key
+        in: formData
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Upload a file to S3
+      tags:
+      - upload
+  /user/app_version/admin/update:
     put:
       consumes:
       - application/json
-      description: The endpoint takes an AudioMessageJSON requests and update the
-        audio message
       parameters:
-      - description: audio message id
+      - description: Version
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AppVersionUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Update the promoted app version (admin)
+      tags:
+      - app-version
+  /user/app_version/version/{version_id}:
+    get:
+      parameters:
+      - description: Version UUID
+        in: path
+        name: version_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.AppVersion'
+      security:
+      - BearerAuth: []
+      summary: Get the current app version record
+      tags:
+      - app-version
+  /user/change_password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Passwords
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Change password for the authenticated user
+      tags:
+      - users
+  /user/devices/all:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.DeviceRecord'
+      security:
+      - BearerAuth: []
+      summary: List all registered devices for the authenticated user
+      tags:
+      - devices
+  /user/devices/delete/{identifier}:
+    delete:
+      parameters:
+      - description: Device identifier
+        in: path
+        name: identifier
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Remove a registered device
+      tags:
+      - devices
+  /user/devices/update/{identifier}/{status}:
+    put:
+      parameters:
+      - description: Device identifier
+        in: path
+        name: identifier
+        required: true
+        type: string
+      - description: Status (ACTIVE|INACTIVE)
+        in: path
+        name: status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Change a device's active/inactive status
+      tags:
+      - devices
+  /user/favourite:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Message to bookmark
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AddFavouriteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Bookmark an audio message
+      tags:
+      - favourites
+  /user/favourite/delete/{message_id}:
+    delete:
+      parameters:
+      - description: Message UUID
         in: path
         name: message_id
         required: true
@@ -540,25 +775,109 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Update Audio Message by ID
+      security:
+      - BearerAuth: []
+      summary: Remove an audio message from favourites
       tags:
-      - Audio Message
-  /update/{series_id}:
-    put:
+      - favourites
+  /user/favourite/favs:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.FavouriteMessage'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List the authenticated user's favourites
+      tags:
+      - favourites
+  /user/reset_password:
+    post:
       consumes:
       - application/json
-      description: The endpoint takes an AudioSeriesJSON requests and update the audio
-        series
       parameters:
-      - description: audio series id
+      - description: New password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Set a new password after OTP verification
+      tags:
+      - users
+  /user/roles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.Role'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get roles for the authenticated user
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Roles
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AssignRolesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Assign roles to a user (admin)
+      tags:
+      - users
+  /user/update:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Profile fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Update the authenticated user's profile
+      tags:
+      - users
+  /verify_email/{token}:
+    get:
+      parameters:
+      - description: JWT from email link
         in: path
-        name: series_id
+        name: token
         required: true
         type: string
       produces:
@@ -566,57 +885,13 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/http_helper.errorResponse'
-      summary: Update Audio Series by ID
+      summary: Complete email verification via link token
       tags:
-      - Audio Series
-  /user/change_password:
-    post:
-      consumes:
-      - application/json
-      description: Create new password with the input payload
-      parameters:
-      - description: Change password
-        in: body
-        name: ChangePasswordPayload
-        required: true
-        schema:
-          $ref: '#/definitions/user.ChangePasswordPayload'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/http_helper.DefaultResponse'
-      summary: Change user password
-      tags:
-      - Password
-  /user/reset_password:
-    post:
-      consumes:
-      - application/json
-      description: Create new password with the input payload
-      parameters:
-      - description: Reset password
-        in: body
-        name: ResetPasswordPayload
-        required: true
-        schema:
-          $ref: '#/definitions/user.ResetPasswordPayload'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/http_helper.DefaultResponse'
-      summary: Reset user password
-      tags:
-      - Password
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and the JWT access token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

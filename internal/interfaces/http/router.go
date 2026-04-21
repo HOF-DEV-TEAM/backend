@@ -1,0 +1,185 @@
+package http
+
+import (
+	"net/http"
+
+	appAuth "bitbucket.org/hofng/hofApp/internal/application/auth"
+	appContent "bitbucket.org/hofng/hofApp/internal/application/content"
+	appSub "bitbucket.org/hofng/hofApp/internal/application/subscription"
+	appUser "bitbucket.org/hofng/hofApp/internal/application/user"
+	"bitbucket.org/hofng/hofApp/internal/infrastructure/security"
+	"bitbucket.org/hofng/hofApp/internal/infrastructure/storage"
+	"bitbucket.org/hofng/hofApp/internal/interfaces/http/handler"
+	"bitbucket.org/hofng/hofApp/internal/interfaces/http/middleware"
+	"github.com/go-chi/chi/v5"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "bitbucket.org/hofng/hofApp/docs"
+)
+
+// NewRouter wires up all routes and returns a ready-to-use Chi router.
+func NewRouter(
+	jwtSvc *security.JWTService,
+	serverURL string,
+	authSvc appAuth.Service,
+	userSvc appUser.Service,
+	contentSvc appContent.Service,
+	subSvc appSub.Service,
+	s3 *storage.S3Storage,
+) http.Handler {
+	r := chi.NewRouter()
+
+	// ── Global middleware ─────────────────────────────────────────────────────
+	r.Use(chiMiddleware.RequestID)
+	r.Use(chiMiddleware.RealIP)
+	r.Use(chiMiddleware.Logger)
+	r.Use(chiMiddleware.Recoverer)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
+	// Attach JWT claims to context on every request (non-blocking — no 401 yet).
+	r.Use(jwtSvc.Middleware)
+
+	// ── Swagger UI ────────────────────────────────────────────────────────────
+	r.Handle("/swagger/*", httpSwagger.WrapHandler)
+
+	// ── Health check ──────────────────────────────────────────────────────────
+	r.Get("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Write([]byte("HOF Backend — running"))
+	})
+	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+
+	// ── Handlers ──────────────────────────────────────────────────────────────
+	authH := handler.NewAuthHandler(authSvc)
+	userH := handler.NewUserHandler(userSvc, serverURL)
+	contentH := handler.NewContentHandler(contentSvc)
+	subH := handler.NewSubscriptionHandler(subSvc)
+	uploadH := handler.NewUploadHandler(s3)
+	adminH := handler.NewAdminHandler(subSvc)
+
+	// ── Email verification (path-based JWT) ───────────────────────────────────
+	r.Group(func(r chi.Router) {
+		r.Use(jwtSvc.PathTokenMiddleware)
+		r.Use(middleware.Authenticate(jwtSvc))
+		r.Get("/verify_email/{token}", userH.VerifyEmail)
+	})
+
+	// ── Public session routes ─────────────────────────────────────────────────
+	r.Route("/session", func(r chi.Router) {
+		r.Post("/sign_in", authH.SignIn)
+		r.Post("/sign_in/admin", authH.AdminSignIn)
+		r.Post("/authenticate", authH.Authenticate)
+		r.Post("/sign_up", userH.SignUp)
+		r.Post("/forgot_password", userH.ForgotPassword)
+		r.Put("/verify_token", userH.VerifyOTP)
+		r.Post("/verify_email", userH.SendEmailVerification)
+		r.Post("/device/{email}", userH.RegisterDevice)
+	})
+
+	// ── Paystack webhook (public, verified by Paystack signature) ─────────────
+	r.Post("/subscription/webhook", subH.VerifySubscription)
+
+	// ── Protected routes ──────────────────────────────────────────────────────
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Authenticate(jwtSvc))
+
+		// User management
+		r.Route("/user", func(r chi.Router) {
+			r.Post("/update", userH.UpdateProfile)
+			r.Post("/reset_password", userH.ResetPassword)
+			r.Post("/change_password", userH.ChangePassword)
+
+			// Roles
+			r.Get("/roles", userH.GetRoles)
+			r.Post("/roles", userH.AssignRoles)
+
+			// Favourites
+			r.Route("/favourite", func(r chi.Router) {
+				r.Post("/", userH.AddFavourite)
+				r.Get("/favs", userH.GetFavourites)
+				r.Delete("/delete/{message_id}", userH.DeleteFavourite)
+			})
+
+			// Devices
+			r.Route("/devices", func(r chi.Router) {
+				r.Get("/all", userH.GetDevices)
+				r.Delete("/delete/{identifier}", userH.DeleteDevice)
+				r.Put("/update/{identifier}/{status}", userH.UpdateDeviceStatus)
+			})
+
+			// App version
+			r.Route("/app_version", func(r chi.Router) {
+				r.Get("/version/{version_id}", userH.GetAppVersion)
+				r.Put("/admin/update", userH.UpdateAppVersion)
+			})
+		})
+
+		// Audio messages
+		r.Route("/audio_message", func(r chi.Router) {
+			r.Get("/", contentH.ListMessages)
+			r.Post("/", contentH.CreateMessage)
+			r.Get("/id/message/{message_id}", contentH.GetMessage)
+			r.Put("/update/{message_id}", contentH.UpdateMessage)
+			r.Delete("/delete/{message_id}", contentH.DeleteMessage)
+
+			r.Post("/meditation", contentH.CreateMeditation)
+			r.Get("/meditations", contentH.ListMeditations)
+			r.Get("/meditation/{meditation_id}", contentH.GetMeditation)
+			r.Put("/meditation/{meditation_id}", contentH.UpdateMeditation)
+			r.Delete("/meditation/delete/{meditation_id}", contentH.DeleteMeditation)
+		})
+
+		// Audio series
+		r.Route("/audio_series", func(r chi.Router) {
+			r.Get("/", contentH.ListSeries)
+			r.Post("/", contentH.CreateSeries)
+			r.Get("/id/series/{series_id}", contentH.GetSeries)
+			r.Put("/update/{series_id}", contentH.UpdateSeries)
+			r.Delete("/delete/{series_id}", contentH.DeleteSeries)
+			r.Get("/home", contentH.GetHomepage)
+		})
+
+		// Subscriptions
+		r.Route("/subscription", func(r chi.Router) {
+			r.Get("/", subH.ListSubscriptions)
+			r.Post("/verify", subH.VerifySubscription)
+			r.Delete("/disable/{code}", subH.DisableSubscription)
+			r.Post("/transaction", subH.InitializeTransaction)
+
+			r.Route("/plan", func(r chi.Router) {
+				r.Get("/", subH.ListPlans)
+				r.Post("/", subH.CreatePlan)
+				r.Get("/{id}", subH.GetPlan)
+				r.Delete("/{id}", subH.DeletePlan)
+				r.Get("/offering", subH.ListPlanOfferings)
+				r.Post("/offering", subH.CreatePlanOffering)
+			})
+
+			r.Route("/offering", func(r chi.Router) {
+				r.Get("/", subH.ListOfferings)
+				r.Post("/", subH.CreateOffering)
+				r.Delete("/delete/{offering_id}", subH.DeleteOffering)
+			})
+		})
+
+		// File upload
+		r.Post("/upload", uploadH.UploadFile)
+
+		// Admin
+		r.Route("/admin", func(r chi.Router) {
+			r.Get("/global", adminH.GetGlobalParameters)
+			r.Put("/global", adminH.UpdateGlobalParameters)
+		})
+	})
+
+	return r
+}
