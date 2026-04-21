@@ -1,51 +1,30 @@
-# Hof Backend - Docker Multistage Build
-# Build command: DOCKER_BUILDKIT=1 docker build -t hof_backend -f Dockerfile .
-# Run command: docker run -it --rm --name hof_backend hof_backend
-#
-
-ARG ALPINE_VERSION=3.15
-
-# BUILD STAGE
-FROM golang:1.19.2-alpine${ALPINE_VERSION} AS base
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache jq
+RUN apk add --no-cache git ca-certificates
 
+# Download dependencies first (cached layer)
 COPY go.mod go.sum ./
+RUN go mod download
 
-RUN --mount=type=ssh go mod download
+# Copy source and build
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/server ./cmd/main.go
 
-COPY . $WORKDIR
+# ── Stage 2: Production ───────────────────────────────────────────────────────
+FROM alpine:3.20
 
-RUN --mount=type=ssh apk add git
+WORKDIR /app
 
-RUN export APP_VERSION=$(jq --raw-output '.version' package.json) && \
-   export GIT_BRANCH_NAME=$(git log -n1 --decorate=short --pretty="tformat:%f") && \
-   export GIT_COMMIT_ID=$(git rev-parse --short HEAD) && \
-   export GIT_COMMIT_TIME=$(git --no-pager log -1 --date=format:"%Y-%m-%d|%T" --format="%ad") && \
-   export GIT_TAGS=$(git tag --points-at HEAD --format="%(refname:short)," | sort -V | tr -d '\n' | sed 's/%//') && \
-   export APP_CREATION_TIME=$(date '+%Y-%m-%d|%H:%M:%S') && \
-   go build -ldflags \
-    '-X "'$GOPRIVATE'/deploy_pipelines/constants.GitBranchName='$GIT_BRANCH_NAME'" \
-     -X "'$GOPRIVATE'/deploy_pipelines/constants.GitCommitID='$GIT_COMMIT_ID'" \
-     -X "'$GOPRIVATE'/deploy_pipelines/constants.GitCommitTime='$GIT_COMMIT_TIME'" \
-     -X "'$GOPRIVATE'/deploy_pipelines/constants.GitTags='$GIT_TAGS'" \
-     -X "'$GOPRIVATE'/deploy_pipelines/constants.AppCreationTime='$APP_CREATION_TIME'" \
-     -X "'$GOPRIVATE'/deploy_pipelines/constants.AppName='$APP_NAME'" \
-     -X "'$GOPRIVATE'/deploy_pipelines/constants.AppVersion='$APP_VERSION'"' \
-   cmd/main.go
+# CA certs for outbound HTTPS (Paystack, S3, SMTP)
+RUN apk --no-cache add ca-certificates tzdata
 
-# PRODUCTION STAGE
-FROM alpine:${ALPINE_VERSION}
-ENV WORKDIR /app
-RUN apk --no-cache add ca-certificates
-COPY --from=base $WORKDIR/main .
-COPY --from=base $WORKDIR/migrations ./migrations
-COPY --from=base $WORKDIR/templates ./templates
-COPY --from=base $WORKDIR/go.mod .
-COPY --from=base $WORKDIR/go.sum .
+COPY --from=builder /app/server      ./server
+COPY --from=builder /app/migrations  ./migrations
+COPY --from=builder /app/templates   ./templates
 
-EXPOSE 8080 8082
+EXPOSE 8080
 
-ENTRYPOINT ["./main"]
+ENTRYPOINT ["./server"]

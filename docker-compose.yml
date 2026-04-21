@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-hofdb}
+      POSTGRES_USER:     ${DB_USERNAME:-hofuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hofpassword}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-hofuser} -d ${DB_NAME:-hofdb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    env_file: .env
+    environment:
+      # Override DATABASE_URL so the app talks to the compose db service, not localhost
+      DATABASE_URL: postgres://${DB_USERNAME:-hofuser}:${DB_PASSWORD:-hofpassword}@db:5432/${DB_NAME:-hofdb}?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/app/migrations
+      - ./templates:/app/templates
+
+volumes:
+  pgdata:

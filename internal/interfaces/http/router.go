@@ -47,7 +47,29 @@ func NewRouter(
 	// Attach JWT claims to context on every request (non-blocking — no 401 yet).
 	r.Use(jwtSvc.Middleware)
 
-	// ── Swagger UI ────────────────────────────────────────────────────────────
+	// ── API Docs ──────────────────────────────────────────────────────────────
+	// Scalar UI (modern): /docs
+	r.Get("/docs", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>HOF Backend API</title>
+  <style>body{margin:0}</style>
+</head>
+<body>
+  <script
+    id="api-reference"
+    data-url="/swagger/doc.json"
+    data-configuration='{"theme":"purple","layout":"modern","defaultHttpClient":{"targetKey":"shell","clientKey":"curl"}}'
+  ></script>
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>`))
+	})
+	// Raw Swagger UI (legacy): /swagger/*
 	r.Handle("/swagger/*", httpSwagger.WrapHandler)
 
 	// ── Health check ──────────────────────────────────────────────────────────

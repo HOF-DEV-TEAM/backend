@@ -18,6 +18,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/joho/godotenv"
+
 	appAuth "bitbucket.org/hofng/hofApp/internal/application/auth"
 	appContent "bitbucket.org/hofng/hofApp/internal/application/content"
 	appSub "bitbucket.org/hofng/hofApp/internal/application/subscription"
@@ -35,6 +37,9 @@ import (
 )
 
 func main() {
+	// ── Load .env (silently ignored in production where env vars are injected) ─
+	_ = godotenv.Load()
+
 	// ── Logger ────────────────────────────────────────────────────────────────
 	appEnv := os.Getenv("APP_ENV")
 	if appEnv == "" {
