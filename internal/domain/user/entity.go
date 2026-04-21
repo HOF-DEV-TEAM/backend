@@ -63,7 +63,7 @@ type User struct {
 	ID                   uuid.UUID          `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	FirstName            string             `gorm:"type:varchar(200);not null"`
 	LastName             string             `gorm:"type:varchar(200);not null"`
-	UserName             string             `gorm:"type:varchar(200)"`
+	UserName             string             `gorm:"column:username;type:varchar(200)"`
 	Email                string             `gorm:"type:varchar(200);uniqueIndex;not null"`
 	Password             string             `gorm:"type:varchar(255);not null"`
 	PasswordVersion      PasswordVersion    `gorm:"type:varchar(10);default:'bcrypt'"`

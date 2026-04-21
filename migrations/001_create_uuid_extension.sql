@@ -1,4 +1,6 @@
-create extension if not exists "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ---- create above / drop below ----
 
-drop table extension "pgcrypto" if exists;
+DROP EXTENSION IF EXISTS pgcrypto;
+DROP EXTENSION IF EXISTS "uuid-ossp";

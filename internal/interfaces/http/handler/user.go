@@ -189,11 +189,19 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 // @Success      200
 // @Router       /user/roles [post]
 func (h *UserHandler) AssignRoles(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		response.Unauthorized(w)
+		return
+	}
+
 	var req appUser.AssignRolesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.BadRequest(w, "invalid request body")
 		return
 	}
+	// Populate from JWT so callers don't need to send user_id in the body.
+	req.UserID = userID.String()
 
 	if err := h.svc.AssignRoles(r.Context(), req); err != nil {
 		response.Error(w, err)

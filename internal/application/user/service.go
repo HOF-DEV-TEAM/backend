@@ -197,7 +197,7 @@ func (s *userService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*dom
 
 func (s *userService) ResetPassword(ctx context.Context, req ResetPasswordRequest) error {
 	if req.Password != req.PasswordConfirm {
-		return domainUser.ErrPasswordConfirm
+		return shared.ErrInvalidInput{Message: domainUser.ErrPasswordConfirm.Error()}
 	}
 
 	u, err := s.repo.GetByEmail(ctx, req.Email)
@@ -215,7 +215,7 @@ func (s *userService) ResetPassword(ctx context.Context, req ResetPasswordReques
 
 func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req ChangePasswordRequest) error {
 	if req.NewPassword != req.ConfirmPassword {
-		return domainUser.ErrPasswordConfirm
+		return shared.ErrInvalidInput{Message: domainUser.ErrPasswordConfirm.Error()}
 	}
 
 	u, err := s.repo.GetByID(ctx, userID)
@@ -226,7 +226,7 @@ func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req 
 	// Verify old password.
 	if err := security.CheckPasswordBcrypt(u.Password, req.OldPassword); err != nil {
 		if security.MD5Hash(req.OldPassword) != u.Password {
-			return domainUser.ErrPasswordMismatch
+			return shared.ErrInvalidInput{Message: domainUser.ErrPasswordMismatch.Error()}
 		}
 	}
 

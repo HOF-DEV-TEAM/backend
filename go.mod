@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/aws/aws-sdk-go v1.44.194
-	github.com/caarlos0/env v3.5.0+incompatible
+	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/cors v1.2.1
 	github.com/go-playground/validator/v10 v10.14.0

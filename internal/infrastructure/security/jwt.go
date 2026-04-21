@@ -93,24 +93,18 @@ func WithClaims(ctx context.Context, c *Claims) context.Context {
 	return context.WithValue(ctx, contextKeyClaims, c)
 }
 
-// Middleware returns an HTTP middleware that enforces JWT authentication.
-// It reads the token from the Authorization: Bearer <token> header.
+// Middleware attaches JWT claims to the context when a valid Bearer token is present.
+// It is non-blocking: requests without a token pass through untouched.
+// Use middleware.Authenticate on protected route groups to enforce presence.
 func (s *JWTService) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenStr := extractBearerToken(r)
-		if tokenStr == "" {
-			http.Error(w, "missing or malformed token", http.StatusUnauthorized)
-			return
+		if tokenStr != "" {
+			if claims, err := s.Parse(tokenStr); err == nil {
+				r = r.WithContext(WithClaims(r.Context(), claims))
+			}
 		}
-
-		claims, err := s.Parse(tokenStr)
-		if err != nil {
-			http.Error(w, "invalid token", http.StatusUnauthorized)
-			return
-		}
-
-		ctx := WithClaims(r.Context(), claims)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		next.ServeHTTP(w, r)
 	})
 }
 

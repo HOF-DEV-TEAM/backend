@@ -112,15 +112,24 @@ func RunMigrations(db *gorm.DB, migrationsDir string, log *zap.Logger) error {
 	return nil
 }
 
-// extractUpSQL returns the SQL above the first "---- ... (down) ----" marker.
+// extractUpSQL returns the up-migration SQL, trimming down-migration content.
+//
+// Two separator styles are supported:
+//   - Old (tern):  "---- create above / drop below ----"  → stop here
+//   - New:         "---- Description (down) ----"          → stop here
+//
+// Descriptive headers like "---- Create roles table ----" (no "down"/"drop below")
+// are treated as SQL comments and passed through — PostgreSQL ignores them.
 func extractUpSQL(content string) string {
 	lines := strings.Split(content, "\n")
 	var up []string
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		// Tern-style down marker
-		if strings.HasPrefix(trimmed, "----") && strings.Contains(strings.ToLower(trimmed), "down") {
-			break
+		if strings.HasPrefix(trimmed, "----") {
+			lower := strings.ToLower(trimmed)
+			if strings.Contains(lower, "down") || strings.Contains(lower, "drop below") {
+				break
+			}
 		}
 		up = append(up, line)
 	}

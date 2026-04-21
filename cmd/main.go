@@ -38,7 +38,7 @@ import (
 
 func main() {
 	// ── Load .env (silently ignored in production where env vars are injected) ─
-	_ = godotenv.Load()
+	_ = godotenv.Overload() // .env always wins in dev; no-op if file absent (production)
 
 	// ── Logger ────────────────────────────────────────────────────────────────
 	appEnv := os.Getenv("APP_ENV")

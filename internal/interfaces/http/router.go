@@ -103,8 +103,6 @@ func NewRouter(
 		r.Post("/sign_up", userH.SignUp)
 		r.Post("/forgot_password", userH.ForgotPassword)
 		r.Put("/verify_token", userH.VerifyOTP)
-		r.Post("/verify_email", userH.SendEmailVerification)
-		r.Post("/device/{email}", userH.RegisterDevice)
 	})
 
 	// ── Paystack webhook (public, verified by Paystack signature) ─────────────
@@ -119,6 +117,7 @@ func NewRouter(
 			r.Post("/update", userH.UpdateProfile)
 			r.Post("/reset_password", userH.ResetPassword)
 			r.Post("/change_password", userH.ChangePassword)
+			r.Post("/verify_email", userH.SendEmailVerification)
 
 			// Roles
 			r.Get("/roles", userH.GetRoles)
@@ -134,6 +133,7 @@ func NewRouter(
 			// Devices
 			r.Route("/devices", func(r chi.Router) {
 				r.Get("/all", userH.GetDevices)
+				r.Post("/add", userH.RegisterDevice)
 				r.Delete("/delete/{identifier}", userH.DeleteDevice)
 				r.Put("/update/{identifier}/{status}", userH.UpdateDeviceStatus)
 			})
