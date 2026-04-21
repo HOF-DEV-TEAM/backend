@@ -40,6 +40,10 @@ Thumbs.db
 *.exe
 *.war
 
+# Claude Code session data
+.claude/
+.claire/
+
 # Large media files
 *.mp4
 *.tiff
