@@ -1,6 +1,6 @@
 module bitbucket.org/hofng/hofApp
 
-go 1.23
+go 1.26
 
 require (
 	github.com/aws/aws-sdk-go v1.44.194

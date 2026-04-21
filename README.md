@@ -18,7 +18,7 @@ REST API for the **Heritage of Faith Church** mobile application — audio conte
 
 | Tool              | Version  |
 |-------------------|----------|
-| Go                | ≥ 1.23   |
+| Go                | ≥ 1.26   |
 | PostgreSQL        | ≥ 14     |
 | Docker + Compose  | latest   |
 
