@@ -138,7 +138,7 @@ func (d DeviceList) Value() (driver.Value, error) {
 	return string(b), err
 }
 
-func (d *DeviceList) Scan(src interface{}) error {
+func (d *DeviceList) Scan(src any) error {
 	var source []byte
 	switch v := src.(type) {
 	case []byte:
@@ -190,7 +190,7 @@ func (f FavouriteList) Value() (driver.Value, error) {
 	return string(b), err
 }
 
-func (f *FavouriteList) Scan(src interface{}) error {
+func (f *FavouriteList) Scan(src any) error {
 	var source []byte
 	switch v := src.(type) {
 	case []byte:

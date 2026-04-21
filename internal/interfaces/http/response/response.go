@@ -10,18 +10,18 @@ import (
 // envelope is the standard JSON wrapper for all API responses.
 type envelope struct {
 	Success bool        `json:"success"`
-	Data    interface{} `json:"data,omitempty"`
+	Data    any `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
 	Total   *int64      `json:"total,omitempty"`
 }
 
 // JSON writes a success JSON response with the given status code.
-func JSON(w http.ResponseWriter, status int, data interface{}) {
+func JSON(w http.ResponseWriter, status int, data any) {
 	write(w, status, envelope{Success: true, Data: data})
 }
 
 // JSONList writes a paginated JSON response.
-func JSONList(w http.ResponseWriter, status int, data interface{}, total int64) {
+func JSONList(w http.ResponseWriter, status int, data any, total int64) {
 	write(w, status, envelope{Success: true, Data: data, Total: &total})
 }
 
@@ -46,7 +46,7 @@ func NotFound(w http.ResponseWriter) {
 	write(w, http.StatusNotFound, envelope{Success: false, Error: "not found"})
 }
 
-func write(w http.ResponseWriter, status int, v interface{}) {
+func write(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)

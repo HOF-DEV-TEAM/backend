@@ -26,7 +26,7 @@ func New(cfg config.MailerConfig, log *zap.Logger) *Mailer {
 
 // SendPasswordReset delivers a password-reset OTP to the recipient.
 func (m *Mailer) SendPasswordReset(to, name, otp string) error {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Name": name,
 		"OTP":  otp,
 	}
@@ -35,14 +35,14 @@ func (m *Mailer) SendPasswordReset(to, name, otp string) error {
 
 // SendEmailVerification delivers a verification link to the recipient.
 func (m *Mailer) SendEmailVerification(to, name, link string) error {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Name": name,
 		"Link": link,
 	}
 	return m.send(to, "Verify Your Email", "verify_email.page.tmpl", data)
 }
 
-func (m *Mailer) send(to, subject, templateFile string, data map[string]interface{}) error {
+func (m *Mailer) send(to, subject, templateFile string, data map[string]any) error {
 	tmplPath := filepath.Join(m.cfg.TemplatePath, templateFile)
 	basePath := filepath.Join(m.cfg.TemplatePath, "base.layout.tmpl")
 

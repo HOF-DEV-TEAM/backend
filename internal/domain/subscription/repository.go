@@ -50,7 +50,7 @@ type InitTransactionRequest struct {
 	Amount    int64
 	PlanCode  string
 	Reference string
-	Metadata  map[string]interface{}
+	Metadata  map[string]any
 }
 
 // TransactionResponse is the payment provider's response to a transaction start.

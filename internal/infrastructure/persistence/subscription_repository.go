@@ -190,7 +190,7 @@ func (r *subscriptionRepository) UpdateSubscriptionStatus(ctx context.Context, i
 }
 
 func (r *subscriptionRepository) UpdateSubscriptionByCode(ctx context.Context, code string, status domainSub.Status, nextPaymentDate *string) error {
-	updates := map[string]interface{}{"status": status}
+	updates := map[string]any{"status": status}
 	if nextPaymentDate != nil {
 		t, err := time.Parse(time.RFC3339, *nextPaymentDate)
 		if err == nil {

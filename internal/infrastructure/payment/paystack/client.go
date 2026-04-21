@@ -158,7 +158,7 @@ func (c *Client) CreateCustomer(ctx context.Context, email, firstName, lastName,
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
 
-func (c *Client) post(ctx context.Context, path string, body, out interface{}) error {
+func (c *Client) post(ctx context.Context, path string, body, out any) error {
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("marshalling paystack request: %w", err)
@@ -173,7 +173,7 @@ func (c *Client) post(ctx context.Context, path string, body, out interface{}) e
 	return c.do(req, out)
 }
 
-func (c *Client) get(ctx context.Context, path string, out interface{}) error {
+func (c *Client) get(ctx context.Context, path string, out any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil)
 	if err != nil {
 		return fmt.Errorf("building paystack request: %w", err)
@@ -187,7 +187,7 @@ func (c *Client) setHeaders(req *http.Request) {
 	req.Header.Set("Content-Type", "application/json")
 }
 
-func (c *Client) do(req *http.Request, out interface{}) error {
+func (c *Client) do(req *http.Request, out any) error {
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("paystack HTTP call: %w", err)

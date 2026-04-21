@@ -94,7 +94,7 @@ func (r *userRepository) UpdateVerificationStatus(ctx context.Context, id uuid.U
 func (r *userRepository) UpdatePassword(ctx context.Context, id uuid.UUID, hashed string, version domainUser.PasswordVersion) error {
 	result := r.db.WithContext(ctx).Model(&domainUser.User{}).
 		Where("id = ?", id).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"password":         hashed,
 			"password_version": version,
 		})
@@ -109,7 +109,7 @@ func (r *userRepository) UpdatePassword(ctx context.Context, id uuid.UUID, hashe
 func (r *userRepository) UpdatePaystackInfo(ctx context.Context, id uuid.UUID, code, customerID string) error {
 	result := r.db.WithContext(ctx).Model(&domainUser.User{}).
 		Where("id = ?", id).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"paystack_customer_code": code,
 			"paystack_customer_id":   customerID,
 		})
@@ -176,7 +176,7 @@ func (r *userRepository) UpsertPasswordToken(ctx context.Context, token *domainU
 
 	// If the record already existed, update its fields.
 	if result.RowsAffected == 0 {
-		result = r.db.WithContext(ctx).Model(token).Updates(map[string]interface{}{
+		result = r.db.WithContext(ctx).Model(token).Updates(map[string]any{
 			"password_reset_token": token.PasswordResetToken,
 			"password_reset_at":    token.PasswordResetAt,
 			"validated":            false,
