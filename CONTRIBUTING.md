@@ -10,6 +10,8 @@ make setup-hooks
 
 This installs a `pre-push` hook that **blocks direct pushes to `master`** on your machine.
 
+**The one caveat**: a teammate can bypass it with git push --no-verify. That's the inherent limit of local hooks — there's no server-side enforcement without GitHub Team. But it's a deliberate extra step that makes bypassing it intentional rather than accidental.
+
 ## Branch Rules
 
 - **Never push directly to `master`.** It is the production branch.

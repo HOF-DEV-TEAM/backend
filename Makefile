@@ -5,6 +5,8 @@
 ##  Run `make help` to list all targets with descriptions.
 ## ──────────────────────────────────────────────────────────────────────────
 
+SHELL := bash
+
 # Load .env into the environment for every sub-command (silent if missing).
 -include .env
 export
@@ -27,9 +29,13 @@ help: ## Show this help message
 ## ── Setup ────────────────────────────────────────────────────────────────────
 
 setup-hooks: ## Install git hooks (run once after cloning)
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "Copy-Item -Path 'scripts/hooks/pre-push' -Destination '.git/hooks/pre-push' -Force; Write-Host 'Git hooks installed.'"
+else
 	@cp scripts/hooks/pre-push .git/hooks/pre-push
 	@chmod +x .git/hooks/pre-push
 	@echo "Git hooks installed."
+endif
 
 ## ── Environment ──────────────────────────────────────────────────────────────
 
