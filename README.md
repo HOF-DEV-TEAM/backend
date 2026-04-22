@@ -2,7 +2,9 @@
 
 REST API for the **Heritage of Faith Church** mobile application — audio content, subscriptions, and user management.
 
-- **Language:** Go 1.23
+> **Before contributing, read [CONTRIBUTING.md](CONTRIBUTING.md).**
+
+- **Language:** Go 1.26
 - **Framework:** Chi v5
 - **ORM:** GORM v2 (PostgreSQL)
 - **Auth:** JWT (48 h access / 30 d refresh)
@@ -92,6 +94,7 @@ make down
 
 ```
 make help          Show all targets with descriptions
+make setup-hooks   Install git hooks (run once after cloning)
 make env           Copy .env.example → .env (skips if .env already exists)
 make run           Run the app locally (loads .env automatically)
 make build         Compile binary → bin/server
@@ -317,7 +320,7 @@ in a `schema_migrations` table — no external tool needed.
 
 To add a new migration:
 ```bash
-touch migrations/022_my_change.sql
+touch migrations/026_my_change.sql
 # write your SQL, then restart the app
 ```
 

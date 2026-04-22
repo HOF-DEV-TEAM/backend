@@ -16,13 +16,20 @@ IMAGE_NAME := hof-backend
 GO         := go
 
 .PHONY: help env run build clean swagger test lint \
-        docker-build up down logs ps db-shell
+        docker-build up down logs ps db-shell setup-hooks
 
 ## ── Help ─────────────────────────────────────────────────────────────────────
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+## ── Setup ────────────────────────────────────────────────────────────────────
+
+setup-hooks: ## Install git hooks (run once after cloning)
+	@cp scripts/hooks/pre-push .git/hooks/pre-push
+	@chmod +x .git/hooks/pre-push
+	@echo "Git hooks installed."
 
 ## ── Environment ──────────────────────────────────────────────────────────────
 
