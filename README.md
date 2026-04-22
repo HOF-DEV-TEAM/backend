@@ -2,7 +2,7 @@
 
 REST API for the **Heritage of Faith Church** mobile application — audio content, subscriptions, and user management.
 
-- **Language:** Go 1.23
+- **Language:** Go 1.26
 - **Framework:** Chi v5
 - **ORM:** GORM v2 (PostgreSQL)
 - **Auth:** JWT (48 h access / 30 d refresh)
@@ -145,7 +145,7 @@ See [`.env.example`](.env.example) for the full list with inline comments.
 | **Scalar UI**    | `http://localhost:8080/docs`             | Modern interactive docs      |
 | **Swagger UI**   | `http://localhost:8080/swagger/`         | Classic Swagger explorer     |
 | **Raw JSON**     | `http://localhost:8080/swagger/doc.json` | OpenAPI 2.0 spec             |
-| **GitHub Pages** | `https://<org>.github.io/<repo>/`        | Auto-synced on every `master` push |
+| **GitHub Pages** | `https://hof-dev-team.github.io/backend`        | Auto-synced on every `master` push |
 
 ### Enabling GitHub Pages (auto-sync)
 
