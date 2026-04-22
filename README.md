@@ -148,7 +148,7 @@ See [`.env.example`](.env.example) for the full list with inline comments.
 | **Scalar UI**    | `http://localhost:8080/docs`             | Modern interactive docs      |
 | **Swagger UI**   | `http://localhost:8080/swagger/`         | Classic Swagger explorer     |
 | **Raw JSON**     | `http://localhost:8080/swagger/doc.json` | OpenAPI 2.0 spec             |
-| **GitHub Pages** | `https://<org>.github.io/<repo>/`        | Auto-synced on every `master` push |
+| **GitHub Pages** | `https://hof-dev-team.github.io/backend`        | Auto-synced on every `master` push |
 
 ### Enabling GitHub Pages (auto-sync)
 
