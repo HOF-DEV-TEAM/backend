@@ -116,6 +116,7 @@ type Subscription struct {
 	ID              uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID          uuid.UUID  `gorm:"type:uuid;not null;index"`
 	PlanID          uuid.UUID  `gorm:"column:subscription_plan_id;type:uuid;not null"`
+	SubCode         string     `gorm:"column:sub_code;type:varchar(200)"`
 	Status          Status     `gorm:"type:int;default:1"`
 	NextPaymentDate *time.Time `gorm:"column:next_payment_date"`
 	CreatedAt       time.Time  `gorm:"column:date_added;autoCreateTime"`

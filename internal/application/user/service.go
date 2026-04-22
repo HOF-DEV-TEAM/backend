@@ -99,11 +99,11 @@ func (s *userService) SignUp(ctx context.Context, req SignUpRequest) (*domainUse
 		s.log.Warn("could not assign default member role", zap.Error(err))
 	}
 
-	// Register device if provided.
-	if req.Device != nil {
-		rec := buildDeviceRecord(u.ID, *req.Device)
+	// Register devices if provided.
+	if len(req.Devices) > 0 {
+		rec := buildDeviceRecords(u.ID, req.Devices)
 		if err := s.repo.UpsertDeviceRecord(ctx, rec); err != nil {
-			s.log.Warn("could not register device during sign up", zap.Error(err))
+			s.log.Warn("could not register devices during sign up", zap.Error(err))
 		}
 	}
 
@@ -390,20 +390,19 @@ func generateOTP() string {
 	return strconv.Itoa(100000 + rng.Intn(900000))
 }
 
-func buildDeviceRecord(userID uuid.UUID, input DeviceInput) *domainUser.DeviceRecord {
-	return &domainUser.DeviceRecord{
-		UserID: userID,
-		Devices: domainUser.DeviceList{
-			{
-				ID:         uuid.NewString(),
-				Who:        input.Who,
-				Identifier: input.Identifier,
-				Os:         input.Os,
-				Brand:      input.Brand,
-				Version:    input.Version,
-				Status:     domainUser.DeviceStatusActive,
-				DateAdded:  time.Now().Format(time.RFC3339),
-			},
-		},
+func buildDeviceRecords(userID uuid.UUID, inputs []DeviceInput) *domainUser.DeviceRecord {
+	devices := make(domainUser.DeviceList, 0, len(inputs))
+	for _, input := range inputs {
+		devices = append(devices, domainUser.Device{
+			ID:         uuid.NewString(),
+			Who:        input.Who,
+			Identifier: input.Identifier,
+			Os:         input.Os,
+			Brand:      input.Brand,
+			Version:    input.Version,
+			Status:     domainUser.DeviceStatusActive,
+			DateAdded:  time.Now().Format(time.RFC3339),
+		})
 	}
+	return &domainUser.DeviceRecord{UserID: userID, Devices: devices}
 }

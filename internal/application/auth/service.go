@@ -137,6 +137,7 @@ func (s *authService) buildSession(ctx context.Context, u *domainUser.User) (*Se
 	}
 
 	subDTO := s.resolveSubscription(ctx, u)
+	globalParams := s.resolveGlobalParameters(ctx)
 
 	roleNames := make([]string, len(u.Roles))
 	for i, r := range u.Roles {
@@ -154,8 +155,17 @@ func (s *authService) buildSession(ctx context.Context, u *domainUser.User) (*Se
 			IsVerified: uint8(u.IsVerified),
 			Roles:      roleNames,
 		},
-		Subscription: subDTO,
+		Subscription:     subDTO,
+		GlobalParameters: globalParams,
 	}, nil
+}
+
+func (s *authService) resolveGlobalParameters(ctx context.Context) GlobalParamsDTO {
+	params, err := s.subRepo.GetGlobalParameters(ctx)
+	if err != nil {
+		return GlobalParamsDTO{ActivateSubscription: true}
+	}
+	return GlobalParamsDTO{ActivateSubscription: params.ActivateSubscription}
 }
 
 func (s *authService) resolveSubscription(ctx context.Context, u *domainUser.User) SubscriptionDTO {

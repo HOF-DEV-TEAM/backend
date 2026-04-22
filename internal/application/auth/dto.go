@@ -21,10 +21,16 @@ type AuthenticateRequest struct {
 
 // SessionResponse is returned on successful authentication.
 type SessionResponse struct {
-	User         UserDTO         `json:"user"`
-	Subscription SubscriptionDTO `json:"subscription"`
-	Token        string          `json:"token"`
-	RefreshToken string          `json:"refresh_token"`
+	User             UserDTO            `json:"user"`
+	Subscription     SubscriptionDTO    `json:"subscription"`
+	GlobalParameters GlobalParamsDTO    `json:"global_parameters"`
+	Token            string             `json:"token"`
+	RefreshToken     string             `json:"refresh_token"`
+}
+
+// GlobalParamsDTO carries app-wide feature flags for the client.
+type GlobalParamsDTO struct {
+	ActivateSubscription bool `json:"activate_subscription"`
 }
 
 // UserDTO is the safe user representation embedded in session responses.

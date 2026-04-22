@@ -29,6 +29,7 @@ func NewServer(
 	port int,
 	jwtSvc *security.JWTService,
 	serverURL string,
+	paystackSecret string,
 	authSvc appAuth.Service,
 	userSvc appUser.Service,
 	contentSvc appContent.Service,
@@ -36,7 +37,7 @@ func NewServer(
 	s3 *storage.S3Storage,
 	log *zap.Logger,
 ) *Server {
-	router := NewRouter(jwtSvc, serverURL, authSvc, userSvc, contentSvc, subSvc, s3)
+	router := NewRouter(jwtSvc, serverURL, paystackSecret, authSvc, userSvc, contentSvc, subSvc, s3, log)
 
 	return &Server{
 		httpServer: &http.Server{

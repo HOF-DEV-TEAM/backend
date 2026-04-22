@@ -4,11 +4,11 @@ import domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
 
 // SignUpRequest is the payload for creating a new user account.
 type SignUpRequest struct {
-	FirstName string              `json:"first_name" validate:"required"`
-	LastName  string              `json:"last_name"  validate:"required"`
-	Email     string              `json:"email"      validate:"required,email"`
-	Password  string              `json:"password"   validate:"required,min=6"`
-	Device    *DeviceInput        `json:"device"`
+	FirstName string        `json:"first_name" validate:"required"`
+	LastName  string        `json:"last_name"  validate:"required"`
+	Email     string        `json:"email"      validate:"required,email"`
+	Password  string        `json:"password"   validate:"required,min=6"`
+	Devices   []DeviceInput `json:"devices"`
 }
 
 // UpdateProfileRequest carries fields the user may change on their profile.

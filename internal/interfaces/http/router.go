@@ -15,6 +15,7 @@ import (
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"go.uber.org/zap"
 
 	_ "bitbucket.org/hofng/hofApp/docs"
 )
@@ -23,11 +24,13 @@ import (
 func NewRouter(
 	jwtSvc *security.JWTService,
 	serverURL string,
+	paystackSecret string,
 	authSvc appAuth.Service,
 	userSvc appUser.Service,
 	contentSvc appContent.Service,
 	subSvc appSub.Service,
 	s3 *storage.S3Storage,
+	log *zap.Logger,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -84,7 +87,7 @@ func NewRouter(
 	authH := handler.NewAuthHandler(authSvc)
 	userH := handler.NewUserHandler(userSvc, serverURL)
 	contentH := handler.NewContentHandler(contentSvc)
-	subH := handler.NewSubscriptionHandler(subSvc)
+	subH := handler.NewSubscriptionHandler(subSvc, paystackSecret, log)
 	uploadH := handler.NewUploadHandler(s3)
 	adminH := handler.NewAdminHandler(subSvc)
 
@@ -105,8 +108,8 @@ func NewRouter(
 		r.Put("/verify_token", userH.VerifyOTP)
 	})
 
-	// ── Paystack webhook (public, verified by Paystack signature) ─────────────
-	r.Post("/subscription/webhook", subH.VerifySubscription)
+	// ── Paystack webhook (public, verified by Paystack HMAC signature) ──────────
+	r.Post("/subscription/webhook", subH.PaystackWebhook)
 
 	// ── Protected routes ──────────────────────────────────────────────────────
 	r.Group(func(r chi.Router) {

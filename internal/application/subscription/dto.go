@@ -48,3 +48,48 @@ type DisableSubscriptionRequest struct {
 type UpdateGlobalParamsRequest struct {
 	ActivateSubscription bool `json:"activate_subscription"`
 }
+
+// ── Webhook event types ───────────────────────────────────────────────────────
+
+// EventType identifies a Paystack webhook event.
+type EventType string
+
+const (
+	EventChargeSuccess         EventType = "charge.success"
+	EventInvoiceUpdate         EventType = "invoice.update"
+	EventSubscriptionCreate    EventType = "subscription.create"
+	EventSubscriptionNotRenew  EventType = "subscription.not_renew"
+	EventInvoicePaymentFailed  EventType = "invoice.payment_failed"
+)
+
+// WebhookEvent is the parsed Paystack webhook payload.
+type WebhookEvent struct {
+	Event EventType        `json:"event"`
+	Data  WebhookEventData `json:"data"`
+}
+
+// WebhookEventData carries the fields common across all Paystack event types.
+type WebhookEventData struct {
+	SubscriptionCode string              `json:"subscription_code"`
+	NextPaymentDate  string              `json:"next_payment_date"`
+	Customer         WebhookCustomer     `json:"customer"`
+	Plan             WebhookPlan         `json:"plan"`
+	Subscription     WebhookSubscription `json:"subscription"`
+}
+
+// WebhookCustomer is the customer block inside a Paystack event.
+type WebhookCustomer struct {
+	Email        string `json:"email"`
+	CustomerCode string `json:"customer_code"`
+}
+
+// WebhookPlan is the plan block inside a Paystack event.
+type WebhookPlan struct {
+	PlanCode string `json:"plan_code"`
+}
+
+// WebhookSubscription is the nested subscription block (invoice events).
+type WebhookSubscription struct {
+	SubscriptionCode string `json:"subscription_code"`
+	NextPaymentDate  string `json:"next_payment_date"`
+}

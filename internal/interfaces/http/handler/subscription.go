@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"crypto/hmac"
+	"crypto/sha512"
+	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	appSub "bitbucket.org/hofng/hofApp/internal/application/subscription"
@@ -9,16 +13,19 @@ import (
 	"bitbucket.org/hofng/hofApp/internal/interfaces/http/response"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 // SubscriptionHandler groups all subscription-related HTTP endpoints.
 type SubscriptionHandler struct {
-	svc appSub.Service
+	svc             appSub.Service
+	paystackSecret  string
+	log             *zap.Logger
 }
 
 // NewSubscriptionHandler creates a SubscriptionHandler.
-func NewSubscriptionHandler(svc appSub.Service) *SubscriptionHandler {
-	return &SubscriptionHandler{svc: svc}
+func NewSubscriptionHandler(svc appSub.Service, paystackSecret string, log *zap.Logger) *SubscriptionHandler {
+	return &SubscriptionHandler{svc: svc, paystackSecret: paystackSecret, log: log}
 }
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
@@ -193,7 +200,6 @@ func (h *SubscriptionHandler) InitializeTransaction(w http.ResponseWriter, r *ht
 		response.BadRequest(w, "invalid request body")
 		return
 	}
-	req.Email = r.URL.Query().Get("email")
 
 	txResp, err := h.svc.InitializeTransaction(r.Context(), userID, req)
 	if err != nil {
@@ -217,4 +223,40 @@ func (h *SubscriptionHandler) DisableSubscription(w http.ResponseWriter, r *http
 	}
 
 	response.JSON(w, http.StatusOK, resp)
+}
+
+// PaystackWebhook receives and processes Paystack webhook events.
+// Always responds 200 to prevent Paystack retries for app-level errors.
+func (h *SubscriptionHandler) PaystackWebhook(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Verify HMAC-SHA512 signature when secret is configured.
+	if h.paystackSecret != "" {
+		sig := r.Header.Get("X-Paystack-Signature")
+		mac := hmac.New(sha512.New, []byte(h.paystackSecret))
+		mac.Write(body)
+		expected := hex.EncodeToString(mac.Sum(nil))
+		if !hmac.Equal([]byte(sig), []byte(expected)) {
+			h.log.Warn("paystack webhook: invalid signature")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+	}
+
+	var event appSub.WebhookEvent
+	if err := json.Unmarshal(body, &event); err != nil {
+		h.log.Warn("paystack webhook: unmarshal error", zap.Error(err))
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if err := h.svc.HandleWebhookEvent(r.Context(), &event); err != nil {
+		h.log.Error("paystack webhook: handler error", zap.Error(err))
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

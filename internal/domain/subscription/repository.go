@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -27,9 +28,11 @@ type Repository interface {
 	CreateSubscription(ctx context.Context, s *Subscription) error
 	GetSubscriptionByUserID(ctx context.Context, userID uuid.UUID) (*Subscription, error)
 	GetSubscriptionByUserAndPlan(ctx context.Context, userID, planID uuid.UUID) (*Subscription, error)
+	GetSubscriptionByCode(ctx context.Context, subCode string) (*Subscription, error)
 	GetAllSubscriptions(ctx context.Context) ([]Subscription, int64, error)
 	UpdateSubscriptionStatus(ctx context.Context, id uuid.UUID, status Status) error
-	UpdateSubscriptionByCode(ctx context.Context, code string, status Status, nextPaymentDate *string) error
+	UpsertSubscription(ctx context.Context, s *Subscription) error
+	UpdateSubscriptionByCode(ctx context.Context, subCode string, status Status, nextPaymentDate *time.Time) error
 
 	// Global parameters
 	GetGlobalParameters(ctx context.Context) (*GlobalParameters, error)

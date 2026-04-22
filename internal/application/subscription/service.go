@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"fmt"
+	"time"
 
 	domainSub "bitbucket.org/hofng/hofApp/internal/domain/subscription"
 	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
@@ -37,6 +38,9 @@ type Service interface {
 	VerifySubscription(ctx context.Context, userID uuid.UUID, req VerifySubscriptionRequest) (*domainSub.Subscription, error)
 	InitializeTransaction(ctx context.Context, userID uuid.UUID, req InitTransactionRequest) (*domainSub.TransactionResponse, error)
 	DisableSubscription(ctx context.Context, req DisableSubscriptionRequest) (*domainSub.DisableResponse, error)
+
+	// Webhook
+	HandleWebhookEvent(ctx context.Context, event *WebhookEvent) error
 
 	// Global parameters
 	GetGlobalParameters(ctx context.Context) (*domainSub.GlobalParameters, error)
@@ -181,7 +185,7 @@ func (s *subscriptionService) VerifySubscription(ctx context.Context, userID uui
 		return nil, domainSub.ErrPaymentFailed
 	}
 
-	// Update or create the user's Paystack customer info.
+	// Update the user's Paystack customer info.
 	if err := s.userRepo.UpdatePaystackInfo(ctx, userID, result.CustomerCode, result.CustomerID); err != nil {
 		s.log.Warn("failed to update paystack customer info", zap.Error(err))
 	}
@@ -203,19 +207,20 @@ func (s *subscriptionService) VerifySubscription(ctx context.Context, userID uui
 	}
 
 	sub := &domainSub.Subscription{
-		UserID: userID,
-		PlanID: planID,
-		Status: domainSub.StatusActive,
+		UserID:  userID,
+		PlanID:  planID,
+		SubCode: result.SubscriptionCode,
+		Status:  domainSub.StatusActive,
 	}
 	if result.NextPaymentDate != "" {
-		nextDate := &result.NextPaymentDate
-		_ = s.repo.UpdateSubscriptionByCode(ctx, result.SubscriptionCode, domainSub.StatusActive, nextDate)
+		if t, err := parsePaystackDate(result.NextPaymentDate); err == nil {
+			sub.NextPaymentDate = &t
+		}
 	}
 
-	if err := s.repo.CreateSubscription(ctx, sub); err != nil {
+	if err := s.repo.UpsertSubscription(ctx, sub); err != nil {
 		return nil, fmt.Errorf("recording subscription: %w", err)
 	}
-
 	return sub, nil
 }
 
@@ -246,6 +251,129 @@ func (s *subscriptionService) DisableSubscription(ctx context.Context, req Disab
 	return s.provider.DisableSubscription(ctx, req.Code, req.Token)
 }
 
+// ── Webhook ───────────────────────────────────────────────────────────────────
+
+func (s *subscriptionService) HandleWebhookEvent(ctx context.Context, event *WebhookEvent) error {
+	s.log.Info("paystack webhook received", zap.String("event", string(event.Event)))
+	switch event.Event {
+	case EventChargeSuccess:
+		return s.handleChargeSuccess(ctx, event)
+	case EventInvoiceUpdate:
+		return s.handleInvoiceUpdate(ctx, event)
+	case EventSubscriptionCreate:
+		return s.handleSubscriptionCreate(ctx, event)
+	case EventSubscriptionNotRenew:
+		return s.handleSubscriptionNotRenew(ctx, event)
+	case EventInvoicePaymentFailed:
+		return s.handleInvoicePaymentFailed(ctx, event)
+	default:
+		s.log.Info("unhandled paystack event", zap.String("event", string(event.Event)))
+	}
+	return nil
+}
+
+func (s *subscriptionService) handleChargeSuccess(ctx context.Context, event *WebhookEvent) error {
+	user, err := s.userRepo.GetByCustomerCode(ctx, event.Data.Customer.CustomerCode)
+	if err != nil {
+		return fmt.Errorf("charge.success: lookup user by customer code: %w", err)
+	}
+
+	sub, err := s.repo.GetSubscriptionByUserID(ctx, user.ID)
+	if err != nil {
+		if shared.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("charge.success: get subscription: %w", err)
+	}
+
+	nextPayment, nextPaymentDate := parseDatePtr(event.Data.Subscription.NextPaymentDate)
+	if !nextPayment {
+		nextPaymentDate2, nextPaymentDate3 := parseDatePtr(event.Data.NextPaymentDate)
+		nextPayment = nextPaymentDate2
+		nextPaymentDate = nextPaymentDate3
+	}
+	_ = nextPayment
+
+	subCode := event.Data.Subscription.SubscriptionCode
+	if subCode == "" {
+		subCode = event.Data.SubscriptionCode
+	}
+	return s.repo.UpdateSubscriptionByCode(ctx, sub.SubCode, domainSub.StatusActive, nextPaymentDate)
+}
+
+func (s *subscriptionService) handleInvoiceUpdate(ctx context.Context, event *WebhookEvent) error {
+	subCode := event.Data.Subscription.SubscriptionCode
+	if subCode == "" {
+		subCode = event.Data.SubscriptionCode
+	}
+	if subCode == "" {
+		return nil
+	}
+
+	_, nextPaymentDate := parseDatePtr(event.Data.Subscription.NextPaymentDate)
+	if nextPaymentDate == nil {
+		_, nextPaymentDate = parseDatePtr(event.Data.NextPaymentDate)
+	}
+
+	return s.repo.UpdateSubscriptionByCode(ctx, subCode, domainSub.StatusActive, nextPaymentDate)
+}
+
+func (s *subscriptionService) handleSubscriptionCreate(ctx context.Context, event *WebhookEvent) error {
+	user, err := s.userRepo.GetByEmail(ctx, event.Data.Customer.Email)
+	if err != nil {
+		return fmt.Errorf("subscription.create: lookup user by email: %w", err)
+	}
+
+	plans, _, err := s.repo.GetPlans(ctx)
+	if err != nil {
+		return fmt.Errorf("subscription.create: list plans: %w", err)
+	}
+	var planID uuid.UUID
+	for _, p := range plans {
+		if p.Code == event.Data.Plan.PlanCode {
+			planID = p.ID
+			break
+		}
+	}
+	if planID == uuid.Nil {
+		s.log.Warn("subscription.create: plan not found locally", zap.String("plan_code", event.Data.Plan.PlanCode))
+		return nil
+	}
+
+	subCode := event.Data.SubscriptionCode
+	sub := &domainSub.Subscription{
+		UserID:  user.ID,
+		PlanID:  planID,
+		SubCode: subCode,
+		Status:  domainSub.StatusActive,
+	}
+	_, sub.NextPaymentDate = parseDatePtr(event.Data.NextPaymentDate)
+
+	if err := s.repo.UpsertSubscription(ctx, sub); err != nil {
+		return fmt.Errorf("subscription.create: upsert: %w", err)
+	}
+	return nil
+}
+
+func (s *subscriptionService) handleSubscriptionNotRenew(ctx context.Context, event *WebhookEvent) error {
+	subCode := event.Data.SubscriptionCode
+	if subCode == "" {
+		return nil
+	}
+	return s.repo.UpdateSubscriptionByCode(ctx, subCode, domainSub.StatusPastDue, nil)
+}
+
+func (s *subscriptionService) handleInvoicePaymentFailed(ctx context.Context, event *WebhookEvent) error {
+	subCode := event.Data.Subscription.SubscriptionCode
+	if subCode == "" {
+		subCode = event.Data.SubscriptionCode
+	}
+	if subCode == "" {
+		return nil
+	}
+	return s.repo.UpdateSubscriptionByCode(ctx, subCode, domainSub.StatusCanceled, nil)
+}
+
 // ── Global parameters ─────────────────────────────────────────────────────────
 
 func (s *subscriptionService) GetGlobalParameters(ctx context.Context) (*domainSub.GlobalParameters, error) {
@@ -257,10 +385,34 @@ func (s *subscriptionService) UpdateGlobalParameters(ctx context.Context, req Up
 	if err != nil {
 		return nil, err
 	}
-
 	params.ActivateSubscription = req.ActivateSubscription
 	if err := s.repo.UpdateGlobalParameters(ctx, params); err != nil {
 		return nil, err
 	}
 	return params, nil
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+// parsePaystackDate parses the date formats Paystack may return.
+func parsePaystackDate(s string) (time.Time, error) {
+	formats := []string{time.RFC3339, "2006-01-02T15:04:05.000Z", "2006-01-02T15:04:05Z"}
+	for _, f := range formats {
+		if t, err := time.Parse(f, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unparseable date: %s", s)
+}
+
+// parseDatePtr parses a date string and returns a pointer; nil if empty or invalid.
+func parseDatePtr(s string) (bool, *time.Time) {
+	if s == "" {
+		return false, nil
+	}
+	t, err := parsePaystackDate(s)
+	if err != nil {
+		return false, nil
+	}
+	return true, &t
 }

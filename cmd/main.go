@@ -96,6 +96,7 @@ func main() {
 		cfg.HTTPPort,
 		jwtSvc,
 		cfg.ServerURL,
+		cfg.Paystack.Secret,
 		authSvc,
 		userSvc,
 		contentSvc,
