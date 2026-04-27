@@ -14,6 +14,25 @@ REST API for the **Heritage of Faith Church** mobile application — audio conte
 
 ---
 
+## New member checklist
+
+If you just joined the team, do these in order:
+
+```
+□ 1. Clone the repo
+□ 2. Run `make env` — fill in your .env (ask the team for real values)
+□ 3. Run `make setup-hooks` — installs the pre-push hook that blocks direct master pushes
+□ 4. Run `make up` — starts Postgres + app in Docker, applies migrations automatically
+□ 5. Hit `curl http://localhost:8080/health` — expect {"status":"ok"}
+□ 6. Read CLAUDE.md — architecture rules, critical error conventions, gotchas
+□ 7. Install Claude Code and open this project — the /commands below become slash commands
+□ 8. Install the Jira CLI (`jira init`) and link your account
+□ 9. Run `make lint` — fix any lint issues on your first branch before opening a PR
+□ 10. Read the "Architecture rules" section below before writing any code
+```
+
+---
+
 ## Quick start
 
 ### Prerequisites
@@ -141,6 +160,241 @@ See [`.env.example`](.env.example) for the full list with inline comments.
 
 ---
 
+## Architecture rules
+
+This project follows **Clean Architecture / DDD**. Every new feature must follow the same layered path — no exceptions.
+
+```
+domain → application → infrastructure → interfaces/http
+```
+
+### The layers
+
+| Layer | Folder | What belongs here |
+|---|---|---|
+| **Domain** | `internal/domain/` | Entities, repository interfaces, domain errors. No framework imports. |
+| **Application** | `internal/application/` | Use cases (service methods), DTOs. Imports domain only. |
+| **Infrastructure** | `internal/infrastructure/` | GORM queries, Paystack client, S3, mailer, JWT. Implements domain interfaces. |
+| **HTTP** | `internal/interfaces/http/` | Handlers, middleware, router. Imports application only. |
+
+### The single most important rule — typed errors
+
+All errors that should produce a specific HTTP status code **must** use the typed errors from `internal/domain/shared/errors.go`. A plain `errors.New()` or bare `fmt.Errorf()` will always produce **HTTP 500**.
+
+```go
+// ✅ Returns 400
+return shared.ErrInvalidInput{Message: "passwords do not match"}
+
+// ✅ Returns 404
+return shared.ErrNotFound{Resource: "plan", ID: planID.String()}
+
+// ✅ Returns 409
+return shared.ErrAlreadyExists{Resource: "user", Field: "email", Value: email}
+
+// ❌ Returns 500 — wrong
+return errors.New("passwords do not match")
+```
+
+| Typed error | HTTP |
+|---|---|
+| `shared.ErrNotFound` | 404 |
+| `shared.ErrAlreadyExists` | 409 |
+| `shared.ErrInvalidInput` | 400 |
+| `shared.ErrUnauthorized` | 401 |
+| `shared.ErrForbidden` | 403 |
+| anything else | 500 |
+
+### Adding a new feature — checklist
+
+```
+□ 1. Add struct/field to entity.go (domain layer)
+□ 2. Add method signature to repository.go interface (domain layer)
+□ 3. Create migration SQL in migrations/NNN_description.sql
+□ 4. Add request/response types to dto.go (application layer)
+□ 5. Add method to Service interface and implement it (application layer)
+□ 6. Implement the repository method in persistence/ (infrastructure layer)
+□ 7. Add HTTP handler (interfaces/http/handler/)
+□ 8. Register the route in router.go
+□ 9. go build ./... — must be zero errors
+□ 10. Write tests, run /deskcheck, run /commit, run /pr
+```
+
+### Common gotchas
+
+- **GORM column names** — GORM snake_cases field names. Use `gorm:"column:..."` when the DB column doesn't match. `CreatedAt` must be `gorm:"column:date_added"`, `UpdatedAt` must be `gorm:"column:last_updated"`.
+- **Stale query plan error (`SQLSTATE 0A000`)** — happens after `ALTER TABLE` while the server is running. Fix: restart the server.
+- **`UserIDFromContext` vs JWT claims** — use `middleware.UserIDFromContext(r.Context())` in handlers to get the authenticated user's ID. Never call `jwtSvc.Parse()` directly in handlers.
+- **Never modify an applied migration** — always create a new numbered file. The runner tracks applied versions in `schema_migrations`.
+- **`go vet`, `make lint`, and `govulncheck`** must all pass before a PR is mergeable.
+
+---
+
+## Developer workflow
+
+### Day-to-day
+
+```bash
+# 1. Pick up a Jira ticket
+/jira HOF-123 start
+
+# 2. Create a feature branch
+git checkout -b hof-123-my-feature master
+
+# 3. Implement the feature
+/implement HOF-123 add phone number to user profile
+
+# 4. Verify end-to-end
+/deskcheck user
+
+# 5. Commit
+/commit
+
+# 6. Open a PR
+/pr
+
+# 7. Monitor CI, address review comments, merge
+```
+
+### Branch naming
+
+```
+hof-<ticket-id>-<short-description-in-kebab-case>
+
+Examples:
+  hof-123-add-phone-to-profile
+  hof-124-fix-signup-devices-array
+  hof-125-restore-webhook-events
+```
+
+### Commit message format
+
+Follows [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <short description> [HOF-123]
+
+Types:  feat | fix | refactor | test | chore | docs | migration
+Scopes: auth | user | content | subscription | infra | http | ci
+```
+
+Examples:
+```
+feat(subscription): restore Paystack webhook event handling [HOF-98]
+fix(user): restore devices array in signup request [HOF-101]
+migration: add sub_code column to subscriptions [HOF-99]
+test(shared): 100% coverage on domain error types [HOF-105]
+```
+
+---
+
+## Claude AI slash commands
+
+When Claude Code is open on this project, the following slash commands are available.
+Each one is a complete, project-aware workflow — not a generic helper.
+
+| Command | What it does |
+|---|---|
+| `/implement` | Full DDD feature workflow — reads the ticket, identifies which layers need changing, writes the code layer by layer (domain → app → infra → HTTP → router), then hands off to `/deskcheck` |
+| `/deskcheck` | Runs every API endpoint with curl, checks expected status codes and response shapes, reports any unexpected 500s. Use after every implementation. |
+| `/commit` | Build gate → `go vet` → `make lint` → `go test` → stage specific files → write a Conventional Commits message → push |
+| `/pr` | Pre-flight checks → `gh pr create` with the full checklist template → links Jira ticket → monitors CI jobs |
+| `/deploy` | Verifies Docker build locally → pushes to Heroku staging or production → runs post-deploy smoke test → shows rollback command if needed |
+| `/logs` | Tails structured logs locally, in Docker, or on Heroku. Includes a diagnosis table for every common error pattern (500, 401, webhook sig failure, stale plan, etc.) |
+| `/migrate` | Finds the next migration number, generates the SQL file from a template, cross-references GORM struct tags, and confirms the migration applied on restart |
+| `/test` | Runs the test suite with coverage, shows the coverage report, and lists the priority packages to test next |
+| `/jira` | Fetches ticket details, transitions state (In Progress → In Review → Done), links PRs to tickets, adds work log comments |
+| `/debug` | Systematic diagnosis for HTTP 500 / 401 / 404 / 400 errors, DB errors, Paystack webhook issues, and auth/password problems. Always starts by confirming the right binary is running. |
+
+> These commands live in `.claude/commands/`. Each is a markdown file — read them directly
+> if you want to understand or adapt a workflow.
+
+---
+
+## CI/CD pipeline
+
+Every PR and push to `master` or `develop` runs the full pipeline on GitHub Actions
+(`.github/workflows/ci.yml`).
+
+### Jobs
+
+| Job | Runs on | What it does |
+|---|---|---|
+| **Build & Vet** | PR + push | `go build`, `go vet`, `go mod verify` |
+| **Lint** | PR + push | `golangci-lint` — config in `.golangci.yml` |
+| **Security** | PR + push | `govulncheck` — checks for known vulnerabilities in dependencies |
+| **Unit Tests + Coverage** | PR + push | `go test -race`, coverage report, fails if coverage drops below threshold |
+| **Integration Tests** | PR + push | Spins up a real Postgres 16 container, runs all migrations, tests the full sign-up/sign-in/webhook flow |
+| **Swagger Docs** | push to master only | Regenerates OpenAPI spec and deploys to GitHub Pages |
+| **Deploy to Heroku** | push to master only | Docker build → push to Heroku registry → release → health check smoke test |
+
+### Coverage threshold
+
+Current threshold: **2%** (baseline — only two packages have tests so far).
+Raise the threshold in `.github/workflows/ci.yml` as coverage grows:
+
+```
+2% (now) → 30% → 50% → 70%
+```
+
+Priority packages to cover next (highest value):
+1. `internal/application/auth` — login, token refresh
+2. `internal/application/subscription` — webhook handlers
+3. `internal/application/user` — signup, password flows
+4. `internal/interfaces/http/handler` — HTTP layer
+
+### Required GitHub secrets
+
+Before the CI pipeline can deploy, set these in **GitHub → Settings → Secrets and variables → Actions**:
+
+| Secret | Where to find it |
+|---|---|
+| `HEROKU_API_KEY` | Heroku → Account Settings → API Key |
+| `HEROKU_APP_NAME` | Your Heroku app name (e.g. `my-heritage-app-1e457dfa2e9c`) |
+
+The integration test job uses ephemeral values for `JWT_SIGNING_KEY` and `DATABASE_URL` — these are set directly in the workflow and do not need secrets.
+
+### PR rules
+
+- All 5 non-deploy jobs must be green before merging
+- Direct pushes to `master` are blocked by the pre-push git hook
+- All changes go through a PR — no exceptions
+
+---
+
+## Testing
+
+```bash
+# Run all unit tests
+make test
+
+# With coverage report
+go test ./... -coverprofile=coverage.out && go tool cover -func=coverage.out
+
+# View coverage in browser
+go tool cover -html=coverage.out
+
+# Integration tests (require a running Postgres)
+TEST_DATABASE_URL="postgres://hofuser:hofpassword@localhost:5432/hofdb_test?sslmode=disable" \
+  go test ./... -tags integration -v
+```
+
+### Test file locations
+
+| Package | Test file |
+|---|---|
+| `internal/domain/shared` | `errors_test.go` — all error types, 100% coverage |
+| `internal/interfaces/http/response` | `response_test.go` — HTTP envelope, status mapping, 100% coverage |
+| `internal/interfaces/http` | `integration_test.go` — full API tests (build tag: `integration`) |
+
+### Writing new tests
+
+- Unit tests: same package as the code, `_test.go` suffix, no build tags
+- Integration tests: `//go:build integration` at the top, require `TEST_DATABASE_URL`
+- Mock the repository interface (not GORM) in unit tests
+- Use `t.Skip("requires live <service>")` for anything that needs real credentials
+
+---
+
 ## API documentation
 
 | Interface        | URL                                      | Notes                        |
@@ -184,7 +438,7 @@ internal/
     auth/                            ← Login (bcrypt/MD5 upgrade), token refresh
     user/                            ← SignUp, ForgotPassword, AssignRoles
     content/                         ← CRUD messages / series / meditations
-    subscription/                    ← VerifySubscription, InitializeTransaction
+    subscription/                    ← VerifySubscription, InitializeTransaction, webhook dispatch
   infrastructure/
     config/config.go                 ← Env-driven config (caarlos0/env + godotenv)
     database/gorm.go                 ← GORM connect + SQL migration runner
@@ -198,7 +452,11 @@ internal/
     response/response.go             ← Standard JSON envelope + error→status mapping
     router.go                        ← Chi routing (Scalar at /docs, Swagger at /swagger/*)
     server.go                        ← Graceful shutdown (30 s)
-migrations/                          ← Sequential SQL files (001–021_*.sql)
+migrations/                          ← Sequential SQL files (NNN_description.sql)
+.claude/commands/                    ← Claude Code slash commands (see Developer workflow)
+.github/workflows/                   ← GitHub Actions CI/CD pipeline
+.golangci.yml                        ← golangci-lint configuration
+CLAUDE.md                            ← Full project context for AI-assisted development
 api-docs/                            ← Static Scalar page deployed to GitHub Pages
 docs/                                ← Generated Swagger spec (do not edit manually)
 ```
@@ -219,6 +477,9 @@ Authorization: Bearer <access_token>
 | Refresh token | 30 d | Returned alongside the access token  |
 
 Use `POST /session/authenticate` with the refresh token to get a new pair without re-logging in.
+
+Every sign-in response includes `global_parameters` (feature flags) and `subscription` status
+alongside the tokens — clients do not need a separate call for these.
 
 ---
 
@@ -257,24 +518,30 @@ content without an active subscription:
 ### Session (public)
 | Method | Path                          | Description                |
 |--------|-------------------------------|----------------------------|
-| POST   | `/session/sign_in`            | Login — returns JWT pair   |
-| POST   | `/session/sign_up`            | Register new user          |
+| POST   | `/session/sign_in`            | Login — returns JWT pair + subscription + global_parameters |
+| POST   | `/session/sign_up`            | Register (accepts `devices: []`) |
 | POST   | `/session/authenticate`       | Refresh tokens             |
 | POST   | `/session/forgot_password`    | Send OTP reset email       |
 | PUT    | `/session/verify_token`       | Verify OTP                 |
-| POST   | `/session/verify_email`       | Send email verification    |
+| POST   | `/subscription/webhook`       | Paystack webhook (HMAC-verified, always 200) |
+| GET    | `/verify_email/{token}`       | Email verification link    |
 
 ### User (JWT required)
 | Method | Path                                    | Description                |
 |--------|-----------------------------------------|----------------------------|
 | POST   | `/user/update`                          | Update profile             |
-| POST   | `/user/reset_password`                  | Reset with OTP             |
-| POST   | `/user/change_password`                 | Change password            |
+| POST   | `/user/reset_password`                  | Reset with OTP token       |
+| POST   | `/user/change_password`                 | Change password (needs old password) |
+| POST   | `/user/verify_email`                    | Send email verification link |
 | GET    | `/user/roles`                           | List user's roles          |
 | POST   | `/user/roles`                           | Assign roles               |
 | POST   | `/user/favourite/`                      | Add favourite              |
 | GET    | `/user/favourite/favs`                  | List favourites            |
 | DELETE | `/user/favourite/delete/{message_id}`   | Remove favourite           |
+| GET    | `/user/devices/all`                     | List registered devices    |
+| POST   | `/user/devices/add`                     | Register a device          |
+| DELETE | `/user/devices/delete/{identifier}`     | Remove a device            |
+| PUT    | `/user/devices/update/{identifier}/{status}` | Update device status  |
 
 ### Content (JWT required)
 | Method | Path                                       | Description                 |
@@ -284,20 +551,34 @@ content without an active subscription:
 | GET    | `/audio_message/id/message/{id}`           | Get message                 |
 | PUT    | `/audio_message/update/{id}`               | Update message              |
 | DELETE | `/audio_message/delete/{id}`               | Soft-delete message         |
+| POST   | `/audio_message/meditation`                | Create meditation           |
+| GET    | `/audio_message/meditations`               | List meditations            |
+| GET    | `/audio_message/meditation/{id}`           | Get meditation              |
+| PUT    | `/audio_message/meditation/{id}`           | Update meditation           |
+| DELETE | `/audio_message/meditation/delete/{id}`    | Delete meditation           |
 | GET    | `/audio_series/`                           | List series                 |
 | POST   | `/audio_series/`                           | Create series               |
+| GET    | `/audio_series/id/series/{id}`             | Get series                  |
+| PUT    | `/audio_series/update/{id}`                | Update series               |
+| DELETE | `/audio_series/delete/{id}`                | Delete series               |
 | GET    | `/audio_series/home`                       | Homepage (series + meditations) |
-| GET    | `/audio_message/meditations`               | List meditations            |
 
 ### Subscriptions (JWT required)
-| Method | Path                             | Description                  |
-|--------|----------------------------------|------------------------------|
-| POST   | `/subscription/transaction`      | Initialize Paystack payment  |
-| POST   | `/subscription/verify`           | Paystack webhook (public)    |
-| DELETE | `/subscription/disable/{code}`   | Disable subscription         |
-| GET    | `/subscription/plan/`            | List plans                   |
-| POST   | `/subscription/plan/`            | Create plan                  |
-| GET    | `/subscription/offering/`        | List offerings               |
+| Method | Path                                | Description                  |
+|--------|-------------------------------------|------------------------------|
+| GET    | `/subscription`                     | List all subscriptions       |
+| POST   | `/subscription/transaction`         | Initialize Paystack payment  |
+| POST   | `/subscription/verify`              | Verify payment + activate sub |
+| DELETE | `/subscription/disable/{code}`      | Disable a subscription       |
+| GET    | `/subscription/plan`                | List plans                   |
+| POST   | `/subscription/plan`                | Create plan                  |
+| GET    | `/subscription/plan/{id}`           | Get plan                     |
+| DELETE | `/subscription/plan/{id}`           | Delete plan                  |
+| GET    | `/subscription/plan/offering`       | List plan offerings          |
+| POST   | `/subscription/plan/offering`       | Create plan offering         |
+| GET    | `/subscription/offering`            | List offerings               |
+| POST   | `/subscription/offering`            | Create offering              |
+| DELETE | `/subscription/offering/delete/{id}`| Delete offering              |
 
 ### Admin (JWT required)
 | Method | Path                   | Description                      |
@@ -318,11 +599,41 @@ SQL migrations live in `migrations/` and are named `NNN_description.sql`.
 The app applies them automatically on startup and tracks applied versions
 in a `schema_migrations` table — no external tool needed.
 
+**Rules:**
+- Always use `IF NOT EXISTS` / `IF EXISTS` — migrations must be safe to re-run
+- Never edit an already-applied migration — create a new numbered file
+- Every table needs `date_added`, `last_updated`, `deleted_at` columns
+- Always update the GORM entity struct after adding a column
+
 To add a new migration:
 ```bash
+# Find the next number
+ls migrations/ | sort | tail -1
+
+# Create the file
 touch migrations/026_my_change.sql
-# write your SQL, then restart the app
+# Write SQL, restart the server — it applies automatically
 ```
+
+See `/migrate` slash command for the full guided workflow.
+
+---
+
+## Paystack webhook
+
+`POST /subscription/webhook` is public but protected by HMAC-SHA512 signature verification.
+Set `PAYSTACK_SECRET` in your environment to match your Paystack dashboard webhook secret.
+
+Events handled automatically:
+| Event | Action |
+|---|---|
+| `charge.success` | Sets subscription to Active, updates next payment date |
+| `subscription.create` | Creates/updates subscription record |
+| `invoice.update` | Updates next payment date |
+| `subscription.not_renew` | Sets subscription to Past Due |
+| `invoice.payment_failed` | Sets subscription to Canceled |
+
+The webhook always returns HTTP 200 to prevent Paystack retries.
 
 ---
 
