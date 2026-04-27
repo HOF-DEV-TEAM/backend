@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -23,6 +24,29 @@ import (
 	httpServer "bitbucket.org/hofng/hofApp/internal/interfaces/http"
 	"go.uber.org/zap"
 )
+
+// findMigrationsDir walks up from the current working directory until it finds
+// a go.mod file (repo root) and returns the path to the migrations/ subdirectory.
+func findMigrationsDir(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			migrationsDir := filepath.Join(dir, "migrations")
+			if _, err := os.Stat(migrationsDir); err == nil {
+				return migrationsDir
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("migrations directory not found (walked up from %s)", dir)
+		}
+		dir = parent
+	}
+}
 
 // testServer spins up a real HTTP server backed by the test PostgreSQL database.
 // It runs all migrations before each test suite.
@@ -44,11 +68,9 @@ func testServer(t *testing.T) *httptest.Server {
 	if err != nil {
 		t.Fatalf("connect to test DB: %v", err)
 	}
-	if err := database.RunMigrations(db, "./migrations", log); err != nil {
-		// Migrations path relative to repo root; try from project root
-		if err2 := database.RunMigrations(db, "../../../migrations", log); err2 != nil {
-			t.Fatalf("run migrations: %v (also tried relative path: %v)", err, err2)
-		}
+	migrationsDir := findMigrationsDir(t)
+	if err := database.RunMigrations(db, migrationsDir, log); err != nil {
+		t.Fatalf("run migrations from %s: %v", migrationsDir, err)
 	}
 
 	jwtKey := os.Getenv("JWT_SIGNING_KEY")
