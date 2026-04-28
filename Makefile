@@ -63,7 +63,8 @@ clean: ## Remove compiled binaries
 
 swagger: ## Regenerate Swagger docs from source annotations
 	$(GO) run github.com/swaggo/swag/cmd/swag@latest init -g $(CMD) -o docs --parseDependency
-	@echo "Docs regenerated → docs/"
+	@cp docs/swagger.json api-docs/swagger.json
+	@echo "Docs regenerated → docs/ and api-docs/"
 
 test: ## Run all tests
 	$(GO) test ./... -v

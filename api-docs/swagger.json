@@ -1,4 +1,7 @@
 {
+    "schemes": [
+        "https"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "Heritage of Faith Church — audio content and subscription platform.",
@@ -14,7 +17,7 @@
         },
         "version": "2.0"
     },
-    "host": "localhost:8080",
+    "host": "backend-thegoninja9785-8yvkmqp6.leapcell.dev",
     "basePath": "/",
     "paths": {
         "/admin/global": {

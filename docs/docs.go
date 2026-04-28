@@ -2000,9 +2000,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "2.0",
-	Host:             "localhost:8080",
+	Host:             "backend-thegoninja9785-8yvkmqp6.leapcell.dev",
 	BasePath:         "/",
-	Schemes:          []string{},
+	Schemes:          []string{"https"},
 	Title:            "HOF Backend API",
 	Description:      "Heritage of Faith Church — audio content and subscription platform.",
 	InfoInstanceName: "swagger",
