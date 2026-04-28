@@ -68,10 +68,10 @@ swagger: ## Regenerate Swagger docs from source annotations
 test: ## Run all tests
 	$(GO) test ./... -v
 
-lint: ## Run golangci-lint (installs if missing)
-	@which golangci-lint > /dev/null 2>&1 || \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$($(GO) env GOPATH)/bin
-	golangci-lint run ./...
+lint: ## Run golangci-lint (installs v2 if missing)
+	@command -v golangci-lint > /dev/null 2>&1 || \
+		$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+	golangci-lint run --timeout=5m
 
 ## ── Docker ───────────────────────────────────────────────────────────────────
 
