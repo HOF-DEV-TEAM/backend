@@ -20,6 +20,11 @@ definitions:
     - refresh_token
     - token
     type: object
+  bitbucket_org_hofng_hofApp_internal_application_auth.GlobalParamsDTO:
+    properties:
+      activate_subscription:
+        type: boolean
+    type: object
   bitbucket_org_hofng_hofApp_internal_application_auth.LoginRequest:
     properties:
       device_identifier:
@@ -34,6 +39,8 @@ definitions:
     type: object
   bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse:
     properties:
+      global_parameters:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.GlobalParamsDTO'
       refresh_token:
         type: string
       subscription:
@@ -172,8 +179,10 @@ definitions:
     type: object
   bitbucket_org_hofng_hofApp_internal_application_user.SignUpRequest:
     properties:
-      device:
-        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput'
+      devices:
+        items:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput'
+        type: array
       email:
         type: string
       first_name:

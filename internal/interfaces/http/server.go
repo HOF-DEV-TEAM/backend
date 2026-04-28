@@ -1,3 +1,4 @@
+// Package http provides the HTTP server lifecycle helpers.
 package http
 
 import (

@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	domainContent "bitbucket.org/hofng/hofApp/internal/domain/content"
-	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+
+	domainContent "bitbucket.org/hofng/hofApp/internal/domain/content"
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 )
 
 type contentRepository struct {

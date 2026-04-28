@@ -1,3 +1,4 @@
+// Package subscription defines the subscription domain entities and value objects.
 package subscription
 
 import (
@@ -10,10 +11,14 @@ import (
 type Status int
 
 const (
+	// StatusInactive marks a subscription that is not active.
 	StatusInactive Status = 0
-	StatusActive   Status = 1
+	// StatusActive marks a subscription that is currently active.
+	StatusActive Status = 1
+	// StatusCanceled marks a subscription that was canceled.
 	StatusCanceled Status = 2
-	StatusPastDue  Status = 3
+	// StatusPastDue marks a subscription that missed payment.
+	StatusPastDue Status = 3
 )
 
 func (s Status) String() string {
@@ -33,19 +38,27 @@ func (s Status) String() string {
 type BillingFrequency int
 
 const (
-	FreqHourly    BillingFrequency = 0
-	FreqDaily     BillingFrequency = 1
-	FreqWeekly    BillingFrequency = 2
-	FreqMonthly   BillingFrequency = 3
+	// FreqHourly bills once per hour.
+	FreqHourly BillingFrequency = 0
+	// FreqDaily bills once per day.
+	FreqDaily BillingFrequency = 1
+	// FreqWeekly bills once per week.
+	FreqWeekly BillingFrequency = 2
+	// FreqMonthly bills once per month.
+	FreqMonthly BillingFrequency = 3
+	// FreqQuarterly bills once per quarter.
 	FreqQuarterly BillingFrequency = 4
-	FreqYearly    BillingFrequency = 5
+	// FreqYearly bills once per year.
+	FreqYearly BillingFrequency = 5
 )
 
-// PlanType categorises the tier of a subscription plan.
+// PlanType categorizes the tier of a subscription plan.
 type PlanType int
 
 const (
+	// PlanTypeRegular is the default subscription tier.
 	PlanTypeRegular PlanType = 0
+	// PlanTypePremium is the premium subscription tier.
 	PlanTypePremium PlanType = 1
 )
 
@@ -58,6 +71,7 @@ type Provider struct {
 	DeletedAt *time.Time `gorm:"column:deleted_at"`
 }
 
+// TableName returns the database table for providers.
 func (Provider) TableName() string { return "subscription_provider" }
 
 // Plan describes a purchasable subscription tier.
@@ -77,6 +91,7 @@ type Plan struct {
 	DeletedAt      *time.Time       `gorm:"column:deleted_at"`
 }
 
+// TableName returns the database table for plans.
 func (Plan) TableName() string { return "subscription_plans" }
 
 // Offering is a named feature that can be attached to subscription plans.
@@ -90,6 +105,7 @@ type Offering struct {
 	DeletedAt  *time.Time `gorm:"column:deleted_at"`
 }
 
+// TableName returns the database table for offerings.
 func (Offering) TableName() string { return "subscription_offerings" }
 
 // PlanOffering is the join between a plan and an offering.
@@ -109,6 +125,7 @@ type PlanOffering struct {
 	DeletedAt  *time.Time       `gorm:"column:deleted_at"`
 }
 
+// TableName returns the database table for plan offerings.
 func (PlanOffering) TableName() string { return "subscription_plan_offerings" }
 
 // Subscription is a user's active entitlement record.
@@ -126,6 +143,7 @@ type Subscription struct {
 	Plan *Plan `gorm:"foreignKey:PlanID"`
 }
 
+// TableName returns the database table for subscriptions.
 func (Subscription) TableName() string { return "subscriptions" }
 
 // IsExpired reports whether the subscription's next payment date has passed.
@@ -138,8 +156,9 @@ func (s *Subscription) IsExpired() bool {
 
 // GlobalParameters holds app-wide feature flags.
 type GlobalParameters struct {
-	ID                    uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	ActivateSubscription  bool      `gorm:"column:activate_subscription;default:true"`
+	ID                   uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	ActivateSubscription bool      `gorm:"column:activate_subscription;default:true"`
 }
 
+// TableName returns the database table for global parameters.
 func (GlobalParameters) TableName() string { return "global_parameters" }

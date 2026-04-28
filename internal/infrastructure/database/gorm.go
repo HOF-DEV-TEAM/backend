@@ -1,3 +1,4 @@
+// Package database provides GORM connection and migration helpers.
 package database
 
 import (

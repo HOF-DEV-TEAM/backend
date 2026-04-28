@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	domainSub "bitbucket.org/hofng/hofApp/internal/domain/subscription"
-	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
+	domainSub "bitbucket.org/hofng/hofApp/internal/domain/subscription"
 )
 
 type subscriptionRepository struct {

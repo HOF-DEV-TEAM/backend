@@ -1,3 +1,4 @@
+// Package paystack provides a minimal Paystack REST API client.
 package paystack
 
 import (
@@ -52,7 +53,8 @@ type initTransactionResponse struct {
 	} `json:"data"`
 }
 
-type verifyTransactionResponse struct {
+// VerifyTransactionResponse represents a verified Paystack transaction payload.
+type VerifyTransactionResponse struct {
 	Status  bool   `json:"status"`
 	Message string `json:"message"`
 	Data    struct {
@@ -89,7 +91,7 @@ type createCustomerRequest struct {
 }
 
 type createCustomerResponse struct {
-	Status bool   `json:"status"`
+	Status bool `json:"status"`
 	Data   struct {
 		CustomerCode string `json:"customer_code"`
 		ID           int64  `json:"id"`
@@ -99,7 +101,7 @@ type createCustomerResponse struct {
 // ── API methods ───────────────────────────────────────────────────────────────
 
 // InitializeTransaction creates a Paystack payment session.
-func (c *Client) InitializeTransaction(ctx context.Context, email string, amount int64, planCode, reference string) (string, string, string, error) {
+func (c *Client) InitializeTransaction(ctx context.Context, email string, amount int64, planCode, reference string) (authURL, accessCode, ref string, err error) {
 	body := initTransactionRequest{
 		Email:     email,
 		Amount:    amount,
@@ -117,8 +119,8 @@ func (c *Client) InitializeTransaction(ctx context.Context, email string, amount
 }
 
 // VerifyTransaction confirms a completed payment by reference.
-func (c *Client) VerifyTransaction(ctx context.Context, reference string) (*verifyTransactionResponse, error) {
-	var resp verifyTransactionResponse
+func (c *Client) VerifyTransaction(ctx context.Context, reference string) (*VerifyTransactionResponse, error) {
+	var resp VerifyTransactionResponse
 	if err := c.get(ctx, "/transaction/verify/"+reference, &resp); err != nil {
 		return nil, err
 	}
@@ -142,7 +144,7 @@ func (c *Client) DisableSubscription(ctx context.Context, code, token string) er
 }
 
 // CreateCustomer registers a new customer in Paystack.
-func (c *Client) CreateCustomer(ctx context.Context, email, firstName, lastName, phone string) (string, string, error) {
+func (c *Client) CreateCustomer(ctx context.Context, email, firstName, lastName, phone string) (customerCode, customerID string, err error) {
 	body := createCustomerRequest{
 		Email: email, FirstName: firstName, LastName: lastName, Phone: phone,
 	}
@@ -161,7 +163,7 @@ func (c *Client) CreateCustomer(ctx context.Context, email, firstName, lastName,
 func (c *Client) post(ctx context.Context, path string, body, out any) error {
 	buf, err := json.Marshal(body)
 	if err != nil {
-		return fmt.Errorf("marshalling paystack request: %w", err)
+		return fmt.Errorf("marshaling paystack request: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, bytes.NewReader(buf))
@@ -188,11 +190,13 @@ func (c *Client) setHeaders(req *http.Request) {
 }
 
 func (c *Client) do(req *http.Request, out any) error {
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.Do(req) //nolint:gosec // Paystack requests use a configured base URL, not user input.
 	if err != nil {
 		return fmt.Errorf("paystack HTTP call: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {

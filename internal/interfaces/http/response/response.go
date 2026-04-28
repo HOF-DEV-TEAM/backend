@@ -1,3 +1,4 @@
+// Package response provides standard JSON HTTP response helpers.
 package response
 
 import (
@@ -9,10 +10,10 @@ import (
 
 // envelope is the standard JSON wrapper for all API responses.
 type envelope struct {
-	Success bool        `json:"success"`
-	Data    any `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
-	Total   *int64      `json:"total,omitempty"`
+	Success bool   `json:"success"`
+	Data    any    `json:"data,omitempty"`
+	Error   string `json:"error,omitempty"`
+	Total   *int64 `json:"total,omitempty"`
 }
 
 // JSON writes a success JSON response with the given status code.
@@ -52,7 +53,7 @@ func write(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-func classify(err error) (int, string) {
+func classify(err error) (status int, message string) {
 	switch {
 	case shared.IsNotFound(err):
 		return http.StatusNotFound, err.Error()

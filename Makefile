@@ -5,6 +5,8 @@
 ##  Run `make help` to list all targets with descriptions.
 ## ──────────────────────────────────────────────────────────────────────────
 
+SHELL := bash
+
 # Load .env into the environment for every sub-command (silent if missing).
 -include .env
 export
@@ -16,13 +18,24 @@ IMAGE_NAME := hof-backend
 GO         := go
 
 .PHONY: help env run build clean swagger test lint \
-        docker-build up down logs ps db-shell
+        docker-build up down logs ps db-shell setup-hooks
 
 ## ── Help ─────────────────────────────────────────────────────────────────────
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+## ── Setup ────────────────────────────────────────────────────────────────────
+
+setup-hooks: ## Install git hooks (run once after cloning)
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "Copy-Item -Path 'scripts/hooks/pre-push' -Destination '.git/hooks/pre-push' -Force; Write-Host 'Git hooks installed.'"
+else
+	@cp scripts/hooks/pre-push .git/hooks/pre-push
+	@chmod +x .git/hooks/pre-push
+	@echo "Git hooks installed."
+endif
 
 ## ── Environment ──────────────────────────────────────────────────────────────
 
@@ -49,17 +62,16 @@ clean: ## Remove compiled binaries
 	@echo "Cleaned."
 
 swagger: ## Regenerate Swagger docs from source annotations
-	@which swag > /dev/null 2>&1 || $(GO) install github.com/swaggo/swag/cmd/swag@latest
-	swag init -g $(CMD) -o docs --parseDependency
+	$(GO) run github.com/swaggo/swag/cmd/swag@latest init -g $(CMD) -o docs --parseDependency
 	@echo "Docs regenerated → docs/"
 
 test: ## Run all tests
 	$(GO) test ./... -v
 
-lint: ## Run golangci-lint (installs if missing)
-	@which golangci-lint > /dev/null 2>&1 || \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$($(GO) env GOPATH)/bin
-	golangci-lint run ./...
+lint: ## Run golangci-lint (installs v2 if missing)
+	@command -v golangci-lint > /dev/null 2>&1 || \
+		$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+	golangci-lint run --timeout=5m
 
 ## ── Docker ───────────────────────────────────────────────────────────────────
 

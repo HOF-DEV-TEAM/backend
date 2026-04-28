@@ -47,9 +47,11 @@ func main() {
 	}
 	zapLog, err := logger.New(appEnv)
 	if err != nil {
-		log.Fatalf("initialising logger: %v", err)
+		log.Fatalf("initializing logger: %v", err)
 	}
-	defer zapLog.Sync()
+	defer func() {
+		_ = zapLog.Sync()
+	}()
 
 	// ── Config ────────────────────────────────────────────────────────────────
 	cfg, err := config.Load(zapLog)
@@ -74,10 +76,10 @@ func main() {
 
 	// ── Infrastructure services ───────────────────────────────────────────────
 	jwtSvc := security.NewJWTService(cfg.Security.JWTSigningKey)
-	mailSvc := mailer.New(cfg.Mailer, zapLog)
+	mailSvc := mailer.New(&cfg.Mailer, zapLog)
 
 	var s3 *storage.S3Storage
-	if s3Svc, err := storage.NewS3Storage(cfg.AWS, zapLog); err != nil {
+	if s3Svc, err := storage.NewS3Storage(&cfg.AWS, zapLog); err != nil {
 		zapLog.Warn("S3 unavailable — file uploads disabled", zap.Error(err))
 	} else {
 		s3 = s3Svc

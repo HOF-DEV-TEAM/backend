@@ -1,3 +1,4 @@
+// Package http wires the application HTTP routes and middleware.
 package http
 
 import (
@@ -54,7 +55,7 @@ func NewRouter(
 	// Scalar UI (modern): /docs
 	r.Get("/docs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write([]byte(`<!doctype html>
+		_, _ = w.Write([]byte(`<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -77,10 +78,10 @@ func NewRouter(
 
 	// ── Health check ──────────────────────────────────────────────────────────
 	r.Get("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte("HOF Backend — running"))
+		_, _ = w.Write([]byte("HOF Backend — running"))
 	})
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 
 	// ── Handlers ──────────────────────────────────────────────────────────────

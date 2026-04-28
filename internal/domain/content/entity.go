@@ -1,3 +1,4 @@
+// Package content defines the content domain entities and value objects.
 package content
 
 import (
@@ -22,9 +23,10 @@ type AudioSeries struct {
 	Messages []AudioMessage `gorm:"foreignKey:SeriesID"`
 }
 
+// TableName returns the database table for audio series.
 func (AudioSeries) TableName() string { return "audio_series" }
 
-// AudioMessage is a single preachable / audio content item.
+// AudioMessage is a single preach-able audio content item.
 // AllowSteward controls whether steward-role users may access this message
 // even when it is not free and the listener has no active subscription.
 type AudioMessage struct {
@@ -45,6 +47,7 @@ type AudioMessage struct {
 	Series *AudioSeries `gorm:"foreignKey:SeriesID"`
 }
 
+// TableName returns the database table for audio messages.
 func (AudioMessage) TableName() string { return "audio_messages" }
 
 // Meditation is a guided meditation content item.
@@ -57,6 +60,7 @@ type Meditation struct {
 	DeletedAt *time.Time `gorm:"column:deleted_at"`
 }
 
+// TableName returns the database table for meditations.
 func (Meditation) TableName() string { return "meditations" }
 
 // Homepage aggregates the content shown on the app home screen.

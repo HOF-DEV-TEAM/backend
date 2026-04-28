@@ -1,3 +1,4 @@
+// Package content provides the content application service and DTOs.
 package content
 
 import (
@@ -17,24 +18,24 @@ var validate = validator.New()
 // Service exposes all content-management use cases.
 type Service interface {
 	// Messages
-	CreateMessage(ctx context.Context, req CreateMessageRequest) (*domainContent.AudioMessage, error)
+	CreateMessage(ctx context.Context, req *CreateMessageRequest) (*domainContent.AudioMessage, error)
 	ListMessages(ctx context.Context, filter MessageListFilter) ([]domainContent.AudioMessage, int64, error)
 	GetMessage(ctx context.Context, id uuid.UUID) (*domainContent.AudioMessage, error)
-	UpdateMessage(ctx context.Context, id uuid.UUID, req UpdateMessageRequest) (*domainContent.AudioMessage, error)
+	UpdateMessage(ctx context.Context, id uuid.UUID, req *UpdateMessageRequest) (*domainContent.AudioMessage, error)
 	DeleteMessage(ctx context.Context, id uuid.UUID) error
 
 	// Series
-	CreateSeries(ctx context.Context, req CreateSeriesRequest) (*domainContent.AudioSeries, error)
+	CreateSeries(ctx context.Context, req *CreateSeriesRequest) (*domainContent.AudioSeries, error)
 	ListSeries(ctx context.Context) ([]domainContent.AudioSeries, int64, error)
 	GetSeries(ctx context.Context, id uuid.UUID) (*domainContent.AudioSeries, error)
-	UpdateSeries(ctx context.Context, id uuid.UUID, req UpdateSeriesRequest) (*domainContent.AudioSeries, error)
+	UpdateSeries(ctx context.Context, id uuid.UUID, req *UpdateSeriesRequest) (*domainContent.AudioSeries, error)
 	DeleteSeries(ctx context.Context, id uuid.UUID) error
 
 	// Meditations
-	CreateMeditation(ctx context.Context, req CreateMeditationRequest) (*domainContent.Meditation, error)
+	CreateMeditation(ctx context.Context, req *CreateMeditationRequest) (*domainContent.Meditation, error)
 	ListMeditations(ctx context.Context, admin bool) ([]domainContent.Meditation, error)
 	GetMeditation(ctx context.Context, id uuid.UUID, admin bool) (*domainContent.Meditation, error)
-	UpdateMeditation(ctx context.Context, id uuid.UUID, req UpdateMeditationRequest) (*domainContent.Meditation, error)
+	UpdateMeditation(ctx context.Context, id uuid.UUID, req *UpdateMeditationRequest) (*domainContent.Meditation, error)
 	DeleteMeditation(ctx context.Context, id uuid.UUID) error
 
 	// Homepage
@@ -53,7 +54,10 @@ func NewService(repo domainContent.Repository, log *zap.Logger) Service {
 
 // ── Messages ──────────────────────────────────────────────────────────────────
 
-func (s *contentService) CreateMessage(ctx context.Context, req CreateMessageRequest) (*domainContent.AudioMessage, error) {
+func (s *contentService) CreateMessage(ctx context.Context, req *CreateMessageRequest) (*domainContent.AudioMessage, error) {
+	if req == nil {
+		return nil, shared.ErrInvalidInput{Message: "request body is required"}
+	}
 	if err := validate.Struct(req); err != nil {
 		return nil, shared.ErrInvalidInput{Message: err.Error()}
 	}
@@ -110,7 +114,10 @@ func (s *contentService) GetMessage(ctx context.Context, id uuid.UUID) (*domainC
 	return s.repo.GetMessageByID(ctx, id)
 }
 
-func (s *contentService) UpdateMessage(ctx context.Context, id uuid.UUID, req UpdateMessageRequest) (*domainContent.AudioMessage, error) {
+func (s *contentService) UpdateMessage(ctx context.Context, id uuid.UUID, req *UpdateMessageRequest) (*domainContent.AudioMessage, error) {
+	if req == nil {
+		return nil, shared.ErrInvalidInput{Message: "request body is required"}
+	}
 	m, err := s.repo.GetMessageByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -162,7 +169,10 @@ func (s *contentService) DeleteMessage(ctx context.Context, id uuid.UUID) error 
 
 // ── Series ────────────────────────────────────────────────────────────────────
 
-func (s *contentService) CreateSeries(ctx context.Context, req CreateSeriesRequest) (*domainContent.AudioSeries, error) {
+func (s *contentService) CreateSeries(ctx context.Context, req *CreateSeriesRequest) (*domainContent.AudioSeries, error) {
+	if req == nil {
+		return nil, shared.ErrInvalidInput{Message: "request body is required"}
+	}
 	if err := validate.Struct(req); err != nil {
 		return nil, shared.ErrInvalidInput{Message: err.Error()}
 	}
@@ -196,7 +206,10 @@ func (s *contentService) GetSeries(ctx context.Context, id uuid.UUID) (*domainCo
 	return s.repo.GetSeriesByID(ctx, id)
 }
 
-func (s *contentService) UpdateSeries(ctx context.Context, id uuid.UUID, req UpdateSeriesRequest) (*domainContent.AudioSeries, error) {
+func (s *contentService) UpdateSeries(ctx context.Context, id uuid.UUID, req *UpdateSeriesRequest) (*domainContent.AudioSeries, error) {
+	if req == nil {
+		return nil, shared.ErrInvalidInput{Message: "request body is required"}
+	}
 	series, err := s.repo.GetSeriesByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -236,7 +249,10 @@ func (s *contentService) DeleteSeries(ctx context.Context, id uuid.UUID) error {
 
 // ── Meditations ───────────────────────────────────────────────────────────────
 
-func (s *contentService) CreateMeditation(ctx context.Context, req CreateMeditationRequest) (*domainContent.Meditation, error) {
+func (s *contentService) CreateMeditation(ctx context.Context, req *CreateMeditationRequest) (*domainContent.Meditation, error) {
+	if req == nil {
+		return nil, shared.ErrInvalidInput{Message: "request body is required"}
+	}
 	if err := validate.Struct(req); err != nil {
 		return nil, shared.ErrInvalidInput{Message: err.Error()}
 	}
@@ -266,7 +282,10 @@ func (s *contentService) GetMeditation(ctx context.Context, id uuid.UUID, admin 
 	return s.repo.GetMeditationByID(ctx, id, admin)
 }
 
-func (s *contentService) UpdateMeditation(ctx context.Context, id uuid.UUID, req UpdateMeditationRequest) (*domainContent.Meditation, error) {
+func (s *contentService) UpdateMeditation(ctx context.Context, id uuid.UUID, req *UpdateMeditationRequest) (*domainContent.Meditation, error) {
+	if req == nil {
+		return nil, shared.ErrInvalidInput{Message: "request body is required"}
+	}
 	m, err := s.repo.GetMeditationByID(ctx, id, true)
 	if err != nil {
 		return nil, err

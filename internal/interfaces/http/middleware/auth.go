@@ -1,3 +1,4 @@
+// Package middleware provides JWT authentication helpers for HTTP routes.
 package middleware
 
 import (

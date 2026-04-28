@@ -1,3 +1,4 @@
+// Package config loads environment-driven application settings.
 package config
 
 import (
@@ -9,14 +10,14 @@ import (
 
 // ServerConfig holds every environment-driven setting for the application.
 type ServerConfig struct {
-	ServerURL   string `env:"SERVER_URL" envDefault:"https://my-heritage-app-1e457dfa2e9c.herokuapp.com"`
-	AppEnv      string `env:"APP_ENV" envDefault:"dev"`
-	HTTPPort    int    `env:"PORT" envDefault:"8080"`
-	Database    DatabaseConfig
-	AWS         AWSConfig
-	Security    SecurityConfig
-	Paystack    PaystackConfig
-	Mailer      MailerConfig
+	ServerURL string `env:"SERVER_URL" envDefault:"https://my-heritage-app-1e457dfa2e9c.herokuapp.com"`
+	AppEnv    string `env:"APP_ENV" envDefault:"dev"`
+	HTTPPort  int    `env:"PORT" envDefault:"8080"`
+	Database  DatabaseConfig
+	AWS       AWSConfig
+	Security  SecurityConfig
+	Paystack  PaystackConfig
+	Mailer    MailerConfig
 }
 
 // DatabaseConfig holds the PostgreSQL connection parameters.

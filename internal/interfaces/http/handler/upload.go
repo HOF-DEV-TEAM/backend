@@ -28,6 +28,8 @@ func NewUploadHandler(s *storage.S3Storage) *UploadHandler {
 // @Success      200 {object} map[string]string
 // @Router       /upload [post]
 func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		response.BadRequest(w, "file too large or malformed form")
 		return

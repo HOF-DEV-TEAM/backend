@@ -1,3 +1,4 @@
+// Package content defines the content domain repository contracts.
 package content
 
 import (

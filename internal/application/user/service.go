@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"time"
 
-	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
-	"bitbucket.org/hofng/hofApp/internal/domain/shared"
-	"bitbucket.org/hofng/hofApp/internal/infrastructure/mailer"
-	"bitbucket.org/hofng/hofApp/internal/infrastructure/security"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
+	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
+	"bitbucket.org/hofng/hofApp/internal/infrastructure/mailer"
+	"bitbucket.org/hofng/hofApp/internal/infrastructure/security"
 )
 
 var validate = validator.New()

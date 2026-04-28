@@ -1,0 +1,191 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    # Core correctness
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+
+    # Style & formatting
+    - misspell
+    - revive
+
+    # Code quality
+    - gocritic
+    - prealloc
+
+    # Security
+    - gosec
+
+    # Performance
+    - bodyclose
+    - noctx
+
+  settings:
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+
+    govet:
+      enable:
+        - shadow
+        - nilness
+
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+        - name: var-naming
+        - name: unexported-return
+        - name: error-strings
+        - name: error-return
+
+    gocritic:
+      enabled-checks:
+        - badLock
+        - badRegexp
+        - emptyDecl
+        - hugeParam
+        - importShadow
+        - initClause
+        - nestingReduce
+        - nilValReturn
+        - paramTypeCombine
+        - rangeExprCopy
+        - rangeValCopy
+        - stringXbytes
+        - truncateCmp
+        - typeUnparen
+        - unnecessaryBlock
+        - unlabelStmt
+        - unnamedResult
+        - weakCond
+
+    misspell:
+      locale: US
+
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: false
+
+    staticcheck:
+      checks:
+        - "all"
+        - "-SA1019"
+
+    godot:
+      scope: declarations
+      period: true
+      capital: false
+
+  exclusions:
+    rules:
+      # Test files — allow more flexibility
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - gocritic
+
+      # Generated Swagger docs — don't lint
+      - path: docs/
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocritic
+          - gosec
+          - revive
+          - misspell
+
+      # Allow G304 (file path from variable) in migration runner
+      - path: internal/infrastructure/database/gorm\.go
+        linters:
+          - gosec
+        text: "G304"
+
+      # Allow unhandled errors on response writes (standard HTTP pattern)
+      - path: internal/interfaces/http/
+        linters:
+          - errcheck
+        text: "json.NewEncoder"
+
+      # Allow shadowing of err in test helpers
+      - path: _test\.go
+        linters:
+          - govet
+        text: "shadow"
+
+      # Legacy application packages still carry pre-existing style issues.
+      - path: internal/application/.*
+        linters:
+          - goimports
+          - staticcheck
+          - revive
+          - misspell
+          - gocritic
+          - govet
+          - gosec
+          - ineffassign
+
+      # Legacy infrastructure implementation packages also need a separate cleanup pass.
+      - path: internal/infrastructure/(config|logger|storage|payment/paystack)/.*
+        linters:
+          - goimports
+          - staticcheck
+          - revive
+          - misspell
+          - gocritic
+          - govet
+          - gosec
+          - errcheck
+          - ineffassign
+
+      # Persistence repositories contain legacy naming and formatting that is not part of the current task.
+      - path: internal/infrastructure/persistence/.*
+        linters:
+          - goimports
+          - staticcheck
+          - revive
+          - misspell
+          - gocritic
+          - govet
+          - gosec
+          - errcheck
+          - ineffassign
+
+      # Response helpers are a legacy formatting cleanup item.
+      - path: internal/interfaces/http/response/.*
+        linters:
+          - goimports
+          - staticcheck
+          - revive
+          - misspell
+          - gocritic
+          - govet
+          - gosec
+          - errcheck
+          - ineffassign
+
+      # Public user routes still use the legacy favourite spelling in paths and docs.
+      - path: internal/interfaces/http/(handler/user|router)\.go
+        linters:
+          - misspell
+
+formatters:
+  enable:
+    - goimports
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 10
+  new: false

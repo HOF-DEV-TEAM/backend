@@ -853,6 +853,14 @@ const docTemplate = `{
                 }
             }
         },
+        "bitbucket_org_hofng_hofApp_internal_application_auth.GlobalParamsDTO": {
+            "type": "object",
+            "properties": {
+                "activate_subscription": {
+                    "type": "boolean"
+                }
+            }
+        },
         "bitbucket_org_hofng_hofApp_internal_application_auth.LoginRequest": {
             "type": "object",
             "required": [
@@ -874,6 +882,9 @@ const docTemplate = `{
         "bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse": {
             "type": "object",
             "properties": {
+                "global_parameters": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.GlobalParamsDTO"
+                },
                 "refresh_token": {
                     "type": "string"
                 },
@@ -1087,8 +1098,11 @@ const docTemplate = `{
                 "password"
             ],
             "properties": {
-                "device": {
-                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput"
+                "devices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput"
+                    }
                 },
                 "email": {
                     "type": "string"

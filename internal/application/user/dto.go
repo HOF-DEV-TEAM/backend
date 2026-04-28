@@ -2,6 +2,32 @@ package user
 
 import domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
 
+// UserResponse is the safe public representation of a user — no password fields.
+type UserResponse struct {
+	ID         string   `json:"id"`
+	FirstName  string   `json:"first_name"`
+	LastName   string   `json:"last_name"`
+	Email      string   `json:"email"`
+	IsVerified uint8    `json:"is_verified"`
+	Roles      []string `json:"roles"`
+}
+
+// ToUserResponse converts a domain User to the safe HTTP response DTO.
+func ToUserResponse(u *domainUser.User) UserResponse {
+	roles := make([]string, len(u.Roles))
+	for i := range u.Roles {
+		roles[i] = string(u.Roles[i].Name)
+	}
+	return UserResponse{
+		ID:         u.ID.String(),
+		FirstName:  u.FirstName,
+		LastName:   u.LastName,
+		Email:      u.Email,
+		IsVerified: uint8(u.IsVerified),
+		Roles:      roles,
+	}
+}
+
 // SignUpRequest is the payload for creating a new user account.
 type SignUpRequest struct {
 	FirstName string        `json:"first_name" validate:"required"`

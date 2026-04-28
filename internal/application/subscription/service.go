@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	domainSub "bitbucket.org/hofng/hofApp/internal/domain/subscription"
-	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
-	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
+	domainSub "bitbucket.org/hofng/hofApp/internal/domain/subscription"
+	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
 )
 
 var validate = validator.New()
@@ -196,9 +197,9 @@ func (s *subscriptionService) VerifySubscription(ctx context.Context, userID uui
 		return nil, err
 	}
 	var planID uuid.UUID
-	for _, p := range plans {
-		if p.Code == result.PlanCode {
-			planID = p.ID
+	for i := range plans {
+		if plans[i].Code == result.PlanCode {
+			planID = plans[i].ID
 			break
 		}
 	}
@@ -329,9 +330,9 @@ func (s *subscriptionService) handleSubscriptionCreate(ctx context.Context, even
 		return fmt.Errorf("subscription.create: list plans: %w", err)
 	}
 	var planID uuid.UUID
-	for _, p := range plans {
-		if p.Code == event.Data.Plan.PlanCode {
-			planID = p.ID
+	for i := range plans {
+		if plans[i].Code == event.Data.Plan.PlanCode {
+			planID = plans[i].ID
 			break
 		}
 	}

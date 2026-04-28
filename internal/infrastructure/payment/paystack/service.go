@@ -1,3 +1,4 @@
+// Package paystack adapts the REST client to the subscription domain interface.
 package paystack
 
 import (
@@ -19,6 +20,7 @@ func NewService(client *Client, log *zap.Logger) domainSub.PaymentProvider {
 	return &Service{client: client, log: log}
 }
 
+// InitializeTransaction creates a Paystack payment session and returns the authorization URL.
 func (s *Service) InitializeTransaction(ctx context.Context, req domainSub.InitTransactionRequest) (*domainSub.TransactionResponse, error) {
 	authURL, accessCode, ref, err := s.client.InitializeTransaction(
 		ctx, req.Email, req.Amount, req.PlanCode, req.Reference,
@@ -33,6 +35,7 @@ func (s *Service) InitializeTransaction(ctx context.Context, req domainSub.InitT
 	}, nil
 }
 
+// VerifyTransaction confirms a completed payment by its reference string.
 func (s *Service) VerifyTransaction(ctx context.Context, reference string) (*domainSub.VerifyTransactionResponse, error) {
 	resp, err := s.client.VerifyTransaction(ctx, reference)
 	if err != nil {
@@ -49,6 +52,7 @@ func (s *Service) VerifyTransaction(ctx context.Context, reference string) (*dom
 	}, nil
 }
 
+// DisableSubscription cancels an active Paystack subscription by code and token.
 func (s *Service) DisableSubscription(ctx context.Context, code, token string) (*domainSub.DisableResponse, error) {
 	if err := s.client.DisableSubscription(ctx, code, token); err != nil {
 		return nil, fmt.Errorf("disabling paystack subscription: %w", err)
@@ -56,6 +60,7 @@ func (s *Service) DisableSubscription(ctx context.Context, code, token string) (
 	return &domainSub.DisableResponse{Message: "subscription disabled"}, nil
 }
 
+// CreateCustomer registers a new customer record in Paystack.
 func (s *Service) CreateCustomer(ctx context.Context, req domainSub.CreateCustomerRequest) (*domainSub.CustomerResponse, error) {
 	code, id, err := s.client.CreateCustomer(ctx, req.Email, req.FirstName, req.LastName, req.Phone)
 	if err != nil {
