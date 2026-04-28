@@ -339,6 +339,414 @@ const docTemplate = `{
                 }
             }
         },
+        "/subscription": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "List subscriptions",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/subscription/disable/{code}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Disable a subscription",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Subscription code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Paystack token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/subscription/offering": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "List subscription offerings",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Create a subscription offering",
+                "parameters": [
+                    {
+                        "description": "Offering payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/subscription/offering/delete/{offering_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Delete a subscription offering",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Offering ID",
+                        "name": "offering_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/subscription/plan": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "List subscription plans",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Create a subscription plan",
+                "parameters": [
+                    {
+                        "description": "Plan payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/subscription/plan/offering": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "List plan-offering mappings",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Create a plan-offering mapping",
+                "parameters": [
+                    {
+                        "description": "Plan offering payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanOfferingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/subscription/plan/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Get a subscription plan by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Delete a subscription plan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/subscription/transaction": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Initialize a Paystack transaction",
+                "parameters": [
+                    {
+                        "description": "Transaction payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.InitTransactionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/subscription/verify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Verify a subscription payment",
+                "parameters": [
+                    {
+                        "description": "Verification payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.VerifySubscriptionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/subscription/webhook": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Handle Paystack webhook events",
+                "parameters": [
+                    {
+                        "description": "Webhook payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookEvent"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/upload": {
             "post": {
                 "security": [
@@ -939,11 +1347,186 @@ const docTemplate = `{
                 }
             }
         },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanOfferingRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "subscription_offering_id",
+                "subscription_plan_id"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fee": {
+                    "type": "number"
+                },
+                "freq": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "subscription_offering_id": {
+                    "type": "string"
+                },
+                "subscription_plan_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "fee": {
+                    "type": "number"
+                },
+                "freq": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.EventType": {
+            "type": "string",
+            "enum": [
+                "charge.success",
+                "invoice.update",
+                "subscription.create",
+                "subscription.not_renew",
+                "invoice.payment_failed"
+            ],
+            "x-enum-varnames": [
+                "EventChargeSuccess",
+                "EventInvoiceUpdate",
+                "EventSubscriptionCreate",
+                "EventSubscriptionNotRenew",
+                "EventInvoicePaymentFailed"
+            ]
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.InitTransactionRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "plan_id"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "plan_id": {
+                    "type": "string"
+                }
+            }
+        },
         "bitbucket_org_hofng_hofApp_internal_application_subscription.UpdateGlobalParamsRequest": {
             "type": "object",
             "properties": {
                 "activate_subscription": {
                     "type": "boolean"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.VerifySubscriptionRequest": {
+            "type": "object",
+            "required": [
+                "reference"
+            ],
+            "properties": {
+                "reference": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookCustomer": {
+            "type": "object",
+            "properties": {
+                "customer_code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookEvent": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookEventData"
+                },
+                "event": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.EventType"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookEventData": {
+            "type": "object",
+            "properties": {
+                "customer": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookCustomer"
+                },
+                "next_payment_date": {
+                    "type": "string"
+                },
+                "plan": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookPlan"
+                },
+                "subscription": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookSubscription"
+                },
+                "subscription_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookPlan": {
+            "type": "object",
+            "properties": {
+                "plan_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookSubscription": {
+            "type": "object",
+            "properties": {
+                "next_payment_date": {
+                    "type": "string"
+                },
+                "subscription_code": {
+                    "type": "string"
                 }
             }
         },

@@ -76,10 +76,127 @@ definitions:
           type: string
         type: array
     type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanOfferingRequest:
+    properties:
+      code:
+        type: string
+      currency:
+        type: string
+      fee:
+        type: number
+      freq:
+        type: integer
+      name:
+        type: string
+      subscription_offering_id:
+        type: string
+      subscription_plan_id:
+        type: string
+      type:
+        type: integer
+    required:
+    - name
+    - subscription_offering_id
+    - subscription_plan_id
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanRequest:
+    properties:
+      code:
+        type: string
+      currency:
+        type: string
+      fee:
+        type: number
+      freq:
+        type: integer
+      name:
+        type: string
+      type:
+        type: integer
+    required:
+    - name
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.EventType:
+    enum:
+    - charge.success
+    - invoice.update
+    - subscription.create
+    - subscription.not_renew
+    - invoice.payment_failed
+    type: string
+    x-enum-varnames:
+    - EventChargeSuccess
+    - EventInvoiceUpdate
+    - EventSubscriptionCreate
+    - EventSubscriptionNotRenew
+    - EventInvoicePaymentFailed
+  bitbucket_org_hofng_hofApp_internal_application_subscription.InitTransactionRequest:
+    properties:
+      email:
+        type: string
+      plan_id:
+        type: string
+    required:
+    - email
+    - plan_id
+    type: object
   bitbucket_org_hofng_hofApp_internal_application_subscription.UpdateGlobalParamsRequest:
     properties:
       activate_subscription:
         type: boolean
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.VerifySubscriptionRequest:
+    properties:
+      reference:
+        type: string
+    required:
+    - reference
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookCustomer:
+    properties:
+      customer_code:
+        type: string
+      email:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookEvent:
+    properties:
+      data:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookEventData'
+      event:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.EventType'
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookEventData:
+    properties:
+      customer:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookCustomer'
+      next_payment_date:
+        type: string
+      plan:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookPlan'
+      subscription:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookSubscription'
+      subscription_code:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookPlan:
+    properties:
+      plan_code:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookSubscription:
+    properties:
+      next_payment_date:
+        type: string
+      subscription_code:
+        type: string
     type: object
   bitbucket_org_hofng_hofApp_internal_application_user.AddFavouriteRequest:
     properties:
@@ -604,6 +721,251 @@ paths:
       summary: Verify a password reset OTP
       tags:
       - users
+  /subscription:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: List subscriptions
+      tags:
+      - subscription
+  /subscription/disable/{code}:
+    delete:
+      parameters:
+      - description: Subscription code
+        in: path
+        name: code
+        required: true
+        type: string
+      - description: Paystack token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Disable a subscription
+      tags:
+      - subscription
+  /subscription/offering:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: List subscription offerings
+      tags:
+      - subscription
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Offering payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Create a subscription offering
+      tags:
+      - subscription
+  /subscription/offering/delete/{offering_id}:
+    delete:
+      parameters:
+      - description: Offering ID
+        in: path
+        name: offering_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Delete a subscription offering
+      tags:
+      - subscription
+  /subscription/plan:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: List subscription plans
+      tags:
+      - subscription
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Plan payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Create a subscription plan
+      tags:
+      - subscription
+  /subscription/plan/{id}:
+    delete:
+      parameters:
+      - description: Plan ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Delete a subscription plan
+      tags:
+      - subscription
+    get:
+      parameters:
+      - description: Plan ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Get a subscription plan by ID
+      tags:
+      - subscription
+  /subscription/plan/offering:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: List plan-offering mappings
+      tags:
+      - subscription
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Plan offering payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanOfferingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Create a plan-offering mapping
+      tags:
+      - subscription
+  /subscription/transaction:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Transaction payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.InitTransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Initialize a Paystack transaction
+      tags:
+      - subscription
+  /subscription/verify:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Verification payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.VerifySubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Verify a subscription payment
+      tags:
+      - subscription
+  /subscription/webhook:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Webhook payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.WebhookEvent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Handle Paystack webhook events
+      tags:
+      - subscription
   /upload:
     post:
       consumes:

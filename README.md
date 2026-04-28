@@ -300,8 +300,8 @@ Each one is a complete, project-aware workflow — not a generic helper.
 | `/deskcheck` | Runs every API endpoint with curl, checks expected status codes and response shapes, reports any unexpected 500s. Use after every implementation. |
 | `/commit` | Build gate → `go vet` → `make lint` → `go test` → stage specific files → write a Conventional Commits message → push |
 | `/pr` | Pre-flight checks → `gh pr create` with the full checklist template → links Jira ticket → monitors CI jobs |
-| `/deploy` | Verifies Docker build locally → pushes to Heroku staging or production → runs post-deploy smoke test → shows rollback command if needed |
-| `/logs` | Tails structured logs locally, in Docker, or on Heroku. Includes a diagnosis table for every common error pattern (500, 401, webhook sig failure, stale plan, etc.) |
+| `/deploy` | Verifies Docker build locally → publishes the release target → runs post-deploy smoke test → shows rollback guidance if needed |
+| `/logs` | Tails structured logs locally, in Docker, or in production. Includes a diagnosis table for every common error pattern (500, 401, webhook sig failure, stale plan, etc.) |
 | `/migrate` | Finds the next migration number, generates the SQL file from a template, cross-references GORM struct tags, and confirms the migration applied on restart |
 | `/test` | Runs the test suite with coverage, shows the coverage report, and lists the priority packages to test next |
 | `/jira` | Fetches ticket details, transitions state (In Progress → In Review → Done), links PRs to tickets, adds work log comments |
@@ -326,8 +326,7 @@ Every PR and push to `master` or `develop` runs the full pipeline on GitHub Acti
 | **Security** | PR + push | `govulncheck` — checks for known vulnerabilities in dependencies |
 | **Unit Tests + Coverage** | PR + push | `go test -race`, coverage report, fails if coverage drops below threshold |
 | **Integration Tests** | PR + push | Spins up a real Postgres 16 container, runs all migrations, tests the full sign-up/sign-in/webhook flow |
-| **Swagger Docs** | push to master only | Regenerates OpenAPI spec and deploys to GitHub Pages |
-| **Deploy to Heroku** | push to master only | Docker build → push to Heroku registry → release → health check smoke test |
+| **Swagger Docs** | push to master only | Regenerates OpenAPI spec and deploys to Netlify |
 
 ### Coverage threshold
 
@@ -346,18 +345,18 @@ Priority packages to cover next (highest value):
 
 ### Required GitHub secrets
 
-Before the CI pipeline can deploy, set these in **GitHub → Settings → Secrets and variables → Actions**:
+Before the docs workflow can deploy, set these in **GitHub → Settings → Secrets and variables → Actions**:
 
 | Secret | Where to find it |
 |---|---|
-| `HEROKU_API_KEY` | Heroku → Account Settings → API Key |
-| `HEROKU_APP_NAME` | Your Heroku app name (e.g. `my-heritage-app-1e457dfa2e9c`) |
+| `NETLIFY_AUTH_TOKEN` | Netlify → User settings → Applications |
+| `NETLIFY_SITE_ID` | Netlify → Site settings → Site details |
 
 The integration test job uses ephemeral values for `JWT_SIGNING_KEY` and `DATABASE_URL` — these are set directly in the workflow and do not need secrets.
 
 ### PR rules
 
-- All 5 non-deploy jobs must be green before merging
+- All 4 non-deploy jobs must be green before merging
 - Direct pushes to `master` are blocked by the pre-push git hook
 - All changes go through a PR — no exceptions
 
@@ -404,20 +403,20 @@ TEST_DATABASE_URL="postgres://hofuser:hofpassword@localhost:5432/hofdb_test?sslm
 | **Scalar UI**    | `http://localhost:8080/docs`             | Modern interactive docs      |
 | **Swagger UI**   | `http://localhost:8080/swagger/`         | Classic Swagger explorer     |
 | **Raw JSON**     | `http://localhost:8080/swagger/doc.json` | OpenAPI 2.0 spec             |
-| **GitHub Pages** | `https://hof-dev-team.github.io/backend`        | Auto-synced on every `master` push |
+| **Netlify** | `https://<your-site>.netlify.app`        | Auto-synced on every `master` push |
 
-### Enabling GitHub Pages (auto-sync)
+### Enabling Netlify (auto-sync)
 
 Every push to `master` runs a GitHub Actions workflow that:
 1. Regenerates the OpenAPI spec via `swag init`
 2. Copies `docs/swagger.json` → `api-docs/swagger.json`
-3. Deploys the [Scalar](https://scalar.com) interactive UI to the `gh-pages` branch
+3. Deploys the [Scalar](https://scalar.com) interactive UI to Netlify
 
 **To activate:**
-1. Go to your repo → **Settings → Pages**
-2. **Source:** `Deploy from a branch`
-3. **Branch:** `gh-pages` / `/ (root)`
-4. Save — your docs will be live at `https://<org>.github.io/<repo>/`
+1. Go to your Netlify site → **Site settings**
+2. **Build command:** use the generated `api-docs/` folder as the publish directory
+3. **Publish directory:** `api-docs`
+4. Save — your docs will be live at your Netlify site URL
 
 To regenerate docs locally at any time:
 ```bash
@@ -459,7 +458,7 @@ migrations/                          ← Sequential SQL files (NNN_description.s
 .github/workflows/                   ← GitHub Actions CI/CD pipeline
 .golangci.yml                        ← golangci-lint configuration
 CLAUDE.md                            ← Full project context for AI-assisted development
-api-docs/                            ← Static Scalar page deployed to GitHub Pages
+api-docs/                            ← Static Scalar page deployed to Netlify
 docs/                                ← Generated Swagger spec (do not edit manually)
 ```
 
