@@ -21,7 +21,6 @@ linters:
     # Code quality
     - gocritic
     - prealloc
-    - gosimple
 
     # Security
     - gosec
@@ -132,10 +131,6 @@ linters:
 formatters:
   enable:
     - goimports
-  settings:
-    goimports:
-      local-prefixes:
-        - bitbucket.org/hofng/hofApp
 
 issues:
   max-issues-per-linter: 50
