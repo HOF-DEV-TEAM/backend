@@ -92,11 +92,6 @@ linters:
       period: true
       capital: false
 
-issues:
-  max-issues-per-linter: 50
-  max-same-issues: 10
-  new: false
-
   exclusions:
     rules:
       # Test files — allow more flexibility
@@ -134,3 +129,8 @@ issues:
         linters:
           - govet
         text: "shadow"
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 10
+  new: false
