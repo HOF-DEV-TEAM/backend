@@ -1,113 +1,102 @@
+version: "2"
+
 run:
   timeout: 5m
   tests: true
 
-linters-settings:
-  errcheck:
-    check-type-assertions: false
-    check-blank: false
-
-  govet:
-    enable-all: false
-    enable:
-      - shadow
-      - nilness
-
-  goimports:
-    local-prefixes: bitbucket.org/hofng/hofApp
-
-  revive:
-    rules:
-      - name: exported
-        severity: warning
-      - name: var-naming
-      - name: unexported-return
-      - name: error-strings
-      - name: error-return
-
-  gocritic:
-    enabled-checks:
-      - appendAssign
-      - argOrder
-      - badCall
-      - badLock
-      - badRegexp
-      - commentFormatting
-      - deprecatedComment
-      - dupArg
-      - dupBranchBody
-      - emptyDecl
-      - exitAfterDefer
-      - hugeParam
-      - ifElseChain
-      - importShadow
-      - initClause
-      - nestingReduce
-      - nilValReturn
-      - paramTypeCombine
-      - rangeExprCopy
-      - rangeValCopy
-      - sloppyLen
-      - stringXbytes
-      - truncateCmp
-      - typeAssert
-      - typeUnparen
-      - underef
-      - unnecessaryBlock
-      - unlabelStmt
-      - unnamedResult
-      - weakCond
-    disabled-checks:
-      - commentedOutCode   # too noisy during development
-      - whyNoLint          # too strict
-
-  misspell:
-    locale: US
-
-  prealloc:
-    simple: true
-    range-loops: true
-    for-loops: false
-
-  staticcheck:
-    checks:
-      - "all"
-      - "-SA1019"  # allow deprecated usage (legacy code)
-
-  godot:
-    scope: declarations
-    period: true
-    capital: false
-
 linters:
-  disable-all: true
+  default: none
   enable:
     # Core correctness
-    - errcheck          # check error return values
-    - govet             # go vet with additional checks
-    - staticcheck       # advanced static analysis
-    - ineffassign       # detect ineffectual assignments
-    - unused            # detect unused code
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
 
     # Style & formatting
-    - goimports         # goimports formatting
-    - misspell          # spelling in comments
-    - revive            # drop-in golint replacement
+    - goimports
+    - misspell
+    - revive
 
     # Code quality
-    - gocritic          # opinionated checks
-    - prealloc          # suggest pre-allocated slices
-    - gosimple          # suggest code simplifications
+    - gocritic
+    - prealloc
+    - gosimple
 
     # Security
-    - gosec             # security checks
+    - gosec
 
     # Performance
-    - bodyclose         # ensure http.Response.Body is closed
-    - noctx             # detect http request without context
+    - bodyclose
+    - noctx
+
+  settings:
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+
+    govet:
+      enable:
+        - shadow
+        - nilness
+
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+        - name: var-naming
+        - name: unexported-return
+        - name: error-strings
+        - name: error-return
+
+    gocritic:
+      enabled-checks:
+        - badLock
+        - badRegexp
+        - emptyDecl
+        - hugeParam
+        - importShadow
+        - initClause
+        - nestingReduce
+        - nilValReturn
+        - paramTypeCombine
+        - rangeExprCopy
+        - rangeValCopy
+        - stringXbytes
+        - truncateCmp
+        - typeUnparen
+        - unnecessaryBlock
+        - unlabelStmt
+        - unnamedResult
+        - weakCond
+      disabled-checks:
+        - commentedOutCode
+        - whyNoLint
+
+    misspell:
+      locale: US
+
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: false
+
+    staticcheck:
+      checks:
+        - "all"
+        - "-SA1019"
+
+    godot:
+      scope: declarations
+      period: true
+      capital: false
 
 issues:
-  # Reasonable exclusions for this codebase
+  max-issues-per-linter: 50
+  max-same-issues: 10
+  new: false
+
   exclude-rules:
     # Test files — allow more flexibility
     - path: _test\.go
@@ -116,15 +105,16 @@ issues:
         - gosec
         - gocritic
 
-    # Generated files — don't lint
+    # Generated Swagger docs — don't lint
     - path: docs/
       linters:
-        - all
-
-    # Migration files — SQL, not Go
-    - path: migrations/
-      linters:
-        - all
+        - errcheck
+        - govet
+        - staticcheck
+        - gocritic
+        - gosec
+        - revive
+        - misspell
 
     # Allow G304 (file path from variable) in migration runner
     - path: internal/infrastructure/database/gorm\.go
@@ -143,10 +133,3 @@ issues:
       linters:
         - govet
       text: "shadow"
-
-  # Maximum issues per linter (0 = unlimited)
-  max-issues-per-linter: 50
-  max-same-issues: 10
-
-  # Raise issues from new code only (useful during migration)
-  new: false

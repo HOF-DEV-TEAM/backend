@@ -62,8 +62,7 @@ clean: ## Remove compiled binaries
 	@echo "Cleaned."
 
 swagger: ## Regenerate Swagger docs from source annotations
-	@which swag > /dev/null 2>&1 || $(GO) install github.com/swaggo/swag/cmd/swag@latest
-	swag init -g $(CMD) -o docs --parseDependency
+	$(GO) run github.com/swaggo/swag/cmd/swag@latest init -g $(CMD) -o docs --parseDependency
 	@echo "Docs regenerated → docs/"
 
 test: ## Run all tests
