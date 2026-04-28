@@ -15,7 +15,6 @@ linters:
     - unused
 
     # Style & formatting
-    - goimports
     - misspell
     - revive
 
@@ -129,6 +128,14 @@ linters:
         linters:
           - govet
         text: "shadow"
+
+formatters:
+  enable:
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - bitbucket.org/hofng/hofApp
 
 issues:
   max-issues-per-linter: 50
