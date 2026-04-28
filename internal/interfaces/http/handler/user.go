@@ -44,7 +44,7 @@ func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusCreated, u)
+	response.JSON(w, http.StatusCreated, appUser.ToUserResponse(u))
 }
 
 // UpdateProfile godoc
