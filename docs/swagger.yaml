@@ -509,7 +509,7 @@ definitions:
     - PhoneVerified
     - EmailVerified
     - EmailAndPhoneVerified
-host: localhost:8080
+host: backend-thegoninja9785-8yvkmqp6.leapcell.dev
 info:
   contact:
     email: dev@hofng.org
@@ -1259,6 +1259,8 @@ paths:
       summary: Complete email verification via link token
       tags:
       - users
+schemes:
+- https
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and the JWT access token.
