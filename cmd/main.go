@@ -78,8 +78,6 @@ func main() {
 	// ── Infrastructure services ───────────────────────────────────────────────
 	jwtSvc := security.NewJWTService(cfg.Security.JWTSigningKey)
 	mailSvc := mailer.New(&cfg.Mailer, zapLog)
-
-	// TODO: deployment remove later. 
 	
 	var s3 *storage.S3Storage
 	if s3Svc, err := storage.NewS3Storage(&cfg.AWS, zapLog); err != nil {
