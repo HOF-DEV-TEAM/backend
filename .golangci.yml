@@ -97,39 +97,40 @@ issues:
   max-same-issues: 10
   new: false
 
-  exclude-rules:
-    # Test files — allow more flexibility
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gosec
-        - gocritic
+  exclusions:
+    rules:
+      # Test files — allow more flexibility
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - gocritic
 
-    # Generated Swagger docs — don't lint
-    - path: docs/
-      linters:
-        - errcheck
-        - govet
-        - staticcheck
-        - gocritic
-        - gosec
-        - revive
-        - misspell
+      # Generated Swagger docs — don't lint
+      - path: docs/
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gocritic
+          - gosec
+          - revive
+          - misspell
 
-    # Allow G304 (file path from variable) in migration runner
-    - path: internal/infrastructure/database/gorm\.go
-      linters:
-        - gosec
-      text: "G304"
+      # Allow G304 (file path from variable) in migration runner
+      - path: internal/infrastructure/database/gorm\.go
+        linters:
+          - gosec
+        text: "G304"
 
-    # Allow unhandled errors on response writes (standard HTTP pattern)
-    - path: internal/interfaces/http/
-      linters:
-        - errcheck
-      text: "json.NewEncoder"
+      # Allow unhandled errors on response writes (standard HTTP pattern)
+      - path: internal/interfaces/http/
+        linters:
+          - errcheck
+        text: "json.NewEncoder"
 
-    # Allow shadowing of err in test helpers
-    - path: _test\.go
-      linters:
-        - govet
-      text: "shadow"
+      # Allow shadowing of err in test helpers
+      - path: _test\.go
+        linters:
+          - govet
+        text: "shadow"
