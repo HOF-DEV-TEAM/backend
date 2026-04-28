@@ -6,7 +6,7 @@
 // @contact.email   dev@hofng.org
 // @license.name    MIT
 // @license.url     https://opensource.org/licenses/MIT
-// @host            localhost:8080
+// @host            https://backend-thegoninja9785-8yvkmqp6.leapcell.dev
 // @BasePath        /
 // @securityDefinitions.apikey BearerAuth
 // @in                         header
