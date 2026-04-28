@@ -8,19 +8,20 @@ import (
 	"io"
 	"net/http"
 
-	appSub "bitbucket.org/hofng/hofApp/internal/application/subscription"
-	"bitbucket.org/hofng/hofApp/internal/interfaces/http/middleware"
-	"bitbucket.org/hofng/hofApp/internal/interfaces/http/response"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	appSub "bitbucket.org/hofng/hofApp/internal/application/subscription"
+	"bitbucket.org/hofng/hofApp/internal/interfaces/http/middleware"
+	"bitbucket.org/hofng/hofApp/internal/interfaces/http/response"
 )
 
 // SubscriptionHandler groups all subscription-related HTTP endpoints.
 type SubscriptionHandler struct {
-	svc             appSub.Service
-	paystackSecret  string
-	log             *zap.Logger
+	svc            appSub.Service
+	paystackSecret string
+	log            *zap.Logger
 }
 
 // NewSubscriptionHandler creates a SubscriptionHandler.
@@ -30,6 +31,7 @@ func NewSubscriptionHandler(svc appSub.Service, paystackSecret string, log *zap.
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
 
+// CreatePlan handles POST requests to create a new subscription plan.
 func (h *SubscriptionHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 	var req appSub.CreatePlanRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -46,6 +48,7 @@ func (h *SubscriptionHandler) CreatePlan(w http.ResponseWriter, r *http.Request)
 	response.JSON(w, http.StatusCreated, plan)
 }
 
+// ListPlans handles GET requests to list all subscription plans.
 func (h *SubscriptionHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
 	plans, total, err := h.svc.ListPlans(r.Context())
 	if err != nil {
@@ -55,6 +58,7 @@ func (h *SubscriptionHandler) ListPlans(w http.ResponseWriter, r *http.Request) 
 	response.JSONList(w, http.StatusOK, plans, total)
 }
 
+// GetPlan handles GET requests to retrieve a subscription plan by ID.
 func (h *SubscriptionHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -71,6 +75,7 @@ func (h *SubscriptionHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, plan)
 }
 
+// DeletePlan handles DELETE requests to remove a subscription plan by ID.
 func (h *SubscriptionHandler) DeletePlan(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -88,6 +93,7 @@ func (h *SubscriptionHandler) DeletePlan(w http.ResponseWriter, r *http.Request)
 
 // ── Offerings ─────────────────────────────────────────────────────────────────
 
+// CreateOffering handles POST requests to create a new subscription offering.
 func (h *SubscriptionHandler) CreateOffering(w http.ResponseWriter, r *http.Request) {
 	var req appSub.CreateOfferingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -104,6 +110,7 @@ func (h *SubscriptionHandler) CreateOffering(w http.ResponseWriter, r *http.Requ
 	response.JSON(w, http.StatusCreated, o)
 }
 
+// ListOfferings handles GET requests to list all subscription offerings.
 func (h *SubscriptionHandler) ListOfferings(w http.ResponseWriter, r *http.Request) {
 	offerings, total, err := h.svc.ListOfferings(r.Context())
 	if err != nil {
@@ -113,6 +120,7 @@ func (h *SubscriptionHandler) ListOfferings(w http.ResponseWriter, r *http.Reque
 	response.JSONList(w, http.StatusOK, offerings, total)
 }
 
+// DeleteOffering handles DELETE requests to remove a subscription offering by ID.
 func (h *SubscriptionHandler) DeleteOffering(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "offering_id"))
 	if err != nil {
@@ -130,6 +138,7 @@ func (h *SubscriptionHandler) DeleteOffering(w http.ResponseWriter, r *http.Requ
 
 // ── Plan offerings ────────────────────────────────────────────────────────────
 
+// CreatePlanOffering handles POST requests to link an offering to a subscription plan.
 func (h *SubscriptionHandler) CreatePlanOffering(w http.ResponseWriter, r *http.Request) {
 	var req appSub.CreatePlanOfferingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -146,6 +155,7 @@ func (h *SubscriptionHandler) CreatePlanOffering(w http.ResponseWriter, r *http.
 	response.JSON(w, http.StatusCreated, po)
 }
 
+// ListPlanOfferings handles GET requests to list all plan-offering associations.
 func (h *SubscriptionHandler) ListPlanOfferings(w http.ResponseWriter, r *http.Request) {
 	pos, total, err := h.svc.ListPlanOfferings(r.Context())
 	if err != nil {
@@ -157,6 +167,7 @@ func (h *SubscriptionHandler) ListPlanOfferings(w http.ResponseWriter, r *http.R
 
 // ── Subscriptions ─────────────────────────────────────────────────────────────
 
+// ListSubscriptions handles GET requests to list all user subscriptions.
 func (h *SubscriptionHandler) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
 	subs, total, err := h.svc.ListSubscriptions(r.Context())
 	if err != nil {
@@ -166,6 +177,7 @@ func (h *SubscriptionHandler) ListSubscriptions(w http.ResponseWriter, r *http.R
 	response.JSONList(w, http.StatusOK, subs, total)
 }
 
+// VerifySubscription handles POST requests to verify and activate a user subscription.
 func (h *SubscriptionHandler) VerifySubscription(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
@@ -188,6 +200,7 @@ func (h *SubscriptionHandler) VerifySubscription(w http.ResponseWriter, r *http.
 	response.JSON(w, http.StatusOK, sub)
 }
 
+// InitializeTransaction handles POST requests to initiate a Paystack payment transaction.
 func (h *SubscriptionHandler) InitializeTransaction(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
@@ -210,6 +223,7 @@ func (h *SubscriptionHandler) InitializeTransaction(w http.ResponseWriter, r *ht
 	response.JSON(w, http.StatusOK, txResp)
 }
 
+// DisableSubscription handles POST requests to cancel a user's active subscription.
 func (h *SubscriptionHandler) DisableSubscription(w http.ResponseWriter, r *http.Request) {
 	code := chi.URLParam(r, "code")
 	token := r.URL.Query().Get("token")
@@ -238,7 +252,7 @@ func (h *SubscriptionHandler) PaystackWebhook(w http.ResponseWriter, r *http.Req
 	if h.paystackSecret != "" {
 		sig := r.Header.Get("X-Paystack-Signature")
 		mac := hmac.New(sha512.New, []byte(h.paystackSecret))
-		mac.Write(body)
+		_, _ = mac.Write(body)
 		expected := hex.EncodeToString(mac.Sum(nil))
 		if !hmac.Equal([]byte(sig), []byte(expected)) {
 			h.log.Warn("paystack webhook: invalid signature")

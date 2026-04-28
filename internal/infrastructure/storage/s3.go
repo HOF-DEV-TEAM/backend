@@ -1,3 +1,4 @@
+// Package storage provides AWS S3 upload helpers.
 package storage
 
 import (
@@ -16,12 +17,15 @@ import (
 // S3Storage uploads files to AWS S3.
 type S3Storage struct {
 	uploader *s3manager.Uploader
-	cfg      config.AWSConfig
+	cfg      *config.AWSConfig
 	log      *zap.Logger
 }
 
 // NewS3Storage connects to AWS and returns a ready-to-use S3Storage.
-func NewS3Storage(cfg config.AWSConfig, log *zap.Logger) (*S3Storage, error) {
+func NewS3Storage(cfg *config.AWSConfig, log *zap.Logger) (*S3Storage, error) {
+	if cfg == nil {
+		cfg = &config.AWSConfig{}
+	}
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(cfg.Region),
 		Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.Secret, ""),
@@ -43,7 +47,11 @@ func (s *S3Storage) Upload(_ context.Context, fh *multipart.FileHeader, key stri
 	if err != nil {
 		return "", fmt.Errorf("opening upload file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			s.log.Warn("closing upload file", zap.Error(cerr))
+		}
+	}()
 
 	objectKey := s.cfg.BucketPath + key
 

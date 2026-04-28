@@ -37,11 +37,13 @@ If you just joined the team, do these in order:
 
 ### Prerequisites
 
-| Tool              | Version  |
-|-------------------|----------|
-| Go                | ≥ 1.26   |
-| PostgreSQL        | ≥ 14     |
-| Docker + Compose  | latest   |
+| Tool              | Version  | Install |
+|-------------------|----------|---------|
+| Go                | ≥ 1.26   | [go.dev/dl](https://go.dev/dl) |
+| PostgreSQL        | ≥ 14     | via Docker (see below) |
+| Docker + Compose  | latest   | [docs.docker.com](https://docs.docker.com/get-docker) |
+| golangci-lint     | v2       | `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest` |
+| swag              | latest   | `go install github.com/swaggo/swag/cmd/swag@latest` |
 
 ---
 

@@ -1,7 +1,7 @@
 package security
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // MD5 is used only for legacy password migration, not for new passwords
 	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
@@ -26,5 +26,5 @@ func CheckPasswordBcrypt(hashed, plaintext string) error {
 // MD5Hash returns the hexadecimal MD5 digest of the input.
 // Used only for backwards-compatible login of legacy accounts.
 func MD5Hash(plaintext string) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(plaintext)))
+	return fmt.Sprintf("%x", md5.Sum([]byte(plaintext))) //nolint:gosec // G401: MD5 is intentional here for legacy password comparison only
 }

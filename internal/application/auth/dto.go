@@ -1,3 +1,4 @@
+// Package auth provides the authentication application service and related DTOs.
 package auth
 
 // LoginRequest is the payload for standard email/password login.

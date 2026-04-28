@@ -1,3 +1,4 @@
+// Package mailer provides SMTP email delivery helpers.
 package mailer
 
 import (
@@ -13,13 +14,16 @@ import (
 
 // Mailer sends transactional emails via SMTP.
 type Mailer struct {
-	cfg    config.MailerConfig
+	cfg    *config.MailerConfig
 	log    *zap.Logger
 	dialer *mail.Dialer
 }
 
 // New creates a Mailer ready to send via the configured SMTP server.
-func New(cfg config.MailerConfig, log *zap.Logger) *Mailer {
+func New(cfg *config.MailerConfig, log *zap.Logger) *Mailer {
+	if cfg == nil {
+		cfg = &config.MailerConfig{}
+	}
 	d := mail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
 	return &Mailer{cfg: cfg, log: log, dialer: d}
 }

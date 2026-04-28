@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+
 	appUser "bitbucket.org/hofng/hofApp/internal/application/user"
 	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
 	"bitbucket.org/hofng/hofApp/internal/interfaces/http/middleware"
 	"bitbucket.org/hofng/hofApp/internal/interfaces/http/response"
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 // UserHandler groups all user-management HTTP endpoints.

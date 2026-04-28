@@ -1,3 +1,4 @@
+// Package user defines the user domain entities, value objects, and related types.
 package user
 
 import (
@@ -13,9 +14,13 @@ import (
 type VerificationStatus uint8
 
 const (
-	Unverified            VerificationStatus = 0
-	PhoneVerified         VerificationStatus = 1
-	EmailVerified         VerificationStatus = 2
+	// Unverified means neither phone nor email is verified.
+	Unverified VerificationStatus = 0
+	// PhoneVerified means the user's phone is verified.
+	PhoneVerified VerificationStatus = 1
+	// EmailVerified means the user's email is verified.
+	EmailVerified VerificationStatus = 2
+	// EmailAndPhoneVerified means both contact methods are verified.
 	EmailAndPhoneVerified VerificationStatus = 3
 )
 
@@ -23,19 +28,26 @@ const (
 type PasswordVersion string
 
 const (
+	// PasswordVersionBcrypt identifies bcrypt-hashed passwords.
 	PasswordVersionBcrypt PasswordVersion = "bcrypt"
-	PasswordVersionMD5    PasswordVersion = "md5" // legacy only
+	// PasswordVersionMD5 identifies legacy MD5-hashed passwords.
+	PasswordVersionMD5 PasswordVersion = "md5" // legacy only
 )
 
 // RoleName enumerates the roles a user may hold within the church system.
 type RoleName string
 
 const (
-	RoleSteward      RoleName = "steward"
-	RoleMember       RoleName = "member"
+	// RoleSteward grants steward-gated content access.
+	RoleSteward RoleName = "steward"
+	// RoleMember is the default role assigned on sign-up.
+	RoleMember RoleName = "member"
+	// RoleChurchFriend is assigned to external supporters.
 	RoleChurchFriend RoleName = "church_friend"
-	RoleTeamLead     RoleName = "team_lead"
-	RoleChurchAdmin  RoleName = "church_admin"
+	// RoleTeamLead is assigned to team leads.
+	RoleTeamLead RoleName = "team_lead"
+	// RoleChurchAdmin grants full administrative access.
+	RoleChurchAdmin RoleName = "church_admin"
 )
 
 // AllRoles lists every valid role name.
@@ -56,6 +68,7 @@ type Role struct {
 	UpdatedAt   time.Time
 }
 
+// TableName returns the database table for roles.
 func (Role) TableName() string { return "roles" }
 
 // User is the root aggregate for all user-related business logic.
@@ -78,12 +91,13 @@ type User struct {
 	UpdatedAt            time.Time          `gorm:"column:last_updated;autoUpdateTime"`
 }
 
+// TableName returns the database table for users.
 func (User) TableName() string { return "users" }
 
 // HasRole reports whether the user holds the named role.
 func (u *User) HasRole(name RoleName) bool {
-	for _, r := range u.Roles {
-		if r.Name == name {
+	for i := range u.Roles {
+		if u.Roles[i].Name == name {
 			return true
 		}
 	}
@@ -104,13 +118,16 @@ type PasswordToken struct {
 	Validated          bool      `gorm:"default:false"`
 }
 
+// TableName returns the database table for password reset tokens.
 func (PasswordToken) TableName() string { return "user_password_token" }
 
 // DeviceStatus represents the active/inactive state of a registered device.
 type DeviceStatus string
 
 const (
-	DeviceStatusActive   DeviceStatus = "ACTIVE"
+	// DeviceStatusActive marks a registered device as active.
+	DeviceStatusActive DeviceStatus = "ACTIVE"
+	// DeviceStatusInactive marks a registered device as inactive.
 	DeviceStatusInactive DeviceStatus = "INACTIVE"
 )
 
@@ -130,6 +147,7 @@ type Device struct {
 // DeviceList is a JSON-serialisable slice of devices for storage in a JSONB column.
 type DeviceList []Device
 
+// Value serializes the device list for database storage.
 func (d DeviceList) Value() (driver.Value, error) {
 	if d == nil {
 		return "[]", nil
@@ -138,6 +156,7 @@ func (d DeviceList) Value() (driver.Value, error) {
 	return string(b), err
 }
 
+// Scan deserializes a database value into the device list.
 func (d *DeviceList) Scan(src any) error {
 	var source []byte
 	switch v := src.(type) {
@@ -158,6 +177,7 @@ type DeviceRecord struct {
 	Devices DeviceList `gorm:"type:jsonb;serializer:json"`
 }
 
+// TableName returns the database table for device records.
 func (DeviceRecord) TableName() string { return "devices" }
 
 // AppVersion holds the metadata for a specific application build.
@@ -169,6 +189,7 @@ type AppVersion struct {
 	UpdatedAt time.Time `gorm:"column:last_updated;autoUpdateTime"`
 }
 
+// TableName returns the database table for application versions.
 func (AppVersion) TableName() string { return "app_version" }
 
 // FavouriteItem is a single bookmarked message stored inside the JSONB array.
@@ -179,9 +200,10 @@ type FavouriteItem struct {
 	DateAdded string `json:"date_added,omitempty"`
 }
 
-// FavouriteList is a JSON-serialisable slice of favourite items.
+// FavouriteList is a JSON-serialisable slice of favorite items.
 type FavouriteList []FavouriteItem
 
+// Value serializes the favorites list for database storage.
 func (f FavouriteList) Value() (driver.Value, error) {
 	if f == nil {
 		return "[]", nil
@@ -190,6 +212,7 @@ func (f FavouriteList) Value() (driver.Value, error) {
 	return string(b), err
 }
 
+// Scan deserializes a database value into the favorites list.
 func (f *FavouriteList) Scan(src any) error {
 	var source []byte
 	switch v := src.(type) {
@@ -203,7 +226,7 @@ func (f *FavouriteList) Scan(src any) error {
 	return json.Unmarshal(source, f)
 }
 
-// FavouriteRecord is the database row that stores a user's favourites as JSONB.
+// FavouriteRecord is the database row that stores a user's favorites as JSONB.
 type FavouriteRecord struct {
 	ID        uuid.UUID     `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID    uuid.UUID     `gorm:"type:uuid;not null;uniqueIndex"`
@@ -213,10 +236,14 @@ type FavouriteRecord struct {
 	DeletedAt *time.Time    `gorm:"column:deleted_at"`
 }
 
+// TableName returns the database table for favorites.
+//
+//nolint:misspell // The underlying table name is the legacy spelling used by migrations.
 func (FavouriteRecord) TableName() string { return "favourites" }
 
-// FavouriteMessage is the enriched view returned when a user fetches their favourites.
+// FavouriteMessage is the enriched view returned when a user fetches their favorites.
 type FavouriteMessage struct {
+	//nolint:misspell // The JSON field name is part of the public API.
 	FavouriteID uuid.UUID `json:"favourite_id"`
 	UserID      uuid.UUID `json:"user_id"`
 	MessageID   uuid.UUID `json:"message_id"`

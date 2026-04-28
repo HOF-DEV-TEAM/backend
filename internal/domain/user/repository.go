@@ -33,7 +33,7 @@ type Repository interface {
 	GetPasswordToken(ctx context.Context, email string) (*PasswordToken, error)
 	MarkPasswordTokenValidated(ctx context.Context, email string) error
 
-	// Favourites
+	// Favorites
 	GetFavouriteRecord(ctx context.Context, userID uuid.UUID) (*FavouriteRecord, error)
 	UpsertFavourite(ctx context.Context, record *FavouriteRecord) error
 	GetFavouriteMessages(ctx context.Context, userID uuid.UUID) ([]FavouriteMessage, error)

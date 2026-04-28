@@ -1,3 +1,4 @@
+// Package security provides JWT signing/verification and password hashing utilities.
 package security
 
 import (

@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	domainSub "bitbucket.org/hofng/hofApp/internal/domain/subscription"
-	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
-	"bitbucket.org/hofng/hofApp/internal/domain/shared"
-	"bitbucket.org/hofng/hofApp/internal/infrastructure/security"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
+	domainSub "bitbucket.org/hofng/hofApp/internal/domain/subscription"
+	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
+	"bitbucket.org/hofng/hofApp/internal/infrastructure/security"
 )
 
 // Service handles authentication operations (login, token refresh).
@@ -140,8 +141,8 @@ func (s *authService) buildSession(ctx context.Context, u *domainUser.User) (*Se
 	globalParams := s.resolveGlobalParameters(ctx)
 
 	roleNames := make([]string, len(u.Roles))
-	for i, r := range u.Roles {
-		roleNames[i] = string(r.Name)
+	for i := range u.Roles {
+		roleNames[i] = string(u.Roles[i].Name)
 	}
 
 	return &SessionResponse{

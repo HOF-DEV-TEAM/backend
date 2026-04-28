@@ -15,8 +15,8 @@ type UserResponse struct {
 // ToUserResponse converts a domain User to the safe HTTP response DTO.
 func ToUserResponse(u *domainUser.User) UserResponse {
 	roles := make([]string, len(u.Roles))
-	for i, r := range u.Roles {
-		roles[i] = string(r.Name)
+	for i := range u.Roles {
+		roles[i] = string(u.Roles[i].Name)
 	}
 	return UserResponse{
 		ID:         u.ID.String(),

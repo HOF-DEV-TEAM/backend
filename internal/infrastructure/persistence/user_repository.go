@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
-	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
+	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
 )
 
 type userRepository struct {
@@ -242,19 +243,6 @@ func (r *userRepository) UpsertFavourite(ctx context.Context, record *domainUser
 }
 
 func (r *userRepository) GetFavouriteMessages(ctx context.Context, userID uuid.UUID) ([]domainUser.FavouriteMessage, error) {
-	type favRow struct {
-		FavouriteID uuid.UUID
-		UserID      uuid.UUID
-		MessageID   uuid.UUID
-		Fav         bool
-		Title       string
-		Author      string
-		ImageURL    string
-		AudioURL    string
-		Description string
-		IsFree      bool
-	}
-
 	rows, err := r.db.WithContext(ctx).Raw(`
 		SELECT
 			f.id AS favourite_id,

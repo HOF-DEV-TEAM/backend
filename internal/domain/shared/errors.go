@@ -1,3 +1,4 @@
+// Package shared provides domain-wide typed errors used across all layers.
 package shared
 
 import "fmt"

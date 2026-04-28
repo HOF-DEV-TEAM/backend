@@ -1,3 +1,4 @@
+// Package handler contains HTTP handlers for admin endpoints.
 package handler
 
 import (

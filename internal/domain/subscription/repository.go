@@ -65,15 +65,15 @@ type TransactionResponse struct {
 
 // VerifyTransactionResponse contains subscription details after verification.
 type VerifyTransactionResponse struct {
-	Status          bool
-	CustomerCode    string
-	CustomerID      string
+	Status           bool
+	CustomerCode     string
+	CustomerID       string
 	SubscriptionCode string
-	NextPaymentDate string
-	PlanCode        string
+	NextPaymentDate  string
+	PlanCode         string
 }
 
-// DisableResponse is returned when a subscription is cancelled at the provider.
+// DisableResponse is returned when a subscription is canceled at the provider.
 type DisableResponse struct {
 	Message string
 }
