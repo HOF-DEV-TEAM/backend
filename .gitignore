@@ -41,8 +41,8 @@ Thumbs.db
 *.war
 
 # Compiled binary output
-server
-server~
+/server
+/server~
 
 # Claude Code session data
 .claude/
