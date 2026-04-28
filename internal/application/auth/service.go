@@ -46,7 +46,7 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (*SessionResp
 	u, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
 		if shared.IsNotFound(err) {
-			return nil, domainUser.ErrInvalidCredentials
+			return nil, shared.ErrUnauthorized{Message: "invalid email or password"}
 		}
 		return nil, fmt.Errorf("login: %w", err)
 	}
@@ -62,7 +62,7 @@ func (s *authService) AdminLogin(ctx context.Context, req AdminLoginRequest) (*S
 	u, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
 		if shared.IsNotFound(err) {
-			return nil, domainUser.ErrInvalidCredentials
+			return nil, shared.ErrUnauthorized{Message: "invalid email or password"}
 		}
 		return nil, fmt.Errorf("admin login: %w", err)
 	}
@@ -106,12 +106,12 @@ func (s *authService) checkPassword(ctx context.Context, u *domainUser.User, pla
 	switch u.PasswordVersion {
 	case domainUser.PasswordVersionBcrypt, "":
 		if err := security.CheckPasswordBcrypt(u.Password, plaintext); err != nil {
-			return domainUser.ErrInvalidCredentials
+			return shared.ErrUnauthorized{Message: "invalid email or password"}
 		}
 	case domainUser.PasswordVersionMD5:
 		// Legacy MD5 path — upgrade the hash on successful login.
 		if security.MD5Hash(plaintext) != u.Password {
-			return domainUser.ErrInvalidCredentials
+			return shared.ErrUnauthorized{Message: "invalid email or password"}
 		}
 		hashed, err := security.HashPassword(plaintext)
 		if err != nil {
