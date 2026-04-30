@@ -61,8 +61,8 @@ func (m *Mailer) send(to, subject, templateFile string, data map[string]any) err
 	}
 
 	// Wrap data in DataMap to match {{.DataMap.X}} references in all templates.
-	// HofRoundLogo is used by the shared base layout.
-	data["HofRoundLogo"] = "https://s3.eu-west-2.amazonaws.com/hof--s3/hof/HoF_Logo_White.png"
+	// HofRoundLogo is injected from config so the URL can be changed without redeploying.
+	data["HofRoundLogo"] = m.cfg.LogoURL
 
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, map[string]any{"DataMap": data}); err != nil {

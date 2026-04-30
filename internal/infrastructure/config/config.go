@@ -74,6 +74,7 @@ type MailerConfig struct {
 	Port         int    `env:"MAILER_PORT" envDefault:"587"`
 	Header       string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
 	TemplatePath string `env:"TEMPLATE_PATH" envDefault:"./templates/"`
+	LogoURL      string `env:"MAIL_LOGO_URL" envDefault:"https://s3.eu-west-2.amazonaws.com/hof--s3/hof/HoF_Logo_White.png"`
 }
 
 // Load reads all environment variables into a ServerConfig.
