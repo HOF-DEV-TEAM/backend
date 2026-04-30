@@ -17,7 +17,7 @@ CMD        := ./cmd/main.go
 IMAGE_NAME := hof-backend
 GO         := go
 
-.PHONY: help env run build clean swagger test lint \
+.PHONY: help env env-sync run build clean swagger test lint \
         docker-build up down logs ps db-shell setup-hooks
 
 ## ── Help ─────────────────────────────────────────────────────────────────────
@@ -39,13 +39,28 @@ endif
 
 ## ── Environment ──────────────────────────────────────────────────────────────
 
-env: ## Copy .env.example → .env (skips if .env already exists)
+env: ## Create .env from .env.example (skips if .env already exists; use env-sync to add new keys)
 	@if [ -f .env ]; then \
-		echo ".env already exists — skipping. Delete it first to reset."; \
+		echo ".env already exists — run 'make env-sync' to add any missing keys."; \
 	else \
 		cp .env.example .env; \
 		echo "Created .env from .env.example — fill in your secrets."; \
 	fi
+
+env-sync: ## Add keys from .env.example that are missing in .env (never overwrites existing values)
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "Created .env from .env.example."; \
+		exit 0; \
+	fi; \
+	added=0; \
+	while IFS= read -r line; do \
+		key=$$(echo "$$line" | sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p'); \
+		if [ -n "$$key" ] && ! grep -q "^$$key=" .env; then \
+			echo "$$line" >> .env; added=$$((added+1)); \
+		fi; \
+	done < .env.example; \
+	echo "env-sync: $$added key(s) added to .env."
 
 ## ── Development ──────────────────────────────────────────────────────────────
 
