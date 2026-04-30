@@ -3,6 +3,7 @@ package http
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -11,7 +12,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 
-	_ "bitbucket.org/hofng/hofApp/docs"
+	docs "bitbucket.org/hofng/hofApp/docs"
 	appAuth "bitbucket.org/hofng/hofApp/internal/application/auth"
 	appContent "bitbucket.org/hofng/hofApp/internal/application/content"
 	appSub "bitbucket.org/hofng/hofApp/internal/application/subscription"
@@ -35,6 +36,12 @@ func NewRouter(
 	s3 *storage.S3Storage,
 	log *zap.Logger,
 ) http.Handler {
+	// ── Swagger host/scheme — set dynamically from SERVER_URL ────────────────
+	if parsed, err := url.Parse(serverURL); err == nil && parsed.Host != "" {
+		docs.SwaggerInfo.Host = parsed.Host
+		docs.SwaggerInfo.Schemes = []string{parsed.Scheme}
+	}
+
 	r := chi.NewRouter()
 
 	// ── Global middleware ─────────────────────────────────────────────────────
