@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	accessTokenTTL  = 48 * time.Hour
-	refreshTokenTTL = 30 * 24 * time.Hour
+	accessTokenTTL      = 48 * time.Hour
+	refreshTokenTTL     = 30 * 24 * time.Hour
+	emailVerifyTokenTTL = 24 * time.Hour
 
 	contextKeyToken  = contextKey("jwt_token")
 	contextKeyClaims = contextKey("jwt_claims")
@@ -46,6 +47,13 @@ func (s *JWTService) IssueAccessToken(userID string) (string, error) {
 // IssueRefreshToken signs a long-lived refresh token for userID.
 func (s *JWTService) IssueRefreshToken(userID string) (string, error) {
 	return s.sign(userID, refreshTokenTTL)
+}
+
+// IssueEmailVerificationToken signs a 24-hour token for email verification links.
+// Using a dedicated token (separate from access tokens) limits the blast radius if a
+// verification link is intercepted — it cannot be used as a regular API bearer token.
+func (s *JWTService) IssueEmailVerificationToken(userID string) (string, error) {
+	return s.sign(userID, emailVerifyTokenTTL)
 }
 
 func (s *JWTService) sign(userID string, ttl time.Duration) (string, error) {

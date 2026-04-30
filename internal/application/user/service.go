@@ -364,7 +364,7 @@ func (s *userService) SendEmailVerification(ctx context.Context, userID uuid.UUI
 		return err
 	}
 
-	token, err := s.jwtSvc.IssueAccessToken(u.ID.String())
+	token, err := s.jwtSvc.IssueEmailVerificationToken(u.ID.String())
 	if err != nil {
 		return fmt.Errorf("issuing email verification token: %w", err)
 	}
