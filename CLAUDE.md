@@ -1,7 +1,7 @@
 # HOF Backend — Claude Project Context
 
 Heritage of Faith Church backend — audio content platform with subscriptions, user management,
-Paystack payments, AWS S3 storage, and SendinBlue email. Go 1.26, Chi, GORM, PostgreSQL, zap.
+Paystack payments, AWS S3 storage, and Brevo email. Go 1.26, Chi, GORM, PostgreSQL, zap.
 
 ---
 
@@ -29,7 +29,7 @@ internal/
     security/                  ← JWT (JWTService), bcrypt, MD5
     payment/paystack/          ← Paystack HTTP client + service
     storage/                   ← AWS S3
-    mailer/                    ← SendinBlue SMTP
+    mailer/                    ← Brevo SMTP
     logger/                    ← zap
   interfaces/http/             ← Layer 4: HTTP (imports application only)
     handler/                   ← one handler file per domain

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -504,7 +505,6 @@ func (h *UserHandler) UpdateAppVersion(w http.ResponseWriter, r *http.Request) {
 // @Param        body body appUser.SendEmailVerificationRequest true "User email"
 // @Success      200 {object} map[string]string
 // @Failure      400 {object} map[string]string
-// @Failure      404 {object} map[string]string
 // @Router       /session/send_verify_email [post]
 func (h *UserHandler) SendEmailVerification(w http.ResponseWriter, r *http.Request) {
 	var req appUser.SendEmailVerificationRequest
@@ -552,13 +552,23 @@ func (h *UserHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 // renderHTMLPage serves a static HTML file from the configured template directory.
 func (h *UserHandler) renderHTMLPage(w http.ResponseWriter, status int, filename string) {
+	// Validate filename to prevent path traversal
+	if !strings.HasSuffix(filename, ".page.tmpl") {
+		http.Error(w, "page unavailable", http.StatusInternalServerError)
+		return
+	}
+
+	// Sanitize filename to prevent directory traversal
+	filename = filepath.Base(filename)
+
 	content, err := os.ReadFile(filepath.Join(h.templatePath, filename))
 	if err != nil {
 		http.Error(w, "page unavailable", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
 	w.WriteHeader(status)
 	_, _ = w.Write(content)
 }
-

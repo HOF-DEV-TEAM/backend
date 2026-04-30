@@ -106,9 +106,10 @@ curl -s -X POST $BASE/user/reset_password \
 # Expected: success:true
 
 # Send email verification
-curl -s -X POST $BASE/user/verify_email \
-  -H "Authorization: Bearer $TOKEN"
-# Expected: success:true (or mailer error — non-blocking)
+curl -s -X POST $BASE/session/send_verify_email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com"}'
+# Expected: success:true from public send_verify_email endpoint (or mailer error — non-blocking)
 
 # Get roles
 curl -s $BASE/user/roles -H "Authorization: Bearer $TOKEN"

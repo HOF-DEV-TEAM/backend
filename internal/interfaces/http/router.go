@@ -39,7 +39,9 @@ func NewRouter(
 	// ── Swagger host/scheme — set dynamically from SERVER_URL ────────────────
 	if parsed, err := url.Parse(serverURL); err == nil && parsed.Host != "" {
 		docs.SwaggerInfo.Host = parsed.Host
-		docs.SwaggerInfo.Schemes = []string{parsed.Scheme}
+		if parsed.Scheme != "" {
+			docs.SwaggerInfo.Schemes = []string{parsed.Scheme}
+		}
 	}
 
 	r := chi.NewRouter()

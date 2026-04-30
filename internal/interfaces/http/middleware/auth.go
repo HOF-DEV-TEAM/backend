@@ -25,6 +25,12 @@ func Authenticate(jwtSvc *security.JWTService) func(http.Handler) http.Handler {
 				return
 			}
 
+			// Reject non-access tokens (e.g., email_verify, refresh) for API access
+			if claims.Type != "" && claims.Type != "access" {
+				response.Unauthorized(w)
+				return
+			}
+
 			userID, err := uuid.Parse(claims.UserID)
 			if err != nil {
 				response.Unauthorized(w)

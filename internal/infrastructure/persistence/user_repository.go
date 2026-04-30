@@ -87,6 +87,9 @@ func (r *userRepository) UpdateVerificationStatus(ctx context.Context, id uuid.U
 	if result.Error != nil {
 		return fmt.Errorf("updating verification status: %w", result.Error)
 	}
+	if result.RowsAffected == 0 {
+		return shared.ErrNotFound{Resource: "user", ID: id.String()}
+	}
 	return nil
 }
 

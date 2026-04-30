@@ -359,23 +359,33 @@ func (s *userService) UpdateAppVersion(ctx context.Context, req AppVersionUpdate
 // ── Email verification ────────────────────────────────────────────────────────
 
 func (s *userService) SendEmailVerification(ctx context.Context, email string, serverURL string) error {
+	if err := validate.Var(email, "required,email"); err != nil {
+		return shared.ErrInvalidInput{Field: "email", Message: "invalid email"}
+	}
 	u, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
+		if shared.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
-	token, err := s.jwtSvc.IssueEmailVerificationToken(u.ID.String())
-	if err != nil {
-		return fmt.Errorf("issuing email verification token: %w", err)
-	}
-
-	link := fmt.Sprintf("%s/verify_email/%s", serverURL, token)
-
-	go func() {
-		if err := s.mailer.SendEmailVerification(u.Email, u.FullName(), link); err != nil {
-			s.log.Error("sending email verification", zap.Error(err))
+	if s.mailer != nil {
+		token, err := s.jwtSvc.IssueEmailVerificationToken(u.ID.String())
+		if err != nil {
+			return fmt.Errorf("issuing email verification token: %w", err)
 		}
-	}()
+
+		link := fmt.Sprintf("%s/verify_email/%s", serverURL, token)
+
+		go func() {
+			if err := s.mailer.SendEmailVerification(u.Email, u.FullName(), link); err != nil {
+				s.log.Error("sending email verification", zap.Error(err))
+			}
+		}()
+	} else {
+		s.log.Warn("mailer not configured, skipping email verification", zap.String("email", u.Email))
+	}
 
 	return nil
 }

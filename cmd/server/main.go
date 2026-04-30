@@ -6,8 +6,7 @@
 // @contact.email   dev@hofng.org
 // @license.name    MIT
 // @license.url     https://opensource.org/licenses/MIT
-// @host            backend-thegoninja9785-8yvkmqp6.leapcell.dev
-// @schemes        https
+// Host and scheme are set dynamically at startup from SERVER_URL — see NewRouter.
 // @BasePath        /
 // @securityDefinitions.apikey BearerAuth
 // @in                         header
