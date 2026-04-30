@@ -681,25 +681,6 @@ paths:
       summary: Create a new user account
       tags:
       - users
-  /session/verify_email:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Email
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Send an email verification link
-      tags:
-      - users
   /session/verify_token:
     put:
       consumes:
@@ -1241,6 +1222,25 @@ paths:
       security:
       - BearerAuth: []
       summary: Update the authenticated user's profile
+      tags:
+      - users
+  /user/verify_email:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Email
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Send an email verification link
       tags:
       - users
   /verify_email/{token}:

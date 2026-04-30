@@ -68,10 +68,10 @@ type PaystackConfig struct {
 // MailerConfig holds SMTP settings for outbound email.
 type MailerConfig struct {
 	Email        string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`
-	Host         string `env:"MAILER_HOST" envDefault:"smtp-relay.sendinblue.com"`
+	Host         string `env:"MAILER_HOST" envDefault:"smtp-relay.brevo.com"`
 	Username     string `env:"MAILER_USERNAME"`
 	Password     string `env:"MAILER_PASSWORD"`
-	Port         int    `env:"MAILER_PORT" envDefault:"2525"`
+	Port         int    `env:"MAILER_PORT" envDefault:"587"`
 	Header       string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
 	TemplatePath string `env:"TEMPLATE_PATH" envDefault:"./templates/"`
 }

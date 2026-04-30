@@ -273,36 +273,6 @@
                 }
             }
         },
-        "/session/verify_email": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Send an email verification link",
-                "parameters": [
-                    {
-                        "description": "Email",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/session/verify_token": {
             "put": {
                 "consumes": [
@@ -1191,6 +1161,36 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/verify_email": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Send an email verification link",
+                "parameters": [
+                    {
+                        "description": "Email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest"
                         }
                     }
                 ],

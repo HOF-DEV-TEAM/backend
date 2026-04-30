@@ -485,7 +485,7 @@ func (h *UserHandler) UpdateAppVersion(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        body body appUser.SendEmailVerificationRequest true "Email"
 // @Success      200
-// @Router       /session/verify_email [post]
+// @Router       /user/verify_email [post]
 func (h *UserHandler) SendEmailVerification(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
