@@ -67,14 +67,17 @@ type PaystackConfig struct {
 
 // MailerConfig holds SMTP settings for outbound email.
 type MailerConfig struct {
-	Email        string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`
-	Host         string `env:"MAILER_HOST" envDefault:"smtp-relay.brevo.com"`
-	Username     string `env:"MAILER_USERNAME"`
-	Password     string `env:"MAILER_PASSWORD"`
-	Port         int    `env:"MAILER_PORT" envDefault:"587"`
-	Header       string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
-	TemplatePath string `env:"TEMPLATE_PATH" envDefault:"./templates/"`
-	LogoURL      string `env:"MAIL_LOGO_URL" envDefault:"https://s3.eu-west-2.amazonaws.com/hof--s3/hof/HoF_Logo_White.png"`
+	Email            string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`
+	Host             string `env:"MAILER_HOST" envDefault:"smtp-relay.brevo.com"`
+	Username         string `env:"MAILER_USERNAME"`
+	Password         string `env:"MAILER_PASSWORD"`
+	Port             int    `env:"MAILER_PORT" envDefault:"587"`
+	Header           string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
+	TemplatePath     string `env:"TEMPLATE_PATH" envDefault:"./templates/"`
+	LogoURL          string `env:"MAIL_LOGO_URL" envDefault:"https://s3.eu-west-2.amazonaws.com/hof--s3/hof/HoF_Logo_White.png"`
+	BrevoAPIKey      string `env:"BREVO_API_KEY"`
+	ResendAPIKey     string `env:"RESEND_API_KEY"`
+	MailerSendAPIKey string `env:"MAILERSEND_API_KEY"`
 }
 
 // Load reads all environment variables into a ServerConfig.
