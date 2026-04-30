@@ -561,7 +561,9 @@ func (h *UserHandler) renderHTMLPage(w http.ResponseWriter, status int, filename
 	// Sanitize filename to prevent directory traversal
 	filename = filepath.Base(filename)
 
-	content, err := os.ReadFile(filepath.Join(h.templatePath, filename))
+	fullPath := filepath.Join(h.templatePath, filename)
+	// #nosec G304 - filename is validated and sanitized above
+	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		http.Error(w, "page unavailable", http.StatusInternalServerError)
 		return
