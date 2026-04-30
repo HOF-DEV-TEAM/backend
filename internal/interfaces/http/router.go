@@ -4,6 +4,14 @@ package http
 import (
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	"github.com/google/uuid"
+	httpSwagger "github.com/swaggo/http-swagger"
+	"go.uber.org/zap"
+
+	_ "bitbucket.org/hofng/hofApp/docs"
 	appAuth "bitbucket.org/hofng/hofApp/internal/application/auth"
 	appContent "bitbucket.org/hofng/hofApp/internal/application/content"
 	appSub "bitbucket.org/hofng/hofApp/internal/application/subscription"
@@ -12,19 +20,13 @@ import (
 	"bitbucket.org/hofng/hofApp/internal/infrastructure/storage"
 	"bitbucket.org/hofng/hofApp/internal/interfaces/http/handler"
 	"bitbucket.org/hofng/hofApp/internal/interfaces/http/middleware"
-	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	httpSwagger "github.com/swaggo/http-swagger"
-	"go.uber.org/zap"
-
-	_ "bitbucket.org/hofng/hofApp/docs"
 )
 
 // NewRouter wires up all routes and returns a ready-to-use Chi router.
 func NewRouter(
 	jwtSvc *security.JWTService,
 	serverURL string,
+	templatePath string,
 	paystackSecret string,
 	authSvc appAuth.Service,
 	userSvc appUser.Service,
@@ -86,18 +88,23 @@ func NewRouter(
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	authH := handler.NewAuthHandler(authSvc)
-	userH := handler.NewUserHandler(userSvc, serverURL)
+	userH := handler.NewUserHandler(userSvc, serverURL, templatePath, func(token string) (uuid.UUID, error) {
+		claims, err := jwtSvc.Parse(token)
+		if err != nil {
+			return uuid.UUID{}, err
+		}
+		return uuid.Parse(claims.UserID)
+	})
 	contentH := handler.NewContentHandler(contentSvc)
 	subH := handler.NewSubscriptionHandler(subSvc, paystackSecret, log)
 	uploadH := handler.NewUploadHandler(s3)
 	adminH := handler.NewAdminHandler(subSvc)
 
-	// ── Email verification (path-based JWT) ───────────────────────────────────
-	r.Group(func(r chi.Router) {
-		r.Use(jwtSvc.PathTokenMiddleware)
-		r.Use(middleware.Authenticate(jwtSvc))
-		r.Get("/verify_email/{token}", userH.VerifyEmail)
-	})
+	// ── Email verification ────────────────────────────────────────────────────
+	// GET  /verify_email/{token} — browser link from the verification email.
+	//   The handler owns all JWT validation and renders a branded HTML page.
+	// POST /session/send_verify_email — public; call right after sign-up.
+	r.Get("/verify_email/{token}", userH.VerifyEmail)
 
 	// ── Public session routes ─────────────────────────────────────────────────
 	r.Route("/session", func(r chi.Router) {
@@ -107,6 +114,7 @@ func NewRouter(
 		r.Post("/sign_up", userH.SignUp)
 		r.Post("/forgot_password", userH.ForgotPassword)
 		r.Put("/verify_token", userH.VerifyOTP)
+		r.Post("/send_verify_email", userH.SendEmailVerification)
 	})
 
 	// ── Paystack webhook (public, verified by Paystack HMAC signature) ──────────
@@ -121,7 +129,6 @@ func NewRouter(
 			r.Post("/update", userH.UpdateProfile)
 			r.Post("/reset_password", userH.ResetPassword)
 			r.Post("/change_password", userH.ChangePassword)
-			r.Post("/verify_email", userH.SendEmailVerification)
 
 			// Roles
 			r.Get("/roles", userH.GetRoles)

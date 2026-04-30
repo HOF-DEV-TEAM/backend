@@ -44,7 +44,7 @@ type Service interface {
 	GetAppVersion(ctx context.Context, versionID uuid.UUID) (*domainUser.AppVersion, error)
 	UpdateAppVersion(ctx context.Context, req AppVersionUpdateRequest) error
 
-	SendEmailVerification(ctx context.Context, userID uuid.UUID, serverURL string) error
+	SendEmailVerification(ctx context.Context, email string, serverURL string) error
 	VerifyEmail(ctx context.Context, userID uuid.UUID) error
 }
 
@@ -358,8 +358,8 @@ func (s *userService) UpdateAppVersion(ctx context.Context, req AppVersionUpdate
 
 // ── Email verification ────────────────────────────────────────────────────────
 
-func (s *userService) SendEmailVerification(ctx context.Context, userID uuid.UUID, serverURL string) error {
-	u, err := s.repo.GetByID(ctx, userID)
+func (s *userService) SendEmailVerification(ctx context.Context, email string, serverURL string) error {
+	u, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return err
 	}

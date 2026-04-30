@@ -99,6 +99,7 @@ func main() {
 		cfg.HTTPPort,
 		jwtSvc,
 		cfg.ServerURL,
+		cfg.Mailer.TemplatePath,
 		cfg.Paystack.Secret,
 		authSvc,
 		userSvc,
