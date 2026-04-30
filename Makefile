@@ -39,19 +39,23 @@ endif
 
 ## ── Environment ──────────────────────────────────────────────────────────────
 
-env: ## Create .env from .env.example, or add any missing keys to an existing .env
+env: ## Create .env from .env.example, or sync missing/empty keys from .env.example into .env
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
 		echo "Created .env from .env.example — fill in your secrets."; \
 	else \
-		added=0; \
+		added=0; filled=0; \
 		while IFS= read -r line; do \
 			key=$$(echo "$$line" | sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p'); \
-			if [ -n "$$key" ] && ! grep -q "^$$key=" .env; then \
+			val=$$(echo "$$line" | sed -n 's/^[A-Za-z_][A-Za-z0-9_]*=\(.*\)/\1/p'); \
+			if [ -z "$$key" ]; then continue; fi; \
+			if ! grep -q "^$$key=" .env; then \
 				echo "$$line" >> .env; added=$$((added+1)); \
+			elif [ -n "$$val" ] && grep -q "^$$key=$$" .env; then \
+				sed -i "s|^$$key=$$|$$line|" .env; filled=$$((filled+1)); \
 			fi; \
 		done < .env.example; \
-		echo "env: $$added new key(s) added to .env."; \
+		echo "env: $$added key(s) added, $$filled empty value(s) filled from .env.example."; \
 	fi
 
 ## ── Development ──────────────────────────────────────────────────────────────
