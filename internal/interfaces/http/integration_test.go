@@ -25,9 +25,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// findMigrationsDir walks up from the current working directory until it finds
-// a go.mod file (repo root) and returns the path to the migrations/ subdirectory.
-func findMigrationsDir(t *testing.T) string {
+// findRepoSubdir walks up from the current working directory until it finds
+// a go.mod file (repo root) and returns the path to the named subdirectory.
+func findRepoSubdir(t *testing.T, name string) string {
 	t.Helper()
 	dir, err := os.Getwd()
 	if err != nil {
@@ -35,18 +35,24 @@ func findMigrationsDir(t *testing.T) string {
 	}
 	for {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			migrationsDir := filepath.Join(dir, "migrations")
-			if _, err := os.Stat(migrationsDir); err == nil {
-				return migrationsDir
+			target := filepath.Join(dir, name)
+			if _, err := os.Stat(target); err == nil {
+				return target
 			}
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			t.Fatalf("migrations directory not found (walked up from %s)", dir)
+			t.Fatalf("%s directory not found (walked up from %s)", name, dir)
 		}
 		dir = parent
 	}
 }
+
+// findMigrationsDir returns the absolute path to the migrations/ directory.
+func findMigrationsDir(t *testing.T) string { return findRepoSubdir(t, "migrations") }
+
+// findTemplatesDir returns the absolute path to the templates/ directory.
+func findTemplatesDir(t *testing.T) string { return findRepoSubdir(t, "templates") }
 
 // testServer spins up a real HTTP server backed by the test PostgreSQL database.
 // It runs all migrations before each test suite.
@@ -88,7 +94,8 @@ func testServer(t *testing.T) *httptest.Server {
 	contentSvc := appContent.NewService(contentRepo, log)
 	subSvc := appSub.NewService(subRepo, nil, userRepo, log)
 
-	router := httpServer.NewRouter(jwtSvc, "http://localhost", "", authSvc, userSvc, contentSvc, subSvc, nil, log)
+	templatesDir := findTemplatesDir(t)
+	router := httpServer.NewRouter(jwtSvc, "http://localhost", templatesDir, "", authSvc, userSvc, contentSvc, subSvc, nil, log)
 	return httptest.NewServer(router)
 }
 

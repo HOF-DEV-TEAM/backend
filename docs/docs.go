@@ -177,6 +177,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/session/send_verify_email": {
+            "post": {
+                "description": "Public endpoint — call this immediately after sign-up to trigger the verification email.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "session"
+                ],
+                "summary": "Send an email verification link",
+                "parameters": [
+                    {
+                        "description": "User email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/session/sign_in": {
             "post": {
                 "consumes": [
@@ -272,36 +318,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User"
                         }
-                    }
-                }
-            }
-        },
-        "/session/verify_email": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Send an email verification link",
-                "parameters": [
-                    {
-                        "description": "Email",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             }
@@ -1206,17 +1222,18 @@ const docTemplate = `{
         },
         "/verify_email/{token}": {
             "get": {
+                "description": "Browser-facing endpoint — opened from the link in the verification email.",
                 "produces": [
-                    "application/json"
+                    "text/html"
                 ],
                 "tags": [
-                    "users"
+                    "session"
                 ],
                 "summary": "Complete email verification via link token",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "JWT from email link",
+                        "description": "JWT embedded in the verification link",
                         "name": "token",
                         "in": "path",
                         "required": true
@@ -1225,6 +1242,9 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
                     }
                 }
             }
@@ -2000,9 +2020,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "2.0",
-	Host:             "backend-thegoninja9785-8yvkmqp6.leapcell.dev",
+	Host:             "",
 	BasePath:         "/",
-	Schemes:          []string{"https"},
+	Schemes:          []string{},
 	Title:            "HOF Backend API",
 	Description:      "Heritage of Faith Church — audio content and subscription platform.",
 	InfoInstanceName: "swagger",

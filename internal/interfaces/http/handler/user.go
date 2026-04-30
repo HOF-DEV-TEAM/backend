@@ -3,6 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -15,13 +18,28 @@ import (
 
 // UserHandler groups all user-management HTTP endpoints.
 type UserHandler struct {
-	svc       appUser.Service
-	serverURL string
+	svc          appUser.Service
+	serverURL    string
+	templatePath string
+	// parseToken extracts a user UUID from a signed JWT string.
+	// Injected so the handler stays free of the security package import.
+	parseToken func(token string) (uuid.UUID, error)
 }
 
 // NewUserHandler creates a UserHandler.
-func NewUserHandler(svc appUser.Service, serverURL string) *UserHandler {
-	return &UserHandler{svc: svc, serverURL: serverURL}
+// parseToken should call jwtSvc.Parse and return the user UUID from the claims.
+func NewUserHandler(
+	svc appUser.Service,
+	serverURL string,
+	templatePath string,
+	parseToken func(token string) (uuid.UUID, error),
+) *UserHandler {
+	return &UserHandler{
+		svc:          svc,
+		serverURL:    serverURL,
+		templatePath: templatePath,
+		parseToken:   parseToken,
+	}
 }
 
 // SignUp godoc
@@ -480,20 +498,22 @@ func (h *UserHandler) UpdateAppVersion(w http.ResponseWriter, r *http.Request) {
 
 // SendEmailVerification godoc
 // @Summary      Send an email verification link
-// @Tags         users
+// @Description  Public endpoint — call this immediately after sign-up to trigger the verification email.
+// @Tags         session
 // @Accept       json
 // @Produce      json
-// @Param        body body appUser.SendEmailVerificationRequest true "Email"
-// @Success      200
-// @Router       /session/verify_email [post]
+// @Param        body body appUser.SendEmailVerificationRequest true "User email"
+// @Success      200 {object} map[string]string
+// @Failure      400 {object} map[string]string
+// @Router       /session/send_verify_email [post]
 func (h *UserHandler) SendEmailVerification(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.UserIDFromContext(r.Context())
-	if !ok {
-		response.Unauthorized(w)
+	var req appUser.SendEmailVerificationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w, "invalid request body")
 		return
 	}
 
-	if err := h.svc.SendEmailVerification(r.Context(), userID, h.serverURL); err != nil {
+	if err := h.svc.SendEmailVerification(r.Context(), req.Email, h.serverURL); err != nil {
 		response.Error(w, err)
 		return
 	}
@@ -503,25 +523,54 @@ func (h *UserHandler) SendEmailVerification(w http.ResponseWriter, r *http.Reque
 
 // VerifyEmail godoc
 // @Summary      Complete email verification via link token
-// @Tags         users
-// @Produce      json
-// @Param        token path string true "JWT from email link"
+// @Description  Browser-facing endpoint — opened from the link in the verification email.
+//
+//	On success or failure it renders a branded HTML page, not JSON.
+//
+// @Tags         session
+// @Produce      html
+// @Param        token path string true "JWT embedded in the verification link"
 // @Success      200
+// @Failure      401
 // @Router       /verify_email/{token} [get]
 func (h *UserHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
-	claims, ok := middleware.UserIDFromContext(r.Context())
-	if !ok {
-		response.Unauthorized(w)
+	tokenStr := chi.URLParam(r, "token")
+
+	userID, err := h.parseToken(tokenStr)
+	if err != nil {
+		h.renderHTMLPage(w, http.StatusUnauthorized, "verify_email_error.page.tmpl")
 		return
 	}
 
-	if err := h.svc.VerifyEmail(r.Context(), claims); err != nil {
-		response.Error(w, err)
+	if err := h.svc.VerifyEmail(r.Context(), userID); err != nil {
+		h.renderHTMLPage(w, http.StatusInternalServerError, "verify_email_error.page.tmpl")
 		return
 	}
 
-	// Render success page.
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`<html><body><h1>Email verified successfully!</h1></body></html>`))
+	h.renderHTMLPage(w, http.StatusOK, "verify_email_success.page.tmpl")
+}
+
+// renderHTMLPage serves a static HTML file from the configured template directory.
+func (h *UserHandler) renderHTMLPage(w http.ResponseWriter, status int, filename string) {
+	// Validate filename to prevent path traversal
+	if !strings.HasSuffix(filename, ".page.tmpl") {
+		http.Error(w, "page unavailable", http.StatusInternalServerError)
+		return
+	}
+
+	// Sanitize filename to prevent directory traversal
+	filename = filepath.Base(filename)
+
+	fullPath := filepath.Join(h.templatePath, filename)
+	// #nosec G304 - filename is validated and sanitized above
+	content, err := os.ReadFile(fullPath)
+	if err != nil {
+		http.Error(w, "page unavailable", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+	w.WriteHeader(status)
+	_, _ = w.Write(content)
 }

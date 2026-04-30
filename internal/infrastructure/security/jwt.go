@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	accessTokenTTL  = 48 * time.Hour
-	refreshTokenTTL = 30 * 24 * time.Hour
+	accessTokenTTL      = 48 * time.Hour
+	refreshTokenTTL     = 30 * 24 * time.Hour
+	emailVerifyTokenTTL = 24 * time.Hour
 
 	contextKeyToken  = contextKey("jwt_token")
 	contextKeyClaims = contextKey("jwt_claims")
@@ -25,6 +26,7 @@ type contextKey string
 // Claims is the standard JWT payload for this application.
 type Claims struct {
 	UserID string `json:"user_id"`
+	Type   string `json:"typ,omitempty"` // "access", "refresh", "email_verify"
 	jwt.RegisteredClaims
 }
 
@@ -40,17 +42,25 @@ func NewJWTService(signingKey string) *JWTService {
 
 // IssueAccessToken signs a short-lived access token for userID.
 func (s *JWTService) IssueAccessToken(userID string) (string, error) {
-	return s.sign(userID, accessTokenTTL)
+	return s.sign(userID, accessTokenTTL, "access")
 }
 
 // IssueRefreshToken signs a long-lived refresh token for userID.
 func (s *JWTService) IssueRefreshToken(userID string) (string, error) {
-	return s.sign(userID, refreshTokenTTL)
+	return s.sign(userID, refreshTokenTTL, "refresh")
 }
 
-func (s *JWTService) sign(userID string, ttl time.Duration) (string, error) {
+// IssueEmailVerificationToken signs a 24-hour token for email verification links.
+// The token includes a "typ: email_verify" claim that middleware.Authenticate rejects
+// for API access, limiting blast radius if the verification link is intercepted.
+func (s *JWTService) IssueEmailVerificationToken(userID string) (string, error) {
+	return s.sign(userID, emailVerifyTokenTTL, "email_verify")
+}
+
+func (s *JWTService) sign(userID string, ttl time.Duration, typ string) (string, error) {
 	claims := Claims{
 		UserID: userID,
+		Type:   typ,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

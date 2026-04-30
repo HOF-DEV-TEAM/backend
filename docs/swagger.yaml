@@ -509,7 +509,6 @@ definitions:
     - PhoneVerified
     - EmailVerified
     - EmailAndPhoneVerified
-host: backend-thegoninja9785-8yvkmqp6.leapcell.dev
 info:
   contact:
     email: dev@hofng.org
@@ -618,6 +617,37 @@ paths:
       summary: Initiate password reset
       tags:
       - users
+  /session/send_verify_email:
+    post:
+      consumes:
+      - application/json
+      description: Public endpoint — call this immediately after sign-up to trigger
+        the verification email.
+      parameters:
+      - description: User email
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Send an email verification link
+      tags:
+      - session
   /session/sign_in:
     post:
       consumes:
@@ -679,25 +709,6 @@ paths:
           schema:
             $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User'
       summary: Create a new user account
-      tags:
-      - users
-  /session/verify_email:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Email
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.SendEmailVerificationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Send an email verification link
       tags:
       - users
   /session/verify_token:
@@ -1245,22 +1256,24 @@ paths:
       - users
   /verify_email/{token}:
     get:
+      description: Browser-facing endpoint — opened from the link in the verification
+        email.
       parameters:
-      - description: JWT from email link
+      - description: JWT embedded in the verification link
         in: path
         name: token
         required: true
         type: string
       produces:
-      - application/json
+      - text/html
       responses:
         "200":
           description: OK
+        "401":
+          description: Unauthorized
       summary: Complete email verification via link token
       tags:
-      - users
-schemes:
-- https
+      - session
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and the JWT access token.

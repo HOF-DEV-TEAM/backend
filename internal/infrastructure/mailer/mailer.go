@@ -29,19 +29,22 @@ func New(cfg *config.MailerConfig, log *zap.Logger) *Mailer {
 }
 
 // SendPasswordReset delivers a password-reset OTP to the recipient.
+// The OTP is valid for 5 minutes (enforced in the application layer).
 func (m *Mailer) SendPasswordReset(to, name, otp string) error {
 	data := map[string]any{
-		"Name": name,
-		"OTP":  otp,
+		"User":      name,
+		"OTP":       otp,
+		"ExpiresIn": "5",
 	}
 	return m.send(to, "Password Reset", "reset_password.page.tmpl", data)
 }
 
-// SendEmailVerification delivers a verification link to the recipient.
+// SendEmailVerification delivers a 24-hour verification link to the recipient.
 func (m *Mailer) SendEmailVerification(to, name, link string) error {
 	data := map[string]any{
-		"Name": name,
-		"Link": link,
+		"User":             name,
+		"VerificationLink": link,
+		"ExpiresIn":        "24 hours",
 	}
 	return m.send(to, "Verify Your Email", "verify_email.page.tmpl", data)
 }
@@ -50,13 +53,19 @@ func (m *Mailer) send(to, subject, templateFile string, data map[string]any) err
 	tmplPath := filepath.Join(m.cfg.TemplatePath, templateFile)
 	basePath := filepath.Join(m.cfg.TemplatePath, "base.layout.tmpl")
 
-	t, err := template.ParseFiles(basePath, tmplPath)
+	// Parse the page template first so that t.Execute() runs the page file
+	// (which calls {{template "base" .}}), NOT the empty layout wrapper.
+	t, err := template.ParseFiles(tmplPath, basePath)
 	if err != nil {
 		return fmt.Errorf("parsing email template %s: %w", templateFile, err)
 	}
 
+	// Wrap data in DataMap to match {{.DataMap.X}} references in all templates.
+	// HofRoundLogo is injected from config so the URL can be changed without redeploying.
+	data["HofRoundLogo"] = m.cfg.LogoURL
+
 	var buf bytes.Buffer
-	if err := t.Execute(&buf, data); err != nil {
+	if err := t.Execute(&buf, map[string]any{"DataMap": data}); err != nil {
 		return fmt.Errorf("rendering email template: %w", err)
 	}
 

@@ -44,8 +44,9 @@ Thumbs.db
 /server
 /server~
 
-# Claude Code session data
-.claude/
+# Claude Code — commit slash commands, ignore session/worktree data
+.claude/worktrees/
+.claude/settings.local.json
 .claire/
 
 # Local environment — never commit secrets
@@ -61,4 +62,3 @@ bin/
 *.wmv
 
 coverage.out
-CLAUDE.md
