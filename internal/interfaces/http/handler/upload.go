@@ -28,12 +28,7 @@ func NewUploadHandler(s storage.Storage) *UploadHandler {
 // @Success      200 {object} map[string]string
 // @Router       /admin/upload [post]
 func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
-
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		response.BadRequest(w, "file too large or malformed form")
-		return
-	}
+	r.Body = http.MaxBytesReader(w, r.Body, 200<<20)
 
 	_, fileHeader, err := r.FormFile("file")
 	if err != nil {
