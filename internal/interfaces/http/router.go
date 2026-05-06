@@ -33,7 +33,7 @@ func NewRouter(
 	userSvc appUser.Service,
 	contentSvc appContent.Service,
 	subSvc appSub.Service,
-	s3 *storage.S3Storage,
+	fileStorage storage.Storage,
 	log *zap.Logger,
 ) http.Handler {
 	// ── Swagger host/scheme — set dynamically from SERVER_URL ────────────────
@@ -97,7 +97,7 @@ func NewRouter(
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	authH := handler.NewAuthHandler(authSvc)
-	userH := handler.NewUserHandler(userSvc, serverURL, templatePath, func(token string) (uuid.UUID, error) {
+	userH := handler.NewUserHandler(userSvc, log, serverURL, templatePath, func(token string) (uuid.UUID, error) {
 		claims, err := jwtSvc.Parse(token)
 		if err != nil {
 			return uuid.UUID{}, err
@@ -106,7 +106,7 @@ func NewRouter(
 	})
 	contentH := handler.NewContentHandler(contentSvc)
 	subH := handler.NewSubscriptionHandler(subSvc, paystackSecret, log)
-	uploadH := handler.NewUploadHandler(s3)
+	uploadH := handler.NewUploadHandler(fileStorage)
 	adminH := handler.NewAdminHandler(subSvc)
 
 	// ── Email verification ────────────────────────────────────────────────────
@@ -117,10 +117,14 @@ func NewRouter(
 
 	// ── Public session routes ─────────────────────────────────────────────────
 	r.Route("/session", func(r chi.Router) {
-		r.Post("/sign_in", authH.SignIn)
+		// admin
+		r.Post("/sign_up/admin", userH.AdminSignup)
 		r.Post("/sign_in/admin", authH.AdminSignIn)
-		r.Post("/authenticate", authH.Authenticate)
+
 		r.Post("/sign_up", userH.SignUp)
+		r.Post("/sign_in", authH.SignIn)
+		r.Post("/authenticate", authH.Authenticate)
+
 		r.Post("/forgot_password", userH.ForgotPassword)
 		r.Put("/verify_token", userH.VerifyOTP)
 		r.Post("/send_verify_email", userH.SendEmailVerification)
@@ -141,7 +145,6 @@ func NewRouter(
 
 			// Roles
 			r.Get("/roles", userH.GetRoles)
-			r.Post("/roles", userH.AssignRoles)
 
 			// Favourites
 			r.Route("/favourite", func(r chi.Router) {
@@ -161,7 +164,6 @@ func NewRouter(
 			// App version
 			r.Route("/app_version", func(r chi.Router) {
 				r.Get("/version/{version_id}", userH.GetAppVersion)
-				r.Put("/admin/update", userH.UpdateAppVersion)
 			})
 		})
 
@@ -212,12 +214,22 @@ func NewRouter(
 				r.Delete("/delete/{offering_id}", subH.DeleteOffering)
 			})
 		})
+	})
 
-		// File upload
-		r.Post("/upload", uploadH.UploadFile)
-
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RequireAdmin)
 		// Admin
 		r.Route("/admin", func(r chi.Router) {
+			//r.Use(middleware.RequireAdmin)
+
+			// User management
+			r.Post("/user/roles", userH.AssignRoles)
+			r.Put("/user/app_version/update", userH.UpdateAppVersion)
+
+			// File upload
+			r.Post("/upload", uploadH.UploadFile)
+
+			// Global parameters
 			r.Get("/global", adminH.GetGlobalParameters)
 			r.Put("/global", adminH.UpdateGlobalParameters)
 		})

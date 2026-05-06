@@ -9,24 +9,24 @@ import (
 
 // UploadHandler handles file upload endpoints.
 type UploadHandler struct {
-	storage *storage.S3Storage
+	storage storage.Storage
 }
 
 // NewUploadHandler creates an UploadHandler.
-func NewUploadHandler(s *storage.S3Storage) *UploadHandler {
+func NewUploadHandler(s storage.Storage) *UploadHandler {
 	return &UploadHandler{storage: s}
 }
 
 // UploadFile godoc
-// @Summary      Upload a file to S3
+// @Summary      Upload a file to storage (S3 or Cloudinary)
 // @Tags         upload
 // @Security     BearerAuth
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        file formData file true "File to upload"
-// @Param        key  formData string true "S3 object key"
+// @Param        key  formData string true "Object key"
 // @Success      200 {object} map[string]string
-// @Router       /upload [post]
+// @Router       /admin/upload [post]
 func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 

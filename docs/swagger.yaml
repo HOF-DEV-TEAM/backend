@@ -207,6 +207,23 @@ definitions:
     required:
     - message_id
     type: object
+  bitbucket_org_hofng_hofApp_internal_application_user.AdminSignupRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
   bitbucket_org_hofng_hofApp_internal_application_user.AppVersionUpdateRequest:
     properties:
       force:
@@ -553,6 +570,77 @@ paths:
       summary: Update global application parameters
       tags:
       - admin
+  /admin/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Object key
+        in: formData
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Upload a file to storage (S3 or Cloudinary)
+      tags:
+      - upload
+  /admin/user/app_version/update:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Version
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AppVersionUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Update the promoted app version (admin)
+      tags:
+      - app-version
+  /admin/user/roles:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Roles
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AssignRolesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Assign roles to a user (admin)
+      tags:
+      - users
   /session/authenticate:
     post:
       consumes:
@@ -711,6 +799,29 @@ paths:
       summary: Create a new user account
       tags:
       - users
+  /session/sign_up/admin:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Admin signup data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AdminSignupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User'
+      security:
+      - BearerAuth: []
+      summary: Admin sign up
+      tags:
+      - session
   /session/verify_token:
     put:
       consumes:
@@ -977,56 +1088,6 @@ paths:
       summary: Handle Paystack webhook events
       tags:
       - subscription
-  /upload:
-    post:
-      consumes:
-      - multipart/form-data
-      parameters:
-      - description: File to upload
-        in: formData
-        name: file
-        required: true
-        type: file
-      - description: S3 object key
-        in: formData
-        name: key
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Upload a file to S3
-      tags:
-      - upload
-  /user/app_version/admin/update:
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Version
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AppVersionUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerAuth: []
-      summary: Update the promoted app version (admin)
-      tags:
-      - app-version
   /user/app_version/version/{version_id}:
     get:
       parameters:
@@ -1211,26 +1272,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Get roles for the authenticated user
-      tags:
-      - users
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Roles
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AssignRolesRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerAuth: []
-      summary: Assign roles to a user (admin)
       tags:
       - users
   /user/update:

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mime/multipart"
 
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 	"bitbucket.org/hofng/hofApp/internal/infrastructure/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -21,17 +22,20 @@ type S3Storage struct {
 	log      *zap.Logger
 }
 
+// Ensure S3Storage implements the Storage interface
+var _ Storage = (*S3Storage)(nil)
+
 // NewS3Storage connects to AWS and returns a ready-to-use S3Storage.
 func NewS3Storage(cfg *config.AWSConfig, log *zap.Logger) (*S3Storage, error) {
 	if cfg == nil {
 		cfg = &config.AWSConfig{}
 	}
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(cfg.Region),
+		Region:      &cfg.Region,
 		Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.Secret, ""),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("creating AWS session: %w", err)
+		return nil, shared.ErrInvalidInput{Message: "invalid AWS configuration"}
 	}
 
 	return &S3Storage{
@@ -45,7 +49,7 @@ func NewS3Storage(cfg *config.AWSConfig, log *zap.Logger) (*S3Storage, error) {
 func (s *S3Storage) Upload(_ context.Context, fh *multipart.FileHeader, key string) (string, error) {
 	f, err := fh.Open()
 	if err != nil {
-		return "", fmt.Errorf("opening upload file: %w", err)
+		return "", shared.ErrInvalidInput{Message: "failed to open upload file"}
 	}
 	defer func() {
 		if cerr := f.Close(); cerr != nil {
@@ -54,15 +58,16 @@ func (s *S3Storage) Upload(_ context.Context, fh *multipart.FileHeader, key stri
 	}()
 
 	objectKey := s.cfg.BucketPath + key
+	contentType := fh.Header.Get("Content-Type")
 
 	_, err = s.uploader.Upload(&s3manager.UploadInput{
-		Bucket:      aws.String(s.cfg.Bucket),
-		Key:         aws.String(objectKey),
+		Bucket:      &s.cfg.Bucket,
+		Key:         &objectKey,
 		Body:        f,
-		ContentType: aws.String(fh.Header.Get("Content-Type")),
+		ContentType: new(contentType),
 	})
 	if err != nil {
-		return "", fmt.Errorf("uploading to S3: %w", err)
+		return "", fmt.Errorf("s3 upload: %w", err)
 	}
 
 	url := fmt.Sprintf("%s%s/%s", s.cfg.BaseURL, s.cfg.Bucket, objectKey)

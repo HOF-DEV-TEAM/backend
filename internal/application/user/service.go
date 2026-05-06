@@ -31,6 +31,7 @@ type Service interface {
 	AssignRoles(ctx context.Context, req AssignRolesRequest) error
 	RemoveRoles(ctx context.Context, userID uuid.UUID, roles []string) error
 	GetRoles(ctx context.Context, userID uuid.UUID) ([]domainUser.Role, error)
+	AdminSignup(ctx context.Context, req AdminSignupRequest) (*domainUser.User, error)
 
 	AddFavourite(ctx context.Context, userID uuid.UUID, req AddFavouriteRequest) error
 	GetFavourites(ctx context.Context, userID uuid.UUID) ([]domainUser.FavouriteMessage, error)
@@ -107,6 +108,55 @@ func (s *userService) SignUp(ctx context.Context, req SignUpRequest) (*domainUse
 			s.log.Warn("could not register devices during sign up", zap.Error(err))
 		}
 	}
+
+	return s.repo.GetByID(ctx, u.ID)
+}
+
+// AdminSignup creates a new admin user with automatic church_admin role assignment.
+func (s *userService) AdminSignup(ctx context.Context, req AdminSignupRequest) (*domainUser.User, error) {
+	if err := validate.Struct(req); err != nil {
+		return nil, shared.ErrInvalidInput{Message: err.Error()}
+	}
+
+	// Check if admin user already exists
+	if _, err := s.repo.GetByEmail(ctx, req.Email); err == nil {
+		return nil, shared.ErrConflict{Message: "admin user already exists"}
+	} else if !shared.IsNotFound(err) {
+		s.log.Error("admin signup: lookup failed", zap.Error(err))
+		return nil, fmt.Errorf("admin signup: %w", err)
+	}
+
+	// Hash password before creating admin user
+	hashed, err := security.HashPassword(req.Password)
+	if err != nil {
+		s.log.Error("admin signup: hashing password", zap.String("email", req.Email), zap.Error(err))
+		return nil, fmt.Errorf("admin signup: hashing password: %w", err)
+	}
+
+	// Create admin user with church_admin role
+	u := &domainUser.User{
+		FirstName:       req.FirstName,
+		LastName:        req.LastName,
+		Email:           req.Email,
+		Password:        hashed,
+		PasswordVersion: domainUser.PasswordVersionBcrypt,
+		IsVerified:      1, // Auto-verify admin users
+	}
+
+	if err := s.repo.Create(ctx, u); err != nil {
+		s.log.Error("admin signup: creating user", zap.String("email", req.Email), zap.Error(err))
+		return nil, err
+	}
+
+	// Set as admin
+	if err := s.repo.AssignRoles(ctx, u.ID, []domainUser.RoleName{domainUser.RoleChurchAdmin}); err != nil {
+		s.log.Warn("could not assign default member role", zap.Error(err))
+	}
+
+	s.log.Info("admin user created",
+		zap.String("email", req.Email),
+		zap.String("name", fmt.Sprintf("%s %s", req.FirstName, req.LastName)),
+	)
 
 	return s.repo.GetByID(ctx, u.ID)
 }
@@ -198,7 +248,7 @@ func (s *userService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*dom
 
 func (s *userService) ResetPassword(ctx context.Context, req ResetPasswordRequest) error {
 	if req.Password != req.PasswordConfirm {
-		return shared.ErrInvalidInput{Message: domainUser.ErrPasswordConfirm.Error()}
+		return domainUser.ErrPasswordConfirm
 	}
 
 	u, err := s.repo.GetByEmail(ctx, req.Email)
@@ -216,7 +266,7 @@ func (s *userService) ResetPassword(ctx context.Context, req ResetPasswordReques
 
 func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req ChangePasswordRequest) error {
 	if req.NewPassword != req.ConfirmPassword {
-		return shared.ErrInvalidInput{Message: domainUser.ErrPasswordConfirm.Error()}
+		return domainUser.ErrPasswordConfirm
 	}
 
 	u, err := s.repo.GetByID(ctx, userID)
@@ -227,7 +277,7 @@ func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req 
 	// Verify old password.
 	if err := security.CheckPasswordBcrypt(u.Password, req.OldPassword); err != nil {
 		if security.MD5Hash(req.OldPassword) != u.Password {
-			return shared.ErrInvalidInput{Message: domainUser.ErrPasswordMismatch.Error()}
+			return domainUser.ErrPasswordMismatch
 		}
 	}
 

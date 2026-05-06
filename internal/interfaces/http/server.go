@@ -36,10 +36,10 @@ func NewServer(
 	userSvc appUser.Service,
 	contentSvc appContent.Service,
 	subSvc appSub.Service,
-	s3 *storage.S3Storage,
+	fileStorage storage.Storage,
 	log *zap.Logger,
 ) *Server {
-	router := NewRouter(jwtSvc, serverURL, templatePath, paystackSecret, authSvc, userSvc, contentSvc, subSvc, s3, log)
+	router := NewRouter(jwtSvc, serverURL, templatePath, paystackSecret, authSvc, userSvc, contentSvc, subSvc, fileStorage, log)
 
 	return &Server{
 		httpServer: &http.Server{

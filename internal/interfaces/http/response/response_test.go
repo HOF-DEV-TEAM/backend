@@ -2,6 +2,7 @@ package response_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -127,10 +128,21 @@ func TestError_Forbidden(t *testing.T) {
 	}
 }
 
-func TestError_UnknownError_Maps500(t *testing.T) {
+func TestError_Conflict(t *testing.T) {
 	w := httptest.NewRecorder()
 	response.Error(w, shared.ErrConflict{Message: "some internal conflict"})
-	// ErrConflict has no IsConflict helper, so it falls through to 500
+	if w.Code != http.StatusConflict {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusConflict)
+	}
+	e := decode(t, w)
+	if e.Error != "some internal conflict" {
+		t.Errorf("error = %q, want %q", e.Error, "some internal conflict")
+	}
+}
+
+func TestError_UnknownError_Maps500(t *testing.T) {
+	w := httptest.NewRecorder()
+	response.Error(w, fmt.Errorf("raw untyped error"))
 	if w.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}

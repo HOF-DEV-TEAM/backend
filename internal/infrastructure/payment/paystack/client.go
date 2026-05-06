@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 	"bitbucket.org/hofng/hofApp/internal/infrastructure/config"
 	"go.uber.org/zap"
 )
@@ -113,7 +114,7 @@ func (c *Client) InitializeTransaction(ctx context.Context, email string, amount
 		return "", "", "", err
 	}
 	if !resp.Status {
-		return "", "", "", fmt.Errorf("paystack: %s", resp.Message)
+		return "", "", "", shared.ErrInvalidInput{Message: resp.Message}
 	}
 	return resp.Data.AuthorizationURL, resp.Data.AccessCode, resp.Data.Reference, nil
 }
@@ -125,7 +126,7 @@ func (c *Client) VerifyTransaction(ctx context.Context, reference string) (*Veri
 		return nil, err
 	}
 	if !resp.Status {
-		return nil, fmt.Errorf("paystack verify: transaction not successful")
+		return nil, shared.ErrInvalidInput{Message: "payment verification failed: transaction not found or unsuccessful"}
 	}
 	return &resp, nil
 }
@@ -138,7 +139,7 @@ func (c *Client) DisableSubscription(ctx context.Context, code, token string) er
 		return err
 	}
 	if !resp.Status {
-		return fmt.Errorf("paystack disable subscription: %s", resp.Message)
+		return shared.ErrInvalidInput{Message: resp.Message}
 	}
 	return nil
 }
@@ -153,7 +154,7 @@ func (c *Client) CreateCustomer(ctx context.Context, email, firstName, lastName,
 		return "", "", err
 	}
 	if !resp.Status {
-		return "", "", fmt.Errorf("paystack create customer failed")
+		return "", "", shared.ErrInvalidInput{Message: "paystack create customer failed"}
 	}
 	return resp.Data.CustomerCode, fmt.Sprintf("%d", resp.Data.ID), nil
 }
