@@ -1,7 +1,91 @@
 // Package shared provides domain-wide typed errors used across all layers.
 package shared
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"runtime"
+	"strings"
+)
+
+// StackTrace captures the call stack for error tracing
+type StackTrace struct {
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Function string `json:"function"`
+}
+
+// CaptureStackTrace captures the current call stack (skipping the first n frames)
+func CaptureStackTrace(skip int) []StackTrace {
+	var trace []StackTrace
+	for i := skip; ; i++ {
+		pc, file, line, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+		fn := runtime.FuncForPC(pc)
+		funcName := "unknown"
+		if fn != nil {
+			funcName = fn.Name()
+			// Get just the function name without package path
+			if idx := strings.LastIndex(funcName, "."); idx != -1 {
+				funcName = funcName[idx+1:]
+			}
+		}
+		trace = append(trace, StackTrace{
+			File:     file,
+			Line:     line,
+			Function: funcName,
+		})
+	}
+	return trace
+}
+
+// TracedError interface for errors with stack traces
+type TracedError interface {
+	error
+	GetTrace() []StackTrace
+}
+
+// ErrorWithTrace wraps an error with stack trace information
+type ErrorWithTrace struct {
+	OriginalError error
+	Trace         []StackTrace
+	Context       map[string]interface{}
+}
+
+func (e *ErrorWithTrace) Error() string {
+	return e.OriginalError.Error()
+}
+
+// GetTrace returns the stack trace of the error
+func (e *ErrorWithTrace) GetTrace() []StackTrace {
+	return e.Trace
+}
+
+func (e *ErrorWithTrace) Unwrap() error {
+	return e.OriginalError
+}
+
+// WrapWithTrace wraps an error with stack trace and context
+func WrapWithTrace(err error, context map[string]interface{}) error {
+	if err == nil {
+		return nil
+	}
+	return &ErrorWithTrace{
+		OriginalError: err,
+		Trace:         CaptureStackTrace(2), // Skip WrapWithTrace and its caller
+		Context:       context,
+	}
+}
+
+// GetTrace retrieves stack trace from an error if available
+func GetTrace(err error) []StackTrace {
+	if traced, ok := err.(TracedError); ok {
+		return traced.GetTrace()
+	}
+	return nil
+}
 
 // ErrNotFound is returned when a requested resource does not exist.
 type ErrNotFound struct {
@@ -70,32 +154,38 @@ func (e ErrConflict) Error() string {
 	return e.Message
 }
 
-// IsNotFound reports whether err is an ErrNotFound.
+// IsNotFound reports whether err or any error in its chain is an ErrNotFound.
 func IsNotFound(err error) bool {
-	_, ok := err.(ErrNotFound)
-	return ok
+	var e ErrNotFound
+	return errors.As(err, &e)
 }
 
-// IsAlreadyExists reports whether err is an ErrAlreadyExists.
+// IsAlreadyExists reports whether err or any error in its chain is an ErrAlreadyExists.
 func IsAlreadyExists(err error) bool {
-	_, ok := err.(ErrAlreadyExists)
-	return ok
+	var e ErrAlreadyExists
+	return errors.As(err, &e)
 }
 
-// IsInvalidInput reports whether err is an ErrInvalidInput.
+// IsInvalidInput reports whether err or any error in its chain is an ErrInvalidInput.
 func IsInvalidInput(err error) bool {
-	_, ok := err.(ErrInvalidInput)
-	return ok
+	var e ErrInvalidInput
+	return errors.As(err, &e)
 }
 
-// IsUnauthorized reports whether err is an ErrUnauthorized.
+// IsUnauthorized reports whether err or any error in its chain is an ErrUnauthorized.
 func IsUnauthorized(err error) bool {
-	_, ok := err.(ErrUnauthorized)
-	return ok
+	var e ErrUnauthorized
+	return errors.As(err, &e)
 }
 
-// IsForbidden reports whether err is an ErrForbidden.
+// IsForbidden reports whether err or any error in its chain is an ErrForbidden.
 func IsForbidden(err error) bool {
-	_, ok := err.(ErrForbidden)
-	return ok
+	var e ErrForbidden
+	return errors.As(err, &e)
+}
+
+// IsConflict reports whether err or any error in its chain is an ErrConflict.
+func IsConflict(err error) bool {
+	var e ErrConflict
+	return errors.As(err, &e)
 }

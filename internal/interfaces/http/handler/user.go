@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	appUser "bitbucket.org/hofng/hofApp/internal/application/user"
 	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
@@ -19,6 +20,7 @@ import (
 // UserHandler groups all user-management HTTP endpoints.
 type UserHandler struct {
 	svc          appUser.Service
+	log          *zap.Logger
 	serverURL    string
 	templatePath string
 	// parseToken extracts a user UUID from a signed JWT string.
@@ -30,12 +32,14 @@ type UserHandler struct {
 // parseToken should call jwtSvc.Parse and return the user UUID from the claims.
 func NewUserHandler(
 	svc appUser.Service,
+	log *zap.Logger,
 	serverURL string,
 	templatePath string,
 	parseToken func(token string) (uuid.UUID, error),
 ) *UserHandler {
 	return &UserHandler{
 		svc:          svc,
+		log:          log,
 		serverURL:    serverURL,
 		templatePath: templatePath,
 		parseToken:   parseToken,
@@ -48,7 +52,7 @@ func NewUserHandler(
 // @Accept       json
 // @Produce      json
 // @Param        body body appUser.SignUpRequest true "Sign up payload"
-// @Success      201 {object} domainUser.User
+// @Success      201 {object} appUser.UserResponse
 // @Router       /session/sign_up [post]
 func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var req appUser.SignUpRequest
@@ -64,6 +68,30 @@ func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusCreated, appUser.ToUserResponse(u))
+}
+
+// AdminSignup godoc
+// @Summary      Admin sign up
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body body appUser.AdminSignupRequest true "Admin signup data"
+// @Success      200 {object} appUser.UserResponse
+// @Router       /session/sign_up/admin [post]
+func (h *UserHandler) AdminSignup(w http.ResponseWriter, r *http.Request) {
+	var req appUser.AdminSignupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w, "invalid request body")
+		return
+	}
+
+	user, err := h.svc.AdminSignup(r.Context(), req)
+	if err != nil {
+		response.Error(w, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, appUser.ToUserResponse(user))
 }
 
 // UpdateProfile godoc
@@ -206,21 +234,13 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        body body appUser.AssignRolesRequest true "Roles"
 // @Success      200
-// @Router       /user/roles [post]
+// @Router       /admin/user/roles [post]
 func (h *UserHandler) AssignRoles(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.UserIDFromContext(r.Context())
-	if !ok {
-		response.Unauthorized(w)
-		return
-	}
-
 	var req appUser.AssignRolesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.BadRequest(w, "invalid request body")
 		return
 	}
-	// Populate from JWT so callers don't need to send user_id in the body.
-	req.UserID = userID.String()
 
 	if err := h.svc.AssignRoles(r.Context(), req); err != nil {
 		response.Error(w, err)
@@ -478,7 +498,7 @@ func (h *UserHandler) GetAppVersion(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        body body appUser.AppVersionUpdateRequest true "Version"
 // @Success      200
-// @Router       /user/app_version/admin/update [put]
+// @Router       /admin/user/app_version/update [put]
 func (h *UserHandler) UpdateAppVersion(w http.ResponseWriter, r *http.Request) {
 	var req appUser.AppVersionUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

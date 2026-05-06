@@ -95,6 +95,9 @@ func (s *authService) Authenticate(ctx context.Context, req AuthenticateRequest)
 
 	u, err := s.userRepo.GetByID(ctx, uid)
 	if err != nil {
+		if shared.IsNotFound(err) {
+			return nil, shared.ErrUnauthorized{Message: "user not found"}
+		}
 		return nil, fmt.Errorf("authenticate: %w", err)
 	}
 
@@ -127,7 +130,13 @@ func (s *authService) checkPassword(ctx context.Context, u *domainUser.User, pla
 }
 
 func (s *authService) buildSession(ctx context.Context, u *domainUser.User) (*SessionResponse, error) {
-	accessToken, err := s.jwtSvc.IssueAccessToken(u.ID.String())
+	// Extract user roles for JWT claims
+	roleNames := make([]string, len(u.Roles))
+	for i := range u.Roles {
+		roleNames[i] = string(u.Roles[i].Name)
+	}
+
+	accessToken, err := s.jwtSvc.IssueAccessTokenWithRoles(u.ID.String(), roleNames)
 	if err != nil {
 		return nil, fmt.Errorf("issuing access token: %w", err)
 	}
@@ -139,11 +148,6 @@ func (s *authService) buildSession(ctx context.Context, u *domainUser.User) (*Se
 
 	subDTO := s.resolveSubscription(ctx, u)
 	globalParams := s.resolveGlobalParameters(ctx)
-
-	roleNames := make([]string, len(u.Roles))
-	for i := range u.Roles {
-		roleNames[i] = string(u.Roles[i].Name)
-	}
 
 	return &SessionResponse{
 		Token:        accessToken,

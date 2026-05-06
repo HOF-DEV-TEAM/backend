@@ -79,6 +79,14 @@ type AssignRolesRequest struct {
 	Roles  []string `json:"roles"   validate:"required,min=1"`
 }
 
+// AdminSignupRequest is the admin signup payload with auto role assignment.
+type AdminSignupRequest struct {
+	FirstName string `json:"first_name" validate:"required"`
+	LastName  string `json:"last_name"  validate:"required"`
+	Email     string `json:"email"      validate:"required,email"`
+	Password  string `json:"password"   validate:"required,min=6"`
+}
+
 // AddFavouriteRequest bookmarks a message for a user.
 type AddFavouriteRequest struct {
 	MessageID string `json:"message_id" validate:"required,uuid"`

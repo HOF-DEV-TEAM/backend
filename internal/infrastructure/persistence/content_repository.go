@@ -28,6 +28,9 @@ func NewContentRepository(db *gorm.DB, log *zap.Logger) domainContent.Repository
 
 func (r *contentRepository) CreateMessage(ctx context.Context, m *domainContent.AudioMessage) error {
 	if result := r.db.WithContext(ctx).Create(m); result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return shared.ErrAlreadyExists{Resource: "audio message", Field: "title", Value: m.Title}
+		}
 		return fmt.Errorf("creating audio message: %w", result.Error)
 	}
 	return nil
@@ -112,6 +115,9 @@ func (r *contentRepository) SoftDeleteMessage(ctx context.Context, id uuid.UUID)
 
 func (r *contentRepository) CreateSeries(ctx context.Context, s *domainContent.AudioSeries) error {
 	if result := r.db.WithContext(ctx).Create(s); result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return shared.ErrAlreadyExists{Resource: "audio series", Field: "title", Value: s.Title}
+		}
 		return fmt.Errorf("creating audio series: %w", result.Error)
 	}
 	return nil
@@ -170,6 +176,9 @@ func (r *contentRepository) SoftDeleteSeries(ctx context.Context, id uuid.UUID) 
 
 func (r *contentRepository) CreateMeditation(ctx context.Context, m *domainContent.Meditation) error {
 	if result := r.db.WithContext(ctx).Create(m); result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return shared.ErrAlreadyExists{Resource: "meditation", Field: "name", Value: m.Name}
+		}
 		return fmt.Errorf("creating meditation: %w", result.Error)
 	}
 	return nil

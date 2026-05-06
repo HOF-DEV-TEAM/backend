@@ -3,6 +3,7 @@ package response
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"bitbucket.org/hofng/hofApp/internal/domain/shared"
@@ -47,6 +48,11 @@ func NotFound(w http.ResponseWriter) {
 	write(w, http.StatusNotFound, envelope{Success: false, Error: "not found"})
 }
 
+// Forbidden writes a 403 JSON error.
+func Forbidden(w http.ResponseWriter) {
+	write(w, http.StatusForbidden, envelope{Success: false, Error: "forbidden"})
+}
+
 func write(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -54,18 +60,29 @@ func write(w http.ResponseWriter, status int, v any) {
 }
 
 func classify(err error) (status int, message string) {
-	switch {
-	case shared.IsNotFound(err):
-		return http.StatusNotFound, err.Error()
-	case shared.IsAlreadyExists(err):
-		return http.StatusConflict, err.Error()
-	case shared.IsInvalidInput(err):
-		return http.StatusBadRequest, err.Error()
-	case shared.IsUnauthorized(err):
-		return http.StatusUnauthorized, err.Error()
-	case shared.IsForbidden(err):
-		return http.StatusForbidden, err.Error()
-	default:
-		return http.StatusInternalServerError, "an unexpected error occurred"
+	var notFound shared.ErrNotFound
+	if errors.As(err, &notFound) {
+		return http.StatusNotFound, notFound.Error()
 	}
+	var alreadyExists shared.ErrAlreadyExists
+	if errors.As(err, &alreadyExists) {
+		return http.StatusConflict, alreadyExists.Error()
+	}
+	var conflict shared.ErrConflict
+	if errors.As(err, &conflict) {
+		return http.StatusConflict, conflict.Error()
+	}
+	var invalidInput shared.ErrInvalidInput
+	if errors.As(err, &invalidInput) {
+		return http.StatusBadRequest, invalidInput.Error()
+	}
+	var unauthorized shared.ErrUnauthorized
+	if errors.As(err, &unauthorized) {
+		return http.StatusUnauthorized, unauthorized.Error()
+	}
+	var forbidden shared.ErrForbidden
+	if errors.As(err, &forbidden) {
+		return http.StatusForbidden, forbidden.Error()
+	}
+	return http.StatusInternalServerError, "an unexpected error occurred"
 }

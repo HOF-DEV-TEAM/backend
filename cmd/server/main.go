@@ -78,11 +78,11 @@ func main() {
 	jwtSvc := security.NewJWTService(cfg.Security.JWTSigningKey)
 	mailSvc := mailer.New(&cfg.Mailer, zapLog)
 
-	var s3 *storage.S3Storage
-	if s3Svc, err := storage.NewS3Storage(&cfg.AWS, zapLog); err != nil {
-		zapLog.Warn("S3 unavailable — file uploads disabled", zap.Error(err))
+	var fileStorage storage.Storage
+	if storageSvc, err := storage.NewStorage(cfg, zapLog); err != nil {
+		zapLog.Warn("Storage unavailable — file uploads disabled", zap.Error(err))
 	} else {
-		s3 = s3Svc
+		fileStorage = storageSvc
 	}
 
 	paystackSvc := paystack.NewService(paystack.NewClient(cfg.Paystack, zapLog), zapLog)
@@ -104,7 +104,7 @@ func main() {
 		userSvc,
 		contentSvc,
 		subSvc,
-		s3,
+		fileStorage,
 		zapLog,
 	)
 

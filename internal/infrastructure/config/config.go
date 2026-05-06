@@ -10,14 +10,15 @@ import (
 
 // ServerConfig holds every environment-driven setting for the application.
 type ServerConfig struct {
-	ServerURL string `env:"SERVER_URL" envDefault:"https://my-heritage-app-1e457dfa2e9c.herokuapp.com"`
-	AppEnv    string `env:"APP_ENV" envDefault:"dev"`
-	HTTPPort  int    `env:"PORT" envDefault:"8080"`
-	Database  DatabaseConfig
-	AWS       AWSConfig
-	Security  SecurityConfig
-	Paystack  PaystackConfig
-	Mailer    MailerConfig
+	ServerURL  string `env:"SERVER_URL" envDefault:"https://my-heritage-app-1e457dfa2e9c.herokuapp.com"`
+	AppEnv     string `env:"APP_ENV" envDefault:"dev"`
+	HTTPPort   int    `env:"PORT" envDefault:"8080"`
+	Database   DatabaseConfig
+	AWS        AWSConfig
+	Cloudinary CloudinaryConfig
+	Security   SecurityConfig
+	Paystack   PaystackConfig
+	Mailer     MailerConfig
 }
 
 // DatabaseConfig holds the PostgreSQL connection parameters.
@@ -45,12 +46,23 @@ func (d *DatabaseConfig) DSN() string {
 
 // AWSConfig holds S3 credentials and bucket settings.
 type AWSConfig struct {
-	Region     string `env:"AWS_REGION" envDefault:"us-east-1"`
-	AccessKey  string `env:"AWS_ENDPOINT" envDefault:""`
-	Secret     string `env:"AWS_SECRET" envDefault:""`
-	Bucket     string `env:"AWS_BUCKET" envDefault:"hof-s3"`
-	BucketPath string `env:"AWS_BUCKET_PATH" envDefault:"goninja/hof/"`
-	BaseURL    string `env:"AWS_BASE_URL" envDefault:"https://s3.amazonaws.com/"`
+	Region       string `env:"AWS_REGION" envDefault:"us-east-1"`
+	AccessKey    string `env:"AWS_ENDPOINT" envDefault:""`
+	Secret       string `env:"AWS_SECRET" envDefault:""`
+	Bucket       string `env:"AWS_BUCKET" envDefault:"hof-s3"`
+	BucketPath   string `env:"AWS_BUCKET_PATH" envDefault:"goninja/hof/"`
+	BaseURL      string `env:"AWS_BASE_URL" envDefault:"https://s3.amazonaws.com/"`
+	PartSize     int64  `env:"AWS_UPLOAD_PART_SIZE" envDefault:"10485760"` // 10MB default
+	MaxFileSize  int64  `env:"AWS_MAX_FILE_SIZE" envDefault:"524288000"`   // 500MB default
+	PreSignedTTL int    `env:"AWS_PRESIGNED_TTL" envDefault:"3600"`        // 1 hour
+}
+
+// CloudinaryConfig holds Cloudinary credentials and settings.
+type CloudinaryConfig struct {
+	CloudName    string `env:"CLOUDINARY_CLOUD_NAME" envDefault:""`
+	APIKey       string `env:"CLOUDINARY_API_KEY" envDefault:""`
+	APISecret    string `env:"CLOUDINARY_API_SECRET" envDefault:""`
+	UploadPreset string `env:"CLOUDINARY_UPLOAD_PRESET" envDefault:""`
 }
 
 // SecurityConfig holds JWT signing keys and related options.
@@ -67,17 +79,14 @@ type PaystackConfig struct {
 
 // MailerConfig holds SMTP settings for outbound email.
 type MailerConfig struct {
-	Email            string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`
-	Host             string `env:"MAILER_HOST" envDefault:"smtp-relay.brevo.com"`
-	Username         string `env:"MAILER_USERNAME"`
-	Password         string `env:"MAILER_PASSWORD"`
-	Port             int    `env:"MAILER_PORT" envDefault:"587"`
-	Header           string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
-	TemplatePath     string `env:"TEMPLATE_PATH" envDefault:"./templates/"`
-	LogoURL          string `env:"MAIL_LOGO_URL" envDefault:"https://s3.eu-west-2.amazonaws.com/hof--s3/hof/HoF_Logo_White.png"`
-	BrevoAPIKey      string `env:"BREVO_API_KEY"`
-	ResendAPIKey     string `env:"RESEND_API_KEY"`
-	MailerSendAPIKey string `env:"MAILERSEND_API_KEY"`
+	Email        string `env:"MAILER_EMAIL" envDefault:"no-reply@hofng.org"`
+	Host         string `env:"MAILER_HOST" envDefault:"smtp-relay.brevo.com"`
+	Username     string `env:"MAILER_USERNAME"`
+	Password     string `env:"MAILER_PASSWORD"`
+	Port         int    `env:"MAILER_PORT" envDefault:"587"`
+	Header       string `env:"MAIL_HEADER" envDefault:"Heritage of Faith Church"`
+	TemplatePath string `env:"TEMPLATE_PATH" envDefault:"./templates/"`
+	LogoURL      string `env:"MAIL_LOGO_URL" envDefault:"https://s3.eu-west-2.amazonaws.com/hof--s3/hof/HoF_Logo_White.png"`
 }
 
 // Load reads all environment variables into a ServerConfig.

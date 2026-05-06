@@ -3,13 +3,14 @@ package security
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 )
 
 const (
@@ -25,8 +26,9 @@ type contextKey string
 
 // Claims is the standard JWT payload for this application.
 type Claims struct {
-	UserID string `json:"user_id"`
-	Type   string `json:"typ,omitempty"` // "access", "refresh", "email_verify"
+	UserID string   `json:"user_id"`
+	Roles  []string `json:"roles,omitempty"` // User roles for authorization
+	Type   string   `json:"typ,omitempty"`   // "access", "refresh", "email_verify"
 	jwt.RegisteredClaims
 }
 
@@ -42,24 +44,30 @@ func NewJWTService(signingKey string) *JWTService {
 
 // IssueAccessToken signs a short-lived access token for userID.
 func (s *JWTService) IssueAccessToken(userID string) (string, error) {
-	return s.sign(userID, accessTokenTTL, "access")
+	return s.sign(userID, nil, accessTokenTTL, "access")
+}
+
+// IssueAccessTokenWithRoles signs a short-lived access token for userID with roles.
+func (s *JWTService) IssueAccessTokenWithRoles(userID string, roles []string) (string, error) {
+	return s.sign(userID, roles, accessTokenTTL, "access")
 }
 
 // IssueRefreshToken signs a long-lived refresh token for userID.
 func (s *JWTService) IssueRefreshToken(userID string) (string, error) {
-	return s.sign(userID, refreshTokenTTL, "refresh")
+	return s.sign(userID, nil, refreshTokenTTL, "refresh")
 }
 
 // IssueEmailVerificationToken signs a 24-hour token for email verification links.
 // The token includes a "typ: email_verify" claim that middleware.Authenticate rejects
 // for API access, limiting blast radius if the verification link is intercepted.
 func (s *JWTService) IssueEmailVerificationToken(userID string) (string, error) {
-	return s.sign(userID, emailVerifyTokenTTL, "email_verify")
+	return s.sign(userID, nil, emailVerifyTokenTTL, "email_verify")
 }
 
-func (s *JWTService) sign(userID string, ttl time.Duration, typ string) (string, error) {
+func (s *JWTService) sign(userID string, roles []string, ttl time.Duration, typ string) (string, error) {
 	claims := Claims{
 		UserID: userID,
+		Roles:  roles,
 		Type:   typ,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
@@ -78,17 +86,17 @@ func (s *JWTService) sign(userID string, ttl time.Duration, typ string) (string,
 func (s *JWTService) Parse(tokenStr string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			return nil, shared.ErrUnauthorized{Message: fmt.Sprintf("unexpected signing method: %v", t.Header["alg"])}
 		}
 		return s.signingKey, nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("parsing token: %w", err)
+		return nil, shared.ErrUnauthorized{Message: "invalid or expired token"}
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, errors.New("invalid token")
+		return nil, shared.ErrUnauthorized{Message: "invalid token"}
 	}
 	return claims, nil
 }
@@ -102,6 +110,31 @@ func ClaimsFromContext(ctx context.Context) (*Claims, bool) {
 // WithClaims returns a new context containing the given claims.
 func WithClaims(ctx context.Context, c *Claims) context.Context {
 	return context.WithValue(ctx, contextKeyClaims, c)
+}
+
+// HasRole checks if the claims contain the specified role.
+func (c *Claims) HasRole(role string) bool {
+	for _, r := range c.Roles {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
+
+// HasAnyRole checks if the claims contain any of the specified roles.
+func (c *Claims) HasAnyRole(roles ...string) bool {
+	for _, role := range roles {
+		if c.HasRole(role) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAdmin checks if the user has admin privileges.
+func (c *Claims) IsAdmin() bool {
+	return c.HasRole("church_admin")
 }
 
 // Middleware attaches JWT claims to the context when a valid Bearer token is present.

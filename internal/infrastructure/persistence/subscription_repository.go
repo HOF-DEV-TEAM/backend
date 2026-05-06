@@ -28,6 +28,9 @@ func NewSubscriptionRepository(db *gorm.DB, log *zap.Logger) domainSub.Repositor
 
 func (r *subscriptionRepository) CreatePlan(ctx context.Context, p *domainSub.Plan) error {
 	if result := r.db.WithContext(ctx).Create(p); result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return shared.ErrAlreadyExists{Resource: "subscription plan", Field: "code", Value: p.Code}
+		}
 		return fmt.Errorf("creating subscription plan: %w", result.Error)
 	}
 	return nil
@@ -74,6 +77,9 @@ func (r *subscriptionRepository) DeletePlan(ctx context.Context, id uuid.UUID) e
 
 func (r *subscriptionRepository) CreateOffering(ctx context.Context, o *domainSub.Offering) error {
 	if result := r.db.WithContext(ctx).Create(o); result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return shared.ErrAlreadyExists{Resource: "subscription offering", Field: "name", Value: o.Name}
+		}
 		return fmt.Errorf("creating offering: %w", result.Error)
 	}
 	return nil
@@ -108,6 +114,9 @@ func (r *subscriptionRepository) DeleteOffering(ctx context.Context, id uuid.UUI
 
 func (r *subscriptionRepository) CreatePlanOffering(ctx context.Context, po *domainSub.PlanOffering) error {
 	if result := r.db.WithContext(ctx).Create(po); result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return shared.ErrAlreadyExists{Resource: "plan offering", Field: "code", Value: po.Code}
+		}
 		return fmt.Errorf("creating plan offering: %w", result.Error)
 	}
 	return nil
@@ -131,6 +140,9 @@ func (r *subscriptionRepository) GetPlanOfferings(ctx context.Context) ([]domain
 
 func (r *subscriptionRepository) CreateSubscription(ctx context.Context, s *domainSub.Subscription) error {
 	if result := r.db.WithContext(ctx).Create(s); result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return shared.ErrAlreadyExists{Resource: "subscription", Field: "user", Value: s.UserID.String()}
+		}
 		return fmt.Errorf("creating subscription: %w", result.Error)
 	}
 	return nil
@@ -213,8 +225,8 @@ func (r *subscriptionRepository) UpsertSubscription(ctx context.Context, s *doma
 	}
 	if existing != nil {
 		updates := map[string]any{
-			"status":      s.Status,
-			"sub_code":    s.SubCode,
+			"status":       s.Status,
+			"sub_code":     s.SubCode,
 			"last_updated": time.Now(),
 		}
 		if s.NextPaymentDate != nil {
@@ -222,9 +234,15 @@ func (r *subscriptionRepository) UpsertSubscription(ctx context.Context, s *doma
 		}
 		result := r.db.WithContext(ctx).Model(&domainSub.Subscription{}).
 			Where("id = ?", existing.ID).Updates(updates)
-		return result.Error
+		if result.Error != nil {
+			return fmt.Errorf("updating subscription: %w", result.Error)
+		}
+		return nil
 	}
 	if result := r.db.WithContext(ctx).Create(s); result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return shared.ErrAlreadyExists{Resource: "subscription", Field: "user", Value: s.UserID.String()}
+		}
 		return fmt.Errorf("creating subscription: %w", result.Error)
 	}
 	return nil
