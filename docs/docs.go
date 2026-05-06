@@ -514,7 +514,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse"
                         }
                     }
                 }
@@ -552,7 +552,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse"
                         }
                     }
                 }
@@ -1892,6 +1892,32 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_user.UserResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_verified": {
+                    "type": "integer"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

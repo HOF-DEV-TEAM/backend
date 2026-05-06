@@ -150,7 +150,10 @@ func (s *userService) AdminSignup(ctx context.Context, req AdminSignupRequest) (
 
 	// Set as admin
 	if err := s.repo.AssignRoles(ctx, u.ID, []domainUser.RoleName{domainUser.RoleChurchAdmin}); err != nil {
-		s.log.Warn("could not assign default member role", zap.Error(err))
+		s.log.Warn("could not assign default member role",
+			zap.String("email", req.Email),
+			zap.String("user_id", u.ID.String()),
+			zap.Error(err))
 	}
 
 	s.log.Info("admin user created",

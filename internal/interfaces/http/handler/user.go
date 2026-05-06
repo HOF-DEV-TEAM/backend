@@ -52,7 +52,7 @@ func NewUserHandler(
 // @Accept       json
 // @Produce      json
 // @Param        body body appUser.SignUpRequest true "Sign up payload"
-// @Success      201 {object} domainUser.User
+// @Success      201 {object} appUser.UserResponse
 // @Router       /session/sign_up [post]
 func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var req appUser.SignUpRequest
@@ -72,12 +72,11 @@ func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 // AdminSignup godoc
 // @Summary      Admin sign up
-// @Tags         session
-// @Security     BearerAuth
+// @Tags         users
 // @Accept       json
 // @Produce      json
 // @Param        body body appUser.AdminSignupRequest true "Admin signup data"
-// @Success      200 {object} domainUser.User
+// @Success      200 {object} appUser.UserResponse
 // @Router       /session/sign_up/admin [post]
 func (h *UserHandler) AdminSignup(w http.ResponseWriter, r *http.Request) {
 	var req appUser.AdminSignupRequest
@@ -92,7 +91,7 @@ func (h *UserHandler) AdminSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, user)
+	response.JSON(w, http.StatusOK, appUser.ToUserResponse(user))
 }
 
 // UpdateProfile godoc

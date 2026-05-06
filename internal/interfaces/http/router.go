@@ -217,6 +217,7 @@ func NewRouter(
 	})
 
 	r.Group(func(r chi.Router) {
+		r.Use(middleware.Authenticate(jwtSvc))
 		r.Use(middleware.RequireAdmin)
 
 		// Admin

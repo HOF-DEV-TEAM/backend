@@ -350,6 +350,23 @@ definitions:
     - first_name
     - last_name
     type: object
+  bitbucket_org_hofng_hofApp_internal_application_user.UserResponse:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      is_verified:
+        type: integer
+      last_name:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+    type: object
   bitbucket_org_hofng_hofApp_internal_application_user.VerifyOTPRequest:
     properties:
       otp:
@@ -850,7 +867,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User'
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse'
       summary: Create a new user account
       tags:
       - users
@@ -871,7 +888,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User'
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse'
       security:
       - BearerAuth: []
       summary: Admin sign up

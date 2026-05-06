@@ -76,7 +76,7 @@ func (c *CloudinaryStorage) Upload(ctx context.Context, fh *multipart.FileHeader
 // GeneratePresignedURL is a no-op for Cloudinary as it doesn't support presigned URLs.
 // Use Upload() directly or implement Cloudinary's upload widget instead.
 func (c *CloudinaryStorage) GeneratePresignedURL(_ context.Context, _ string, _ string) (string, error) {
-	return "", shared.ErrInvalidInput{Message: "presigned URLs not supported for Cloudinary"}
+	return "", shared.ErrForbidden{Message: "presigned URLs not supported for Cloudinary"}
 }
 
 // GetMaxFileSize returns the Cloudinary max file size (500MB).
