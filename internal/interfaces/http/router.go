@@ -218,9 +218,9 @@ func NewRouter(
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireAdmin)
+
 		// Admin
 		r.Route("/admin", func(r chi.Router) {
-			//r.Use(middleware.RequireAdmin)
 
 			// User management
 			r.Post("/user/roles", userH.AssignRoles)

@@ -58,6 +58,7 @@ func (e *ErrorWithTrace) Error() string {
 	return e.OriginalError.Error()
 }
 
+// GetTrace returns the stack trace of the error
 func (e *ErrorWithTrace) GetTrace() []StackTrace {
 	return e.Trace
 }
