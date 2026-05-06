@@ -227,7 +227,10 @@ func NewRouter(
 			r.Put("/user/app_version/update", userH.UpdateAppVersion)
 
 			// File upload
-			r.Post("/upload", uploadH.UploadFile)
+			r.Route("/upload", func(r chi.Router) {
+				r.Post("/", uploadH.UploadFile)                   // Server-side upload
+				r.Get("/presigned", uploadH.GeneratePresignedURL) // Direct browser-to-S3 upload
+			})
 
 			// Global parameters
 			r.Get("/global", adminH.GetGlobalParameters)

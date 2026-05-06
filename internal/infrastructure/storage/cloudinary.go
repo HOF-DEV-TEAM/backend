@@ -20,7 +20,7 @@ type CloudinaryStorage struct {
 	log *zap.Logger
 }
 
-// Ensure CloudinaryStorage implements the Storage interface
+// Ensure CloudinaryStorage implements the Storage interface.
 var _ Storage = (*CloudinaryStorage)(nil)
 
 // NewCloudinaryStorage connects to Cloudinary and returns a ready-to-use CloudinaryStorage.
@@ -42,7 +42,7 @@ func NewCloudinaryStorage(cfg *config.CloudinaryConfig, log *zap.Logger) (*Cloud
 }
 
 // Upload stores the file in Cloudinary and returns the public URL.
-func (c *CloudinaryStorage) Upload(_ context.Context, fh *multipart.FileHeader, key string) (string, error) {
+func (c *CloudinaryStorage) Upload(ctx context.Context, fh *multipart.FileHeader, key string) (string, error) {
 	f, err := fh.Open()
 	if err != nil {
 		return "", shared.ErrInvalidInput{Message: "failed to open upload file"}
@@ -53,25 +53,35 @@ func (c *CloudinaryStorage) Upload(_ context.Context, fh *multipart.FileHeader, 
 		}
 	}()
 
-	// Prepare upload parameters
 	uploadParams := uploader.UploadParams{
 		PublicID:     key,
-		ResourceType: "auto", // Let Cloudinary detect the resource type
+		ResourceType: "auto",
 		Folder:       "uploads",
 	}
 
-	// If upload preset is configured, use it
 	if c.cfg.UploadPreset != "" {
 		uploadParams.UploadPreset = c.cfg.UploadPreset
 	}
 
-	// Upload to Cloudinary using the file reader directly
-	result, err := c.cld.Upload.Upload(context.Background(), f, uploadParams)
+	result, err := c.cld.Upload.Upload(ctx, f, uploadParams)
 	if err != nil {
 		return "", fmt.Errorf("cloudinary upload: %w", err)
 	}
 
 	url := result.SecureURL
-	c.log.Info("file uploaded to Cloudinary", zap.String("url", url))
+	c.log.Info("file uploaded to Cloudinary", zap.String("url", url), zap.Int64("size", fh.Size))
 	return url, nil
+}
+
+// GeneratePresignedURL is a no-op for Cloudinary as it doesn't support presigned URLs.
+// Use Upload() directly or implement Cloudinary's upload widget instead.
+func (c *CloudinaryStorage) GeneratePresignedURL(_ context.Context, _ string, _ string) (string, error) {
+	return "", shared.ErrInvalidInput{Message: "presigned URLs not supported for Cloudinary"}
+}
+
+// GetMaxFileSize returns the Cloudinary max file size (500MB).
+func (c *CloudinaryStorage) GetMaxFileSize() int64 {
+	// Cloudinary free tier limit: 5MB per file, pro tier: 500MB
+	// Return 500MB as default; adjust if needed
+	return 524288000 // 500MB
 }

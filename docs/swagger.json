@@ -77,6 +77,7 @@
                         "BearerAuth": []
                     }
                 ],
+                "description": "Uploads a file with early validation. Max file size and content-type are checked before processing.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -97,15 +98,96 @@
                     },
                     {
                         "type": "string",
-                        "description": "Object key",
+                        "description": "Object key (auto-generated if omitted)",
                         "name": "key",
-                        "in": "formData",
-                        "required": true
+                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid file or size exceeded",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/upload/presigned": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a time-limited URL allowing direct upload to S3, bypassing this server.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "upload"
+                ],
+                "summary": "Generate a presigned S3 upload URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "MIME type of file to upload (e.g., audio/mp3)",
+                        "name": "content_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "presigned_url, expires_in",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid content type",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Presigned URLs not supported for this backend",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

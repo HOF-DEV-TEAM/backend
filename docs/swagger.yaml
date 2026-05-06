@@ -574,16 +574,17 @@ paths:
     post:
       consumes:
       - multipart/form-data
+      description: Uploads a file with early validation. Max file size and content-type
+        are checked before processing.
       parameters:
       - description: File to upload
         in: formData
         name: file
         required: true
         type: file
-      - description: Object key
+      - description: Object key (auto-generated if omitted)
         in: formData
         name: key
-        required: true
         type: string
       produces:
       - application/json
@@ -594,9 +595,63 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "400":
+          description: Invalid file or size exceeded
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
       summary: Upload a file to storage (S3 or Cloudinary)
+      tags:
+      - upload
+  /admin/upload/presigned:
+    get:
+      description: Returns a time-limited URL allowing direct upload to S3, bypassing
+        this server.
+      parameters:
+      - description: MIME type of file to upload (e.g., audio/mp3)
+        in: query
+        name: content_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: presigned_url, expires_in
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid content type
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Presigned URLs not supported for this backend
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Generate a presigned S3 upload URL
       tags:
       - upload
   /admin/user/app_version/update:

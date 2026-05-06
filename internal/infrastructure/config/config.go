@@ -46,12 +46,15 @@ func (d *DatabaseConfig) DSN() string {
 
 // AWSConfig holds S3 credentials and bucket settings.
 type AWSConfig struct {
-	Region     string `env:"AWS_REGION" envDefault:"us-east-1"`
-	AccessKey  string `env:"AWS_ENDPOINT" envDefault:""`
-	Secret     string `env:"AWS_SECRET" envDefault:""`
-	Bucket     string `env:"AWS_BUCKET" envDefault:"hof-s3"`
-	BucketPath string `env:"AWS_BUCKET_PATH" envDefault:"goninja/hof/"`
-	BaseURL    string `env:"AWS_BASE_URL" envDefault:"https://s3.amazonaws.com/"`
+	Region       string `env:"AWS_REGION" envDefault:"us-east-1"`
+	AccessKey    string `env:"AWS_ENDPOINT" envDefault:""`
+	Secret       string `env:"AWS_SECRET" envDefault:""`
+	Bucket       string `env:"AWS_BUCKET" envDefault:"hof-s3"`
+	BucketPath   string `env:"AWS_BUCKET_PATH" envDefault:"goninja/hof/"`
+	BaseURL      string `env:"AWS_BASE_URL" envDefault:"https://s3.amazonaws.com/"`
+	PartSize     int64  `env:"AWS_UPLOAD_PART_SIZE" envDefault:"10485760"` // 10MB default
+	MaxFileSize  int64  `env:"AWS_MAX_FILE_SIZE" envDefault:"524288000"`   // 500MB default
+	PreSignedTTL int    `env:"AWS_PRESIGNED_TTL" envDefault:"3600"`        // 1 hour
 }
 
 // CloudinaryConfig holds Cloudinary credentials and settings.
