@@ -20,10 +20,11 @@ func NewAuthHandler(svc appAuth.Service) *AuthHandler {
 
 // SignIn godoc
 // @Summary      Sign in with email and password
+// @Description  Include the optional `device` field to register/refresh the device on login.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        body body appAuth.LoginRequest true "Login credentials"
+// @Param        body body appAuth.LoginRequest true "Login credentials (device field optional)"
 // @Success      200 {object} appAuth.SessionResponse
 // @Router       /session/sign_in [post]
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {

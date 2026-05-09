@@ -18,7 +18,7 @@ IMAGE_NAME := hof-backend
 GO         := go
 
 .PHONY: help env run build clean swagger test lint \
-        docker-build up down logs ps db-shell setup-hooks
+        docker-build up down logs ps db-shell setup-hooks seed-admin
 
 ## ── Help ─────────────────────────────────────────────────────────────────────
 
@@ -57,6 +57,19 @@ env: ## Create .env from .env.example, or sync missing/empty keys from .env.exam
 		done < .env.example; \
 		echo "env: $$added key(s) added, $$filled empty value(s) filled from .env.example."; \
 	fi
+
+## ── Admin bootstrap ──────────────────────────────────────────────────────────
+
+seed-admin: ## Seed the first admin user (fails if any admin already exists)
+	@test -n "$(EMAIL)" || (echo "usage: make seed-admin EMAIL=… FIRST=… LAST=… PASS=…" && exit 1)
+	@test -n "$(FIRST)" || (echo "usage: make seed-admin EMAIL=… FIRST=… LAST=… PASS=…" && exit 1)
+	@test -n "$(LAST)"  || (echo "usage: make seed-admin EMAIL=… FIRST=… LAST=… PASS=…" && exit 1)
+	@test -n "$(PASS)"  || (echo "usage: make seed-admin EMAIL=… FIRST=… LAST=… PASS=…" && exit 1)
+	$(GO) run ./cmd/seed \
+		-email "$(EMAIL)" \
+		-first-name "$(FIRST)" \
+		-last-name "$(LAST)" \
+		-password "$(PASS)"
 
 ## ── Development ──────────────────────────────────────────────────────────────
 

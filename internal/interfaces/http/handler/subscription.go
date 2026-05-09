@@ -32,14 +32,14 @@ func NewSubscriptionHandler(svc appSub.Service, paystackSecret string, log *zap.
 // ── Plans ─────────────────────────────────────────────────────────────────────
 
 // CreatePlan godoc
-// @Summary      Create a subscription plan
+// @Summary      Create a subscription plan (admin only)
 // @Tags         subscription
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
 // @Param        body body appSub.CreatePlanRequest true "Plan payload"
 // @Success      201
-// @Router       /subscription/plan [post]
+// @Router       /admin/subscription/plan [post]
 // CreatePlan handles POST requests to create a new subscription plan.
 func (h *SubscriptionHandler) CreatePlan(w http.ResponseWriter, r *http.Request) {
 	var req appSub.CreatePlanRequest
@@ -100,13 +100,13 @@ func (h *SubscriptionHandler) GetPlan(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeletePlan godoc
-// @Summary      Delete a subscription plan
+// @Summary      Delete a subscription plan (admin only)
 // @Tags         subscription
 // @Security     BearerAuth
 // @Produce      json
 // @Param        id path string true "Plan ID"
 // @Success      200
-// @Router       /subscription/plan/{id} [delete]
+// @Router       /admin/subscription/plan/{id} [delete]
 // DeletePlan handles DELETE requests to remove a subscription plan by ID.
 func (h *SubscriptionHandler) DeletePlan(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
@@ -126,14 +126,14 @@ func (h *SubscriptionHandler) DeletePlan(w http.ResponseWriter, r *http.Request)
 // ── Offerings ─────────────────────────────────────────────────────────────────
 
 // CreateOffering godoc
-// @Summary      Create a subscription offering
+// @Summary      Create a subscription offering (admin only)
 // @Tags         subscription
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
 // @Param        body body appSub.CreateOfferingRequest true "Offering payload"
 // @Success      201
-// @Router       /subscription/offering [post]
+// @Router       /admin/subscription/offering [post]
 // CreateOffering handles POST requests to create a new subscription offering.
 func (h *SubscriptionHandler) CreateOffering(w http.ResponseWriter, r *http.Request) {
 	var req appSub.CreateOfferingRequest
@@ -169,13 +169,13 @@ func (h *SubscriptionHandler) ListOfferings(w http.ResponseWriter, r *http.Reque
 }
 
 // DeleteOffering godoc
-// @Summary      Delete a subscription offering
+// @Summary      Delete a subscription offering (admin only)
 // @Tags         subscription
 // @Security     BearerAuth
 // @Produce      json
 // @Param        offering_id path string true "Offering ID"
 // @Success      200
-// @Router       /subscription/offering/delete/{offering_id} [delete]
+// @Router       /admin/subscription/offering/delete/{offering_id} [delete]
 // DeleteOffering handles DELETE requests to remove a subscription offering by ID.
 func (h *SubscriptionHandler) DeleteOffering(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "offering_id"))
@@ -195,14 +195,14 @@ func (h *SubscriptionHandler) DeleteOffering(w http.ResponseWriter, r *http.Requ
 // ── Plan offerings ────────────────────────────────────────────────────────────
 
 // CreatePlanOffering godoc
-// @Summary      Create a plan-offering mapping
+// @Summary      Create a plan-offering mapping (admin only)
 // @Tags         subscription
 // @Security     BearerAuth
 // @Accept       json
 // @Produce      json
 // @Param        body body appSub.CreatePlanOfferingRequest true "Plan offering payload"
 // @Success      201
-// @Router       /subscription/plan/offering [post]
+// @Router       /admin/subscription/plan/offering [post]
 // CreatePlanOffering handles POST requests to link an offering to a subscription plan.
 func (h *SubscriptionHandler) CreatePlanOffering(w http.ResponseWriter, r *http.Request) {
 	var req appSub.CreatePlanOfferingRequest

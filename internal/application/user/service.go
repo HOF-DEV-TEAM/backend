@@ -32,6 +32,7 @@ type Service interface {
 	RemoveRoles(ctx context.Context, userID uuid.UUID, roles []string) error
 	GetRoles(ctx context.Context, userID uuid.UUID) ([]domainUser.Role, error)
 	AdminSignup(ctx context.Context, req AdminSignupRequest) (*domainUser.User, error)
+	DeleteAdmin(ctx context.Context, callerID, targetID uuid.UUID) error
 
 	AddFavourite(ctx context.Context, userID uuid.UUID, req AddFavouriteRequest) error
 	GetFavourites(ctx context.Context, userID uuid.UUID) ([]domainUser.FavouriteMessage, error)
@@ -51,7 +52,7 @@ type Service interface {
 
 type userService struct {
 	repo   domainUser.Repository
-	mailer *mailer.Mailer
+	mailer mailer.EmailSender
 	jwtSvc *security.JWTService
 	log    *zap.Logger
 }
@@ -59,7 +60,7 @@ type userService struct {
 // NewService creates the user application service.
 func NewService(
 	repo domainUser.Repository,
-	mailer *mailer.Mailer,
+	mailer mailer.EmailSender,
 	jwtSvc *security.JWTService,
 	log *zap.Logger,
 ) Service {
@@ -164,6 +165,23 @@ func (s *userService) AdminSignup(ctx context.Context, req AdminSignupRequest) (
 	return s.repo.GetByID(ctx, u.ID)
 }
 
+func (s *userService) DeleteAdmin(ctx context.Context, callerID, targetID uuid.UUID) error {
+	if callerID == targetID {
+		return shared.ErrForbidden{Message: "you cannot delete your own admin account"}
+	}
+
+	target, err := s.repo.GetByID(ctx, targetID)
+	if err != nil {
+		return err
+	}
+
+	if !target.HasRole(domainUser.RoleChurchAdmin) {
+		return shared.ErrNotFound{Resource: "admin", ID: targetID.String()}
+	}
+
+	return s.repo.DeleteUser(ctx, targetID)
+}
+
 func (s *userService) UpdateProfile(ctx context.Context, userID uuid.UUID, req UpdateProfileRequest) error {
 	if err := validate.Struct(req); err != nil {
 		return shared.ErrInvalidInput{Message: err.Error()}
@@ -214,11 +232,9 @@ func (s *userService) ForgotPassword(ctx context.Context, req ForgotPasswordRequ
 		return fmt.Errorf("storing OTP: %w", err)
 	}
 
-	go func() {
-		if err := s.mailer.SendPasswordReset(req.Email, u.FullName(), otp); err != nil {
-			s.log.Error("sending password reset email", zap.Error(err))
-		}
-	}()
+	if err := s.mailer.SendPasswordReset(req.Email, u.FullName(), otp); err != nil {
+		s.log.Error("enqueuing password reset email", zap.Error(err))
+	}
 
 	return nil
 }
@@ -252,6 +268,12 @@ func (s *userService) VerifyOTP(ctx context.Context, req VerifyOTPRequest) (*dom
 func (s *userService) ResetPassword(ctx context.Context, req ResetPasswordRequest) error {
 	if req.Password != req.PasswordConfirm {
 		return domainUser.ErrPasswordConfirm
+	}
+
+	// Require the OTP to have been validated before allowing the password change.
+	token, err := s.repo.GetPasswordToken(ctx, req.Email)
+	if err != nil || !token.Validated {
+		return shared.ErrForbidden{Message: "OTP not verified"}
 	}
 
 	u, err := s.repo.GetByEmail(ctx, req.Email)
@@ -349,6 +371,9 @@ func (s *userService) DeleteFavourite(ctx context.Context, userID, messageID uui
 
 // ── Devices ───────────────────────────────────────────────────────────────────
 
+// RegisterDevice upserts a device by identifier: if the identifier already exists the
+// entry is refreshed (os, version, status=ACTIVE); otherwise a new entry is appended.
+// This is safe to call on every login — it will never create duplicate device entries.
 func (s *userService) RegisterDevice(ctx context.Context, userID uuid.UUID, input DeviceInput) (*domainUser.DeviceRecord, error) {
 	rec, err := s.repo.GetDeviceRecord(ctx, userID)
 	if shared.IsNotFound(err) {
@@ -357,17 +382,34 @@ func (s *userService) RegisterDevice(ctx context.Context, userID uuid.UUID, inpu
 		return nil, err
 	}
 
-	device := domainUser.Device{
-		ID:         uuid.NewString(),
-		Who:        input.Who,
-		Identifier: input.Identifier,
-		Os:         input.Os,
-		Brand:      input.Brand,
-		Version:    input.Version,
-		Status:     domainUser.DeviceStatusActive,
-		DateAdded:  time.Now().Format(time.RFC3339),
+	now := time.Now().Format(time.RFC3339)
+
+	for i, d := range rec.Devices {
+		if d.Identifier == input.Identifier {
+			// Known device — refresh metadata and mark active.
+			rec.Devices[i].Os = input.Os
+			rec.Devices[i].Brand = input.Brand
+			rec.Devices[i].Version = input.Version
+			rec.Devices[i].Status = domainUser.DeviceStatusActive
+			rec.Devices[i].LastUpdated = now
+			if err := s.repo.UpsertDeviceRecord(ctx, rec); err != nil {
+				return nil, err
+			}
+			return rec, nil
+		}
 	}
-	rec.Devices = append(rec.Devices, device)
+
+	// New device — append it.
+	rec.Devices = append(rec.Devices, domainUser.Device{
+		ID:        uuid.NewString(),
+		Who:       input.Who,
+		Identifier: input.Identifier,
+		Os:        input.Os,
+		Brand:     input.Brand,
+		Version:   input.Version,
+		Status:    domainUser.DeviceStatusActive,
+		DateAdded: now,
+	})
 
 	if err := s.repo.UpsertDeviceRecord(ctx, rec); err != nil {
 		return nil, err
@@ -431,11 +473,9 @@ func (s *userService) SendEmailVerification(ctx context.Context, email string, s
 
 		link := fmt.Sprintf("%s/verify_email/%s", serverURL, token)
 
-		go func() {
-			if err := s.mailer.SendEmailVerification(u.Email, u.FullName(), link); err != nil {
-				s.log.Error("sending email verification", zap.Error(err))
-			}
-		}()
+		if err := s.mailer.SendEmailVerification(u.Email, u.FullName(), link); err != nil {
+			s.log.Error("enqueuing email verification", zap.Error(err))
+		}
 	} else {
 		s.log.Warn("mailer not configured, skipping email verification", zap.String("email", u.Email))
 	}
@@ -455,17 +495,23 @@ func generateOTP() string {
 }
 
 func buildDeviceRecords(userID uuid.UUID, inputs []DeviceInput) *domainUser.DeviceRecord {
+	seen := make(map[string]bool, len(inputs))
 	devices := make(domainUser.DeviceList, 0, len(inputs))
+	now := time.Now().Format(time.RFC3339)
 	for _, input := range inputs {
+		if seen[input.Identifier] {
+			continue // deduplicate within the signup payload
+		}
+		seen[input.Identifier] = true
 		devices = append(devices, domainUser.Device{
-			ID:         uuid.NewString(),
-			Who:        input.Who,
+			ID:        uuid.NewString(),
+			Who:       input.Who,
 			Identifier: input.Identifier,
-			Os:         input.Os,
-			Brand:      input.Brand,
-			Version:    input.Version,
-			Status:     domainUser.DeviceStatusActive,
-			DateAdded:  time.Now().Format(time.RFC3339),
+			Os:        input.Os,
+			Brand:     input.Brand,
+			Version:   input.Version,
+			Status:    domainUser.DeviceStatusActive,
+			DateAdded: now,
 		})
 	}
 	return &domainUser.DeviceRecord{UserID: userID, Devices: devices}

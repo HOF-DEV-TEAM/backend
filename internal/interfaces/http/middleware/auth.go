@@ -49,6 +49,44 @@ func UserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	return id, ok
 }
 
+// IsAdminFromContext reports whether the caller holds the church_admin role.
+// Used to gate visibility of private content — only church_admin may see is_private messages.
+func IsAdminFromContext(ctx context.Context) bool {
+	claims, ok := security.ClaimsFromContext(ctx)
+	if !ok {
+		return false
+	}
+	return claims.IsAdmin()
+}
+
+// ViewerAccessFromContext derives the caller's content access level from their JWT claims.
+// Mapping (checked in descending privilege order):
+//
+//	church_admin or team_lead → "leaders"
+//	steward                   → "stewards"
+//	anything else             → "members"
+//
+// Returns "members" when no claims are present (unauthenticated path, should not happen
+// on protected routes but safe to default conservatively).
+func ViewerAccessFromContext(ctx context.Context) string {
+	claims, ok := security.ClaimsFromContext(ctx)
+	if !ok {
+		return "members"
+	}
+	for _, r := range claims.Roles {
+		switch r {
+		case "church_admin", "team_lead":
+			return "leaders"
+		}
+	}
+	for _, r := range claims.Roles {
+		if r == "steward" {
+			return "stewards"
+		}
+	}
+	return "members"
+}
+
 // RequireAdmin is middleware that ensures the authenticated user has admin role.
 // Must be used after Authenticate middleware.
 func RequireAdmin(next http.Handler) http.Handler {

@@ -9,8 +9,11 @@ type CreateMessageRequest struct {
 	Description  string  `json:"description"`
 	SeriesID     string  `json:"series_id"`
 	DateReleased string  `json:"date_released"`
-	IsFree       bool    `json:"is_free"`
-	AllowSteward bool    `json:"allow_steward"`
+	IsFree bool `json:"is_free"`
+	// Access controls visibility: "leaders", "stewards", "members". Defaults to "members".
+	Access string `json:"access"`
+	// IsPrivate hides the message from all non-admin users regardless of access level.
+	IsPrivate bool `json:"is_private"`
 }
 
 // UpdateMessageRequest carries the fields that may be changed on an existing message.
@@ -22,8 +25,11 @@ type UpdateMessageRequest struct {
 	Description  string `json:"description"`
 	SeriesID     string `json:"series_id"`
 	DateReleased string `json:"date_released"`
-	IsFree       *bool  `json:"is_free"`
-	AllowSteward *bool  `json:"allow_steward"`
+	IsFree *bool `json:"is_free"`
+	// Optional access change. Valid values: "leaders", "stewards", "members".
+	Access *string `json:"access"`
+	// IsPrivate, when non-nil, updates the private visibility flag.
+	IsPrivate *bool `json:"is_private"`
 }
 
 // CreateSeriesRequest is the payload for adding a new audio series.
@@ -50,6 +56,7 @@ type UpdateSeriesRequest struct {
 type CreateMeditationRequest struct {
 	Name   string `json:"name"   validate:"required"`
 	Image  string `json:"image"`
+	Text   string `json:"text"`
 	Status string `json:"status"`
 }
 
@@ -57,6 +64,7 @@ type CreateMeditationRequest struct {
 type UpdateMeditationRequest struct {
 	Name   string `json:"name"`
 	Image  string `json:"image"`
+	Text   string `json:"text"`
 	Status string `json:"status"`
 }
 
@@ -64,7 +72,10 @@ type UpdateMeditationRequest struct {
 type MessageListFilter struct {
 	Search   string `json:"search"`
 	SeriesID string `json:"series_id"`
+	Access   string `json:"access"`
 	IsFree   *bool  `json:"is_free"`
 	Page     int    `json:"page"`
 	PageSize int    `json:"page_size"`
+	// IsAdmin, when true, allows private messages to be included in results.
+	IsAdmin bool `json:"-"`
 }

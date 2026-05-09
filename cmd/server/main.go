@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -77,6 +78,8 @@ func main() {
 	// ── Infrastructure services ───────────────────────────────────────────────
 	jwtSvc := security.NewJWTService(cfg.Security.JWTSigningKey)
 	mailSvc := mailer.New(&cfg.Mailer, zapLog)
+	emailQueue := mailer.NewEmailQueue(mailSvc, db, zapLog)
+	emailQueue.Start(context.Background())
 
 	var fileStorage storage.Storage
 	if storageSvc, err := storage.NewStorage(cfg, zapLog); err != nil {
@@ -89,7 +92,7 @@ func main() {
 
 	// ── Application services ──────────────────────────────────────────────────
 	authSvc := appAuth.NewService(userRepo, subRepo, jwtSvc, zapLog)
-	userSvc := appUser.NewService(userRepo, mailSvc, jwtSvc, zapLog)
+	userSvc := appUser.NewService(userRepo, emailQueue, jwtSvc, zapLog)
 	contentSvc := appContent.NewService(contentRepo, zapLog)
 	subSvc := appSub.NewService(subRepo, paystackSvc, userRepo, zapLog)
 

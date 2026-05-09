@@ -20,6 +20,19 @@ definitions:
     - refresh_token
     - token
     type: object
+  bitbucket_org_hofng_hofApp_internal_application_auth.DeviceInput:
+    properties:
+      brand:
+        type: string
+      identifier:
+        type: string
+      os:
+        type: string
+      version:
+        type: string
+      who:
+        type: string
+    type: object
   bitbucket_org_hofng_hofApp_internal_application_auth.GlobalParamsDTO:
     properties:
       activate_subscription:
@@ -27,8 +40,8 @@ definitions:
     type: object
   bitbucket_org_hofng_hofApp_internal_application_auth.LoginRequest:
     properties:
-      device_identifier:
-        type: string
+      device:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.DeviceInput'
       email:
         type: string
       password:
@@ -75,6 +88,120 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_content.CreateMeditationRequest:
+    properties:
+      image:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      text:
+        type: string
+    required:
+    - name
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_content.CreateMessageRequest:
+    properties:
+      access:
+        description: 'Access controls visibility: "leaders", "stewards", "members".
+          Defaults to "members".'
+        type: string
+      audio_url:
+        type: string
+      author:
+        type: string
+      date_released:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+      is_free:
+        type: boolean
+      is_private:
+        description: IsPrivate hides the message from all non-admin users regardless
+          of access level.
+        type: boolean
+      series_id:
+        type: string
+      title:
+        type: string
+    required:
+    - audio_url
+    - author
+    - title
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_content.CreateSeriesRequest:
+    properties:
+      author:
+        type: string
+      date_released:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+      of_the_month:
+        type: boolean
+      title:
+        type: string
+    required:
+    - image_url
+    - title
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_content.UpdateMeditationRequest:
+    properties:
+      image:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      text:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_content.UpdateMessageRequest:
+    properties:
+      access:
+        description: 'Optional access change. Valid values: "leaders", "stewards",
+          "members".'
+        type: string
+      audio_url:
+        type: string
+      author:
+        type: string
+      date_released:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+      is_free:
+        type: boolean
+      is_private:
+        description: IsPrivate, when non-nil, updates the private visibility flag.
+        type: boolean
+      series_id:
+        type: string
+      title:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_application_content.UpdateSeriesRequest:
+    properties:
+      author:
+        type: string
+      date_released:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+      of_the_month:
+        type: boolean
+      title:
+        type: string
     type: object
   bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest:
     properties:
@@ -377,6 +504,99 @@ definitions:
     - otp
     - target
     type: object
+  bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage:
+    properties:
+      accessLevel:
+        description: |-
+          AccessLevel controls who may access this message.
+          Valid values: "leaders", "stewards", "members" (members includes stewards and leaders).
+        type: string
+      audioURL:
+        type: string
+      author:
+        type: string
+      createdAt:
+        type: string
+      dateReleased:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      imageURL:
+        type: string
+      isFree:
+        type: boolean
+      isPrivate:
+        description: IsPrivate hides the message from all non-admin users regardless
+          of access level.
+        type: boolean
+      series:
+        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries'
+      seriesID:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries:
+    properties:
+      author:
+        type: string
+      createdAt:
+        type: string
+      dateReleased:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      imageURL:
+        type: string
+      messages:
+        items:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage'
+        type: array
+      ofTheMonth:
+        type: boolean
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  bitbucket_org_hofng_hofApp_internal_domain_content.Homepage:
+    properties:
+      audio_series:
+        items:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries'
+        type: array
+      meditations:
+        items:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation'
+        type: array
+    type: object
+  bitbucket_org_hofng_hofApp_internal_domain_content.Meditation:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      text:
+        type: string
+    type: object
   bitbucket_org_hofng_hofApp_internal_domain_user.AppVersion:
     properties:
       createdAt:
@@ -453,19 +673,6 @@ definitions:
       user_id:
         type: string
     type: object
-  bitbucket_org_hofng_hofApp_internal_domain_user.PasswordVersion:
-    enum:
-    - bcrypt
-    - md5
-    type: string
-    x-enum-comments:
-      PasswordVersionMD5: legacy only
-    x-enum-descriptions:
-    - ""
-    - legacy only
-    x-enum-varnames:
-    - PasswordVersionBcrypt
-    - PasswordVersionMD5
   bitbucket_org_hofng_hofApp_internal_domain_user.Role:
     properties:
       createdAt:
@@ -493,56 +700,6 @@ definitions:
     - RoleChurchFriend
     - RoleTeamLead
     - RoleChurchAdmin
-  bitbucket_org_hofng_hofApp_internal_domain_user.User:
-    properties:
-      address:
-        type: string
-      createdAt:
-        type: string
-      email:
-        type: string
-      firstName:
-        type: string
-      gender:
-        type: string
-      id:
-        type: string
-      isVerified:
-        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.VerificationStatus'
-      lastName:
-        type: string
-      mobile:
-        type: string
-      password:
-        type: string
-      passwordVersion:
-        $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.PasswordVersion'
-      paystackCustomerCode:
-        type: string
-      paystackCustomerID:
-        type: string
-      roles:
-        items:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.Role'
-        type: array
-      updatedAt:
-        type: string
-      userName:
-        type: string
-    type: object
-  bitbucket_org_hofng_hofApp_internal_domain_user.VerificationStatus:
-    enum:
-    - 0
-    - 1
-    - 2
-    - 3
-    format: int32
-    type: integer
-    x-enum-varnames:
-    - Unverified
-    - PhoneVerified
-    - EmailVerified
-    - EmailAndPhoneVerified
 info:
   contact:
     email: dev@hofng.org
@@ -555,6 +712,255 @@ info:
   title: HOF Backend API
   version: "2.0"
 paths:
+  /admin/audio_message/:
+    post:
+      consumes:
+      - application/json
+      description: 'Create a new audio message with optional access control. Access
+        levels: "leaders" (leaders only), "stewards" (stewards+leaders), "members"
+        (all roles). Defaults to "members". URLs are trimmed and checked for uniqueness.'
+      parameters:
+      - description: Message payload with optional 'access' field
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.CreateMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage'
+        "400":
+          description: Invalid access value or other validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Audio URL already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new audio message
+      tags:
+      - content
+  /admin/audio_message/delete/{message_id}:
+    delete:
+      parameters:
+      - description: Message ID
+        in: path
+        name: message_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete an audio message
+      tags:
+      - content
+  /admin/audio_message/meditation:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Meditation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.CreateMeditationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation'
+      security:
+      - BearerAuth: []
+      summary: Create a new meditation
+      tags:
+      - content
+  /admin/audio_message/meditation/{meditation_id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Meditation ID
+        in: path
+        name: meditation_id
+        required: true
+        type: string
+      - description: Updated meditation fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.UpdateMeditationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation'
+      security:
+      - BearerAuth: []
+      summary: Update an existing meditation
+      tags:
+      - content
+  /admin/audio_message/meditation/delete/{meditation_id}:
+    delete:
+      parameters:
+      - description: Meditation ID
+        in: path
+        name: meditation_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a meditation
+      tags:
+      - content
+  /admin/audio_message/update/{message_id}:
+    put:
+      consumes:
+      - application/json
+      description: Update an audio message. Can change access level via 'access' field
+        (leaders, stewards, members). URLs are trimmed and checked for uniqueness
+        against other messages.
+      parameters:
+      - description: Message ID
+        in: path
+        name: message_id
+        required: true
+        type: string
+      - description: Updated message fields (all optional)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.UpdateMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage'
+        "400":
+          description: Invalid access value or other validation error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Audio URL already used by another message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update an existing audio message
+      tags:
+      - content
+  /admin/audio_series/:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Series payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.CreateSeriesRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries'
+      security:
+      - BearerAuth: []
+      summary: Create a new audio series
+      tags:
+      - content
+  /admin/audio_series/delete/{series_id}:
+    delete:
+      parameters:
+      - description: Series ID
+        in: path
+        name: series_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete an audio series
+      tags:
+      - content
+  /admin/audio_series/update/{series_id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Series ID
+        in: path
+        name: series_id
+        required: true
+        type: string
+      - description: Updated series fields
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.UpdateSeriesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries'
+      security:
+      - BearerAuth: []
+      summary: Update an existing audio series
+      tags:
+      - content
   /admin/global:
     get:
       produces:
@@ -587,6 +993,105 @@ paths:
       summary: Update global application parameters
       tags:
       - admin
+  /admin/subscription/offering:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Offering payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Create a subscription offering (admin only)
+      tags:
+      - subscription
+  /admin/subscription/offering/delete/{offering_id}:
+    delete:
+      parameters:
+      - description: Offering ID
+        in: path
+        name: offering_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Delete a subscription offering (admin only)
+      tags:
+      - subscription
+  /admin/subscription/plan:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Plan payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Create a subscription plan (admin only)
+      tags:
+      - subscription
+  /admin/subscription/plan/{id}:
+    delete:
+      parameters:
+      - description: Plan ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Delete a subscription plan (admin only)
+      tags:
+      - subscription
+  /admin/subscription/plan/offering:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Plan offering payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanOfferingRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Create a plan-offering mapping (admin only)
+      tags:
+      - subscription
   /admin/upload:
     post:
       consumes:
@@ -692,6 +1197,71 @@ paths:
       summary: Update the promoted app version (admin)
       tags:
       - app-version
+  /admin/user/create:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Admin signup data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AdminSignupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new admin user (admin only)
+      tags:
+      - users
+  /admin/user/delete/{user_id}:
+    delete:
+      description: Permanently soft-deletes an admin account. Caller cannot delete
+        themselves.
+      parameters:
+      - description: Admin user ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid user_id
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Cannot delete your own account
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Admin not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete an admin user (admin only)
+      tags:
+      - users
   /admin/user/roles:
     post:
       consumes:
@@ -713,6 +1283,173 @@ paths:
       summary: Assign roles to a user (admin)
       tags:
       - users
+  /audio_message/:
+    get:
+      description: List audio messages filtered by the caller's role derived from
+        JWT claims. Admins and team leads see all levels; stewards see stewards+members;
+        members see members only.
+      parameters:
+      - description: Search term in title or author
+        in: query
+        name: search
+        type: string
+      - description: Filter by series ID
+        in: query
+        name: series_id
+        type: string
+      - description: Filter by free status
+        in: query
+        name: is_free
+        type: boolean
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List audio messages with optional filters
+      tags:
+      - content
+  /audio_message/id/message/{message_id}:
+    get:
+      description: Retrieve a single audio message. Returns 403 if the caller's role
+        (derived from JWT) lacks permission for the message's access level.
+      parameters:
+      - description: Message ID
+        in: path
+        name: message_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage'
+        "403":
+          description: Access denied
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Message not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get a single audio message by ID
+      tags:
+      - content
+  /audio_message/meditation/{meditation_id}:
+    get:
+      parameters:
+      - description: Meditation ID
+        in: path
+        name: meditation_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation'
+      security:
+      - BearerAuth: []
+      summary: Get a single meditation by ID
+      tags:
+      - content
+  /audio_message/meditations:
+    get:
+      parameters:
+      - description: Admin view
+        in: query
+        name: admin
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List meditations
+      tags:
+      - content
+  /audio_series/:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List all audio series
+      tags:
+      - content
+  /audio_series/home:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Homepage'
+      security:
+      - BearerAuth: []
+      summary: Get the homepage content aggregation
+      tags:
+      - content
+  /audio_series/id/series/{series_id}:
+    get:
+      parameters:
+      - description: Series ID
+        in: path
+        name: series_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries'
+      security:
+      - BearerAuth: []
+      summary: Get a single audio series by ID
+      tags:
+      - content
   /session/authenticate:
     post:
       consumes:
@@ -734,30 +1471,6 @@ paths:
       summary: Refresh a session using refresh token
       tags:
       - auth
-  /session/device/{email}:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: User email
-        in: path
-        name: email
-        required: true
-        type: string
-      - description: Device info
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-      summary: Register a device for the user identified by email
-      tags:
-      - devices
   /session/forgot_password:
     post:
       consumes:
@@ -812,8 +1525,10 @@ paths:
     post:
       consumes:
       - application/json
+      description: Include the optional `device` field to register/refresh the device
+        on login.
       parameters:
-      - description: Login credentials
+      - description: Login credentials (device field optional)
         in: body
         name: body
         required: true
@@ -871,29 +1586,6 @@ paths:
       summary: Create a new user account
       tags:
       - users
-  /session/sign_up/admin:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Admin signup data
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AdminSignupRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse'
-      security:
-      - BearerAuth: []
-      summary: Admin sign up
-      tags:
-      - session
   /session/verify_token:
     put:
       consumes:
@@ -911,7 +1603,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User'
+            $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse'
       summary: Verify a password reset OTP
       tags:
       - users
@@ -962,44 +1654,6 @@ paths:
       summary: List subscription offerings
       tags:
       - subscription
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Offering payload
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-      security:
-      - BearerAuth: []
-      summary: Create a subscription offering
-      tags:
-      - subscription
-  /subscription/offering/delete/{offering_id}:
-    delete:
-      parameters:
-      - description: Offering ID
-        in: path
-        name: offering_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerAuth: []
-      summary: Delete a subscription offering
-      tags:
-      - subscription
   /subscription/plan:
     get:
       produces:
@@ -1012,44 +1666,7 @@ paths:
       summary: List subscription plans
       tags:
       - subscription
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Plan payload
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-      security:
-      - BearerAuth: []
-      summary: Create a subscription plan
-      tags:
-      - subscription
   /subscription/plan/{id}:
-    delete:
-      parameters:
-      - description: Plan ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerAuth: []
-      summary: Delete a subscription plan
-      tags:
-      - subscription
     get:
       parameters:
       - description: Plan ID
@@ -1077,26 +1694,6 @@ paths:
       security:
       - BearerAuth: []
       summary: List plan-offering mappings
-      tags:
-      - subscription
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Plan offering payload
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanOfferingRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-      security:
-      - BearerAuth: []
-      summary: Create a plan-offering mapping
       tags:
       - subscription
   /subscription/transaction:
@@ -1201,6 +1798,27 @@ paths:
       summary: Change password for the authenticated user
       tags:
       - users
+  /user/devices/add:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Device info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+      security:
+      - BearerAuth: []
+      summary: Register a device for the authenticated user
+      tags:
+      - devices
   /user/devices/all:
     get:
       produces:

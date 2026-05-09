@@ -156,36 +156,36 @@ func (e ErrConflict) Error() string {
 
 // IsNotFound reports whether err or any error in its chain is an ErrNotFound.
 func IsNotFound(err error) bool {
-	var e ErrNotFound
-	return errors.As(err, &e)
+	_, ok := errors.AsType[ErrNotFound](err)
+	return ok
 }
 
 // IsAlreadyExists reports whether err or any error in its chain is an ErrAlreadyExists.
 func IsAlreadyExists(err error) bool {
-	var e ErrAlreadyExists
-	return errors.As(err, &e)
+	_, ok := errors.AsType[ErrAlreadyExists](err)
+	return ok
 }
 
 // IsInvalidInput reports whether err or any error in its chain is an ErrInvalidInput.
 func IsInvalidInput(err error) bool {
-	var e ErrInvalidInput
-	return errors.As(err, &e)
+	_, ok := errors.AsType[ErrInvalidInput](err)
+	return ok
 }
 
 // IsUnauthorized reports whether err or any error in its chain is an ErrUnauthorized.
 func IsUnauthorized(err error) bool {
-	var e ErrUnauthorized
-	return errors.As(err, &e)
+	_, ok := errors.AsType[ErrUnauthorized](err)
+	return ok
 }
 
 // IsForbidden reports whether err or any error in its chain is an ErrForbidden.
 func IsForbidden(err error) bool {
-	var e ErrForbidden
-	return errors.As(err, &e)
+	_, ok := errors.AsType[ErrForbidden](err)
+	return ok
 }
 
 // IsConflict reports whether err or any error in its chain is an ErrConflict.
 func IsConflict(err error) bool {
-	var e ErrConflict
-	return errors.As(err, &e)
+	_, ok := errors.AsType[ErrConflict](err)
+	return ok
 }

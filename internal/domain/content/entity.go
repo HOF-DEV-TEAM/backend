@@ -7,6 +7,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// Access level constants for AudioMessage.AccessLevel.
+const (
+	AccessMembers  = "members"  // visible to all authenticated users
+	AccessStewards = "stewards" // stewards and leaders only
+	AccessLeaders  = "leaders"  // leaders only
+)
+
 // AudioSeries is a named collection that groups related audio messages.
 type AudioSeries struct {
 	ID           uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
@@ -27,17 +34,19 @@ type AudioSeries struct {
 func (AudioSeries) TableName() string { return "audio_series" }
 
 // AudioMessage is a single preach-able audio content item.
-// AllowSteward controls whether steward-role users may access this message
-// even when it is not free and the listener has no active subscription.
 type AudioMessage struct {
-	ID           uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	Title        string     `gorm:"type:varchar(200);not null"`
-	Author       string     `gorm:"type:varchar(200)"`
-	ImageURL     string     `gorm:"column:image_url;type:varchar(500)"`
-	AudioURL     string     `gorm:"column:audio_url;type:varchar(500);not null"`
-	Description  string     `gorm:"type:text"`
-	IsFree       bool       `gorm:"column:is_free;default:false"`
-	AllowSteward bool       `gorm:"column:allow_steward;default:false"`
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Title       string    `gorm:"type:varchar(200);not null"`
+	Author      string    `gorm:"type:varchar(200)"`
+	ImageURL    string    `gorm:"column:image_url;type:varchar(500)"`
+	AudioURL    string    `gorm:"column:audio_url;type:varchar(500);not null"`
+	Description string    `gorm:"type:text"`
+	IsFree      bool      `gorm:"column:is_free;default:false"`
+	// AccessLevel controls who may access this message.
+	// Valid values: "leaders", "stewards", "members" (members includes stewards and leaders).
+	AccessLevel string `gorm:"column:access_level;type:varchar(50);default:'members'"`
+	// IsPrivate hides the message from all non-admin users regardless of access level.
+	IsPrivate    bool       `gorm:"column:is_private;default:false"`
 	SeriesID     *uuid.UUID `gorm:"column:series_id;type:uuid"`
 	DateReleased *time.Time `gorm:"column:date_released"`
 	CreatedAt    time.Time  `gorm:"column:date_added;autoCreateTime"`
@@ -55,6 +64,7 @@ type Meditation struct {
 	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	Name      string     `gorm:"type:varchar(200);not null"`
 	Image     string     `gorm:"type:varchar(500)"`
+	Text      string     `gorm:"type:text"`
 	Status    string     `gorm:"type:varchar(50);default:'active'"`
 	CreatedAt time.Time  `gorm:"column:date_added;autoCreateTime"`
 	DeletedAt *time.Time `gorm:"column:deleted_at"`

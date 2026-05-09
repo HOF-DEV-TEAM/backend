@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	appUser "bitbucket.org/hofng/hofApp/internal/application/user"
+	"bitbucket.org/hofng/hofApp/internal/domain/shared"
 	domainUser "bitbucket.org/hofng/hofApp/internal/domain/user"
 	"bitbucket.org/hofng/hofApp/internal/interfaces/http/middleware"
 	"bitbucket.org/hofng/hofApp/internal/interfaces/http/response"
@@ -71,13 +72,14 @@ func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 // AdminSignup godoc
-// @Summary      Admin sign up
+// @Summary      Create a new admin user (admin only)
 // @Tags         users
+// @Security     BearerAuth
 // @Accept       json
 // @Produce      json
 // @Param        body body appUser.AdminSignupRequest true "Admin signup data"
 // @Success      200 {object} appUser.UserResponse
-// @Router       /session/sign_up/admin [post]
+// @Router       /admin/user/create [post]
 func (h *UserHandler) AdminSignup(w http.ResponseWriter, r *http.Request) {
 	var req appUser.AdminSignupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -92,6 +94,39 @@ func (h *UserHandler) AdminSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, appUser.ToUserResponse(user))
+}
+
+// DeleteAdmin godoc
+// @Summary      Delete an admin user (admin only)
+// @Description  Permanently soft-deletes an admin account. Caller cannot delete themselves.
+// @Tags         users
+// @Security     BearerAuth
+// @Produce      json
+// @Param        user_id path string true "Admin user ID"
+// @Success      200 {object} map[string]string
+// @Failure      400 {object} map[string]string "Invalid user_id"
+// @Failure      403 {object} map[string]string "Cannot delete your own account"
+// @Failure      404 {object} map[string]string "Admin not found"
+// @Router       /admin/user/delete/{user_id} [delete]
+func (h *UserHandler) DeleteAdmin(w http.ResponseWriter, r *http.Request) {
+	targetID, err := uuid.Parse(chi.URLParam(r, "user_id"))
+	if err != nil {
+		response.BadRequest(w, "invalid user_id")
+		return
+	}
+
+	callerID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		response.Error(w, shared.ErrUnauthorized{Message: "could not identify caller"})
+		return
+	}
+
+	if err := h.svc.DeleteAdmin(r.Context(), callerID, targetID); err != nil {
+		response.Error(w, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]string{"message": "admin deleted"})
 }
 
 // UpdateProfile godoc
@@ -153,7 +188,7 @@ func (h *UserHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body body appUser.VerifyOTPRequest true "OTP"
-// @Success      200 {object} domainUser.User
+// @Success      200 {object} appUser.UserResponse
 // @Router       /session/verify_token [put]
 func (h *UserHandler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	var req appUser.VerifyOTPRequest
@@ -168,7 +203,7 @@ func (h *UserHandler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSON(w, http.StatusOK, u)
+	response.JSON(w, http.StatusOK, appUser.ToUserResponse(u))
 }
 
 // ResetPassword godoc
@@ -360,14 +395,14 @@ func (h *UserHandler) DeleteFavourite(w http.ResponseWriter, r *http.Request) {
 // ── Devices ───────────────────────────────────────────────────────────────────
 
 // RegisterDevice godoc
-// @Summary      Register a device for the user identified by email
+// @Summary      Register a device for the authenticated user
 // @Tags         devices
+// @Security     BearerAuth
 // @Accept       json
 // @Produce      json
-// @Param        email path string true "User email"
 // @Param        body body appUser.DeviceInput true "Device info"
 // @Success      201
-// @Router       /session/device/{email} [post]
+// @Router       /user/devices/add [post]
 func (h *UserHandler) RegisterDevice(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {

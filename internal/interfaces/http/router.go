@@ -117,8 +117,6 @@ func NewRouter(
 
 	// ── Public session routes ─────────────────────────────────────────────────
 	r.Route("/session", func(r chi.Router) {
-		// admin
-		r.Post("/sign_up/admin", userH.AdminSignup)
 		r.Post("/sign_in/admin", authH.AdminSignIn)
 
 		r.Post("/sign_up", userH.SignUp)
@@ -170,25 +168,16 @@ func NewRouter(
 		// Audio messages
 		r.Route("/audio_message", func(r chi.Router) {
 			r.Get("/", contentH.ListMessages)
-			r.Post("/", contentH.CreateMessage)
 			r.Get("/id/message/{message_id}", contentH.GetMessage)
-			r.Put("/update/{message_id}", contentH.UpdateMessage)
-			r.Delete("/delete/{message_id}", contentH.DeleteMessage)
 
-			r.Post("/meditation", contentH.CreateMeditation)
 			r.Get("/meditations", contentH.ListMeditations)
 			r.Get("/meditation/{meditation_id}", contentH.GetMeditation)
-			r.Put("/meditation/{meditation_id}", contentH.UpdateMeditation)
-			r.Delete("/meditation/delete/{meditation_id}", contentH.DeleteMeditation)
 		})
 
 		// Audio series
 		r.Route("/audio_series", func(r chi.Router) {
 			r.Get("/", contentH.ListSeries)
-			r.Post("/", contentH.CreateSeries)
 			r.Get("/id/series/{series_id}", contentH.GetSeries)
-			r.Put("/update/{series_id}", contentH.UpdateSeries)
-			r.Delete("/delete/{series_id}", contentH.DeleteSeries)
 			r.Get("/home", contentH.GetHomepage)
 		})
 
@@ -201,17 +190,12 @@ func NewRouter(
 
 			r.Route("/plan", func(r chi.Router) {
 				r.Get("/", subH.ListPlans)
-				r.Post("/", subH.CreatePlan)
 				r.Get("/{id}", subH.GetPlan)
-				r.Delete("/{id}", subH.DeletePlan)
 				r.Get("/offering", subH.ListPlanOfferings)
-				r.Post("/offering", subH.CreatePlanOffering)
 			})
 
 			r.Route("/offering", func(r chi.Router) {
 				r.Get("/", subH.ListOfferings)
-				r.Post("/", subH.CreateOffering)
-				r.Delete("/delete/{offering_id}", subH.DeleteOffering)
 			})
 		})
 	})
@@ -224,6 +208,8 @@ func NewRouter(
 		r.Route("/admin", func(r chi.Router) {
 
 			// User management
+			r.Post("/user/create", userH.AdminSignup)
+			r.Delete("/user/delete/{user_id}", userH.DeleteAdmin)
 			r.Post("/user/roles", userH.AssignRoles)
 			r.Put("/user/app_version/update", userH.UpdateAppVersion)
 
@@ -236,6 +222,38 @@ func NewRouter(
 			// Global parameters
 			r.Get("/global", adminH.GetGlobalParameters)
 			r.Put("/global", adminH.UpdateGlobalParameters)
+
+			// Audio series
+			r.Route("/audio_series", func(r chi.Router) {
+				r.Post("/", contentH.CreateSeries)
+				r.Put("/update/{series_id}", contentH.UpdateSeries)
+				r.Delete("/delete/{series_id}", contentH.DeleteSeries)
+			})
+
+			// Message content
+			r.Route("/audio_message", func(r chi.Router) {
+				r.Post("/", contentH.CreateMessage)
+				r.Put("/update/{message_id}", contentH.UpdateMessage)
+				r.Delete("/delete/{message_id}", contentH.DeleteMessage)
+
+				r.Post("/meditation", contentH.CreateMeditation)
+				r.Put("/meditation/{meditation_id}", contentH.UpdateMeditation)
+				r.Delete("/meditation/delete/{meditation_id}", contentH.DeleteMeditation)
+			})
+
+			// Subscriptions
+			r.Route("/subscription", func(r chi.Router) {
+				r.Route("/plan", func(r chi.Router) {
+					r.Post("/", subH.CreatePlan)
+					r.Delete("/{id}", subH.DeletePlan)
+					r.Post("/offering", subH.CreatePlanOffering)
+				})
+
+				r.Route("/offering", func(r chi.Router) {
+					r.Post("/", subH.CreateOffering)
+					r.Delete("/delete/{offering_id}", subH.DeleteOffering)
+				})
+			})
 		})
 	})
 
