@@ -482,3 +482,40 @@ Numbered list — logging improvements, missing tests for edge cases, minor clar
 
 ### Approved / Changes requested
 One line verdict with reason.
+
+---
+
+## Post review to GitHub
+
+After writing the verdict, post the review as a PR comment using the table format below.
+Derive the PR number from `$ARGUMENTS` or `gh pr view --json number -q .number`.
+
+```bash
+gh pr comment <PR_NUMBER> --body "$(cat <<'REVIEW'
+## Code Review
+
+### Summary
+<one paragraph>
+
+### Findings
+
+| # | Priority | File / Location | Issue | Recommendation |
+|---|----------|----------------|-------|----------------|
+| 1 | 🔴 Must fix | `path/to/file.go:42` | Short description of the problem | What to do instead |
+| 2 | 🟡 Should fix | `path/to/file.go:100` | Short description | What to do instead |
+| 3 | 🟢 Nice to have | `path/to/file.go:200` | Short description | What to do instead |
+
+**Priority key:** 🔴 Must fix (blocks merge) · 🟡 Should fix (high priority) · 🟢 Nice to have (non-blocking)
+
+### Verdict
+<!-- "Approved ✅" or "Changes requested ❌" with one-line reason -->
+REVIEW
+)"
+```
+
+Rules for the table:
+- One row per finding — do not merge multiple issues into one row.
+- `File / Location` must be a code-fenced path with line number, e.g. `` `internal/application/user/service.go:88` ``.
+- `Issue` — one sentence, state the problem (not the fix).
+- `Recommendation` — one sentence, state what to change.
+- Omit a priority group entirely if it has no findings (no empty rows).
