@@ -1,7 +1,7 @@
 # /deskcheck — Desk Check / QA
 
 Manual curl-based verification of one or all API endpoints.
-Arguments: $ARGUMENTS — optional scope (e.g. "subscription", "user", "auth", or blank for all).
+Arguments: $ARGUMENTS — optional scope (e.g. "subscription", "content", "user", "auth", or blank for all).
 
 ---
 

@@ -117,6 +117,7 @@ make down
 make help          Show all targets with descriptions
 make setup-hooks   Install git hooks (run once after cloning)
 make env           Copy .env.example → .env (skips if .env already exists)
+make seed-admin    Bootstrap the first admin user (see below)
 make run           Run the app locally (loads .env automatically)
 make build         Compile binary → bin/server
 make clean         Remove compiled binaries
@@ -129,6 +130,116 @@ make down          docker compose down
 make logs          docker compose logs -f
 make ps            docker compose ps
 make db-shell      Open a psql shell inside the compose postgres container
+```
+
+---
+
+## Creating the first admin
+
+Admin accounts are **not publicly self-registerable**. The `POST /session/sign_up/admin` endpoint no longer exists. Admin creation works in two phases:
+
+### Phase 1 — Bootstrap (no admins exist yet)
+
+Use the `seed-admin` command. It connects directly to the database and will **refuse to run** if any `church_admin` already exists, preventing accidental overwrites.
+
+```bash
+# Make sure your .env is populated (DATABASE_URL is required)
+make seed-admin \
+  EMAIL=admin@hofng.org \
+  FIRST=John \
+  LAST=Doe \
+  PASS='SecretPass123!'
+```
+
+Or run the Go command directly:
+
+```bash
+go run ./cmd/seed \
+  -email admin@hofng.org \
+  -first-name John \
+  -last-name Doe \
+  -password 'SecretPass123!'
+```
+
+On success you'll see:
+```
+✓ Admin created: John Doe <admin@hofng.org>
+  Sign in at POST /session/sign_in/admin
+```
+
+### Phase 2 — Adding more admins (after the first admin exists)
+
+Once an admin exists and can sign in, new admin accounts are created via the admin-protected API:
+
+```
+POST /admin/user/create
+Authorization: Bearer <admin_jwt>
+
+{
+  "first_name": "Jane",
+  "last_name":  "Smith",
+  "email":      "jane@hofng.org",
+  "password":   "SecretPass456!"
+}
+```
+
+This endpoint requires a valid admin JWT. Regular users cannot reach it.
+
+---
+
+## Email delivery
+
+All outbound emails (password reset, email verification) go through an async queue — the HTTP request returns immediately and delivery happens in the background.
+
+### How it works
+
+```
+Request → EmailQueue.Enqueue()
+              │
+              ├── 1. Write job to email_jobs table (status = pending)
+              └── 2. Push to in-memory channel (buffer: 200)
+                            │
+                     Background worker
+                            │
+                     SMTP send via Brevo
+                            │
+                  ┌─────────┴──────────┐
+                Success              Failure
+                  │                    │
+            status = sent        attempt < 3?
+                                 ├── yes → schedule retry
+                                 │         (1 min / 5 min / 15 min)
+                                 └── no  → status = failed (logged)
+```
+
+### Retry behaviour
+
+| Attempt | Delay before retry |
+|---------|--------------------|
+| 1 → 2   | 1 minute           |
+| 2 → 3   | 5 minutes          |
+| 3       | Permanently failed |
+
+### Resilience on restart
+
+A 5-minute DB poll picks up any `pending` jobs whose `scheduled_at` has arrived. This means:
+- Jobs survive server restarts (they're in the DB)
+- Jobs missed due to a full channel are retried automatically
+- Failed sends are visible in the `email_jobs` table for debugging
+
+### Monitoring failed emails
+
+```sql
+-- See all permanently failed emails
+SELECT id, "to", subject, attempts, last_error, created_at
+FROM email_jobs
+WHERE status = 'failed'
+ORDER BY created_at DESC;
+
+-- Manually requeue a failed job
+UPDATE email_jobs
+SET status = 'pending', attempts = 0, scheduled_at = NOW()
+WHERE id = '<job-id>';
 ```
 
 ---

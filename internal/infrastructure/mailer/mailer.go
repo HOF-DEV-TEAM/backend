@@ -12,14 +12,20 @@ import (
 	"gopkg.in/mail.v2"
 )
 
-// Mailer sends transactional emails via MailerSend API.
+// EmailSender is implemented by Mailer (direct) and EmailQueue (async + retry).
+type EmailSender interface {
+	SendPasswordReset(to, name, otp string) error
+	SendEmailVerification(to, name, link string) error
+}
+
+// Mailer sends transactional emails via Brevo SMTP.
 type Mailer struct {
 	cfg    *config.MailerConfig
 	log    *zap.Logger
 	dialer *mail.Dialer
 }
 
-// New creates a Mailer ready to send via the MailerSend API.
+// New creates a Mailer ready to send via Brevo SMTP.
 func New(cfg *config.MailerConfig, log *zap.Logger) *Mailer {
 	if cfg == nil {
 		cfg = &config.MailerConfig{}

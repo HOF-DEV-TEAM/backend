@@ -11,6 +11,8 @@ import (
 type MessageFilter struct {
 	Search   string
 	SeriesID *uuid.UUID
+	// AccessIn is a list of access_level values to include (e.g., ["members","stewards"]).
+	AccessIn []string
 	IsFree   *bool
 	Page     int
 	PageSize int
@@ -20,6 +22,8 @@ type MessageFilter struct {
 type Repository interface {
 	// Audio messages
 	CreateMessage(ctx context.Context, m *AudioMessage) error
+	// GetMessageByAudioURL returns a message matching the given audio URL (not deleted) or NotFound.
+	GetMessageByAudioURL(ctx context.Context, audioURL string) (*AudioMessage, error)
 	GetMessages(ctx context.Context, filter MessageFilter) ([]AudioMessage, int64, error)
 	GetMessageByID(ctx context.Context, id uuid.UUID) (*AudioMessage, error)
 	UpdateMessage(ctx context.Context, m *AudioMessage) error

@@ -60,29 +60,23 @@ func write(w http.ResponseWriter, status int, v any) {
 }
 
 func classify(err error) (status int, message string) {
-	var notFound shared.ErrNotFound
-	if errors.As(err, &notFound) {
-		return http.StatusNotFound, notFound.Error()
+	if v, ok := errors.AsType[shared.ErrNotFound](err); ok {
+		return http.StatusNotFound, v.Error()
 	}
-	var alreadyExists shared.ErrAlreadyExists
-	if errors.As(err, &alreadyExists) {
-		return http.StatusConflict, alreadyExists.Error()
+	if v, ok := errors.AsType[shared.ErrAlreadyExists](err); ok {
+		return http.StatusConflict, v.Error()
 	}
-	var conflict shared.ErrConflict
-	if errors.As(err, &conflict) {
-		return http.StatusConflict, conflict.Error()
+	if v, ok := errors.AsType[shared.ErrConflict](err); ok {
+		return http.StatusConflict, v.Error()
 	}
-	var invalidInput shared.ErrInvalidInput
-	if errors.As(err, &invalidInput) {
-		return http.StatusBadRequest, invalidInput.Error()
+	if v, ok := errors.AsType[shared.ErrInvalidInput](err); ok {
+		return http.StatusBadRequest, v.Error()
 	}
-	var unauthorized shared.ErrUnauthorized
-	if errors.As(err, &unauthorized) {
-		return http.StatusUnauthorized, unauthorized.Error()
+	if v, ok := errors.AsType[shared.ErrUnauthorized](err); ok {
+		return http.StatusUnauthorized, v.Error()
 	}
-	var forbidden shared.ErrForbidden
-	if errors.As(err, &forbidden) {
-		return http.StatusForbidden, forbidden.Error()
+	if v, ok := errors.AsType[shared.ErrForbidden](err); ok {
+		return http.StatusForbidden, v.Error()
 	}
 	return http.StatusInternalServerError, "an unexpected error occurred"
 }

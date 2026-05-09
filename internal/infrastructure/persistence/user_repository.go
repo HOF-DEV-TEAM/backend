@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,7 +39,9 @@ func (r *userRepository) Create(ctx context.Context, u *domainUser.User) error {
 
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*domainUser.User, error) {
 	var u domainUser.User
-	result := r.db.WithContext(ctx).Preload("Roles").First(&u, "id = ?", id)
+	result := r.db.WithContext(ctx).Preload("Roles").
+		Where("deleted_at IS NULL").
+		First(&u, "id = ?", id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, shared.ErrNotFound{Resource: "user", ID: id.String()}
 	}
@@ -50,7 +53,9 @@ func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*domainUser
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domainUser.User, error) {
 	var u domainUser.User
-	result := r.db.WithContext(ctx).Preload("Roles").First(&u, "email = ?", email)
+	result := r.db.WithContext(ctx).Preload("Roles").
+		Where("deleted_at IS NULL").
+		First(&u, "email = ?", email)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, shared.ErrNotFound{Resource: "user", ID: email}
 	}
@@ -62,7 +67,9 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domainU
 
 func (r *userRepository) GetByCustomerCode(ctx context.Context, code string) (*domainUser.User, error) {
 	var u domainUser.User
-	result := r.db.WithContext(ctx).Preload("Roles").First(&u, "paystack_customer_code = ?", code)
+	result := r.db.WithContext(ctx).Preload("Roles").
+		Where("deleted_at IS NULL").
+		First(&u, "paystack_customer_code = ?", code)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, shared.ErrNotFound{Resource: "user", ID: code}
 	}
@@ -86,6 +93,20 @@ func (r *userRepository) UpdateVerificationStatus(ctx context.Context, id uuid.U
 		Update("is_verified", status)
 	if result.Error != nil {
 		return fmt.Errorf("updating verification status: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return shared.ErrNotFound{Resource: "user", ID: id.String()}
+	}
+	return nil
+}
+
+func (r *userRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	now := time.Now()
+	result := r.db.WithContext(ctx).Model(&domainUser.User{}).
+		Where("id = ?", id).
+		Update("deleted_at", now)
+	if result.Error != nil {
+		return fmt.Errorf("deleting user: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return shared.ErrNotFound{Resource: "user", ID: id.String()}
@@ -389,17 +410,9 @@ func (r *userRepository) UpdateAppVersion(ctx context.Context, v *domainUser.App
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 func isUniqueViolation(err error) bool {
-	return err != nil && (containsString(err.Error(), "unique") || containsString(err.Error(), "duplicate"))
-}
-
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 &&
-		func() bool {
-			for i := 0; i <= len(s)-len(substr); i++ {
-				if s[i:i+len(substr)] == substr {
-					return true
-				}
-			}
-			return false
-		}())
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "unique") || strings.Contains(msg, "duplicate")
 }

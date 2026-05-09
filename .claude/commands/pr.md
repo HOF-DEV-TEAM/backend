@@ -7,20 +7,34 @@ Arguments: $ARGUMENTS — optional PR title override or Jira ticket ID (e.g. HOF
 
 ## Step 1 — Pre-flight
 
+Run every check below in order. **Do not skip any.** Stop and fix before proceeding if any check fails.
+
 ```bash
-# Confirm you're on a feature branch (not master)
+# 1. Confirm you're on a feature branch (not master)
 git branch --show-current
+# If on master: stop — create a feature branch first with git checkout -b feat/...
 
-# Confirm everything is committed
-git status   # should be clean
+# 2. Confirm everything is committed
+git status
+# If there are uncommitted changes: stop — commit or stash them first
 
-# Confirm CI will pass locally
+# 3. Build must be clean
 go build ./...
+
+# 4. Vet must be clean
 go vet ./...
+
+# 5. All tests must pass with race detector
 go test ./... -race -count=1
+
+# 6. Lint must be clean
 make lint
+
+# 7. No known vulnerabilities
 govulncheck ./...
 ```
+
+All seven checks must pass before moving to Step 2. Any failure must be resolved first.
 
 ---
 

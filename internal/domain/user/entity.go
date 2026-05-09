@@ -89,6 +89,7 @@ type User struct {
 	Roles                []Role             `gorm:"many2many:user_roles;"`
 	CreatedAt            time.Time          `gorm:"column:date_added;autoCreateTime"`
 	UpdatedAt            time.Time          `gorm:"column:last_updated;autoUpdateTime"`
+	DeletedAt            *time.Time         `gorm:"column:deleted_at"`
 }
 
 // TableName returns the database table for users.

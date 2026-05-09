@@ -1,7 +1,7 @@
 # HOF Backend — Claude Project Context
 
 Heritage of Faith Church backend — audio content platform with subscriptions, user management,
-Paystack payments, AWS S3 storage, and Brevo email. Go 1.26, Chi, GORM, PostgreSQL, zap.
+Paystack payments, S3/Cloudinary storage, and Brevo SMTP email. Go 1.26, Chi, GORM, PostgreSQL, zap.
 
 ---
 
@@ -13,7 +13,7 @@ internal/
   domain/                      ← Layer 1: entities + interfaces (no imports from other layers)
     shared/errors.go           ← typed errors used everywhere
     user/entity.go             ← User, DeviceRecord, Role, AppVersion
-    content/entity.go          ← AudioMessage, AudioSeries, Meditation
+    content/entity.go          ← AudioMessage (with AccessLevel), AudioSeries, Meditation (with Text)
     subscription/entity.go     ← Plan, Offering, PlanOffering, Subscription, GlobalParameters
     */repository.go            ← interfaces only (no GORM, no SQL)
   application/                 ← Layer 2: use cases / business logic (imports domain only)
@@ -28,7 +28,7 @@ internal/
     persistence/               ← repository implementations (GORM queries)
     security/                  ← JWT (JWTService), bcrypt, MD5
     payment/paystack/          ← Paystack HTTP client + service
-    storage/                   ← AWS S3
+    storage/                   ← S3 (primary) + Cloudinary (fallback); factory in storage/factory.go
     mailer/                    ← Brevo SMTP
     logger/                    ← zap
   interfaces/http/             ← Layer 4: HTTP (imports application only)
@@ -98,6 +98,69 @@ Every `sign_in`, `sign_in/admin`, and `authenticate` response includes:
 The handler always returns 200 to prevent Paystack retries.
 Events handled: `charge.success`, `invoice.update`, `subscription.create`, `subscription.not_renew`, `invoice.payment_failed`.
 
+### Audio message access control
+`AudioMessage` has an `access_level` column (`varchar(50)`, default `"members"`).
+Valid values and their hierarchy (broadest → narrowest): `"members"` → `"stewards"` → `"leaders"`.
+- `"members"` — visible to all authenticated users
+- `"stewards"` — stewards and leaders only
+- `"leaders"` — leaders only
+
+Set via `access` field in create/update requests (preferred). Legacy `allow_steward: true` maps to `"stewards"`.
+`GetMessage` enforces access with `ErrForbidden` when the viewer's role is insufficient.
+`ListMessages` accepts `access` query param (viewer role) and filters via `AccessIn`.
+
+### Email queue (async delivery + retry)
+All emails go through `mailer.EmailQueue` — never call `*Mailer` directly from application code.
+
+**Flow:** `enqueue()` writes a row to `email_jobs` (status `pending`) then pushes to a buffered channel (200 slots). The background worker drains the channel, calls `mailer.send()`, and updates the row. On failure it reschedules: attempt 1→2 waits 1 min, 2→3 waits 5 min; after 3 failures the row is marked `failed` and logged as an error. A 5-minute DB poll recovers jobs missed by the channel (restarts, full buffer).
+
+**Adding a new email type:**
+1. Add a method on `EmailQueue` (e.g. `SendWelcome`) that calls `q.enqueue(to, subject, templateFile, data)`
+2. Add the same method signature to the `EmailSender` interface in `mailer.go`
+3. Add the template file under `templates/`
+4. Call it via the `EmailSender` interface in the application service — never the concrete type
+
+**Key files:**
+- `internal/infrastructure/mailer/queue.go` — `EmailQueue`, worker, retry logic
+- `internal/infrastructure/mailer/mailer.go` — `EmailSender` interface + `Mailer` (SMTP)
+- `migrations/030_create_email_jobs.sql` — `email_jobs` table schema
+
+**Debugging failed emails:** query `SELECT * FROM email_jobs WHERE status = 'failed'`. To manually requeue: `UPDATE email_jobs SET status = 'pending', attempts = 0, scheduled_at = NOW() WHERE id = '...'`.
+
+### Storage backends
+`storage/factory.go` selects the backend at startup:
+1. **S3** — used when `AWS_SECRET` is set
+2. **Cloudinary** — fallback when `CLOUDINARY_CLOUD_NAME` + `CLOUDINARY_API_KEY` + `CLOUDINARY_API_SECRET` are set
+
+Cloudinary does **not** support presigned URLs — calling `GeneratePresignedURL` returns `ErrForbidden`.
+Both implement the `Storage` interface (`Upload`, `GeneratePresignedURL`, `GetMaxFileSize`).
+
+### Date format for `date_released`
+All `date_released` fields accept **DD/MM/YYYY** format (e.g. `"10/11/2022"`), not RFC3339.
+Invalid format returns `ErrInvalidInput` with a clear message.
+
+### Admin-only write routes
+All mutating content, subscription, and admin-user routes live under `/admin` and require admin auth:
+- `POST /admin/user/create` — create a new admin user (replaces the old public `/session/sign_up/admin`)
+- `POST/PUT/DELETE /admin/audio_message/` — create/update/delete audio messages
+- `POST/PUT/DELETE /admin/audio_series/` — create/update/delete series
+- `POST/PUT/DELETE /admin/audio_message/meditation` — create/update/delete meditations
+- `POST/DELETE /admin/subscription/plan/` — plan management
+- `POST/DELETE /admin/subscription/offering/` — offering management
+
+Public routes (`/audio_message/`, `/audio_series/`, `/audio_message/meditations`) are read-only.
+
+### Admin bootstrapping
+`POST /session/sign_up/admin` **no longer exists** — it was publicly accessible and has been removed.
+
+- **First admin**: run `make seed-admin EMAIL=… FIRST=… LAST=… PASS=…` (see README). The seed tool (`cmd/seed/main.go`) refuses to run if any `church_admin` already exists.
+- **Subsequent admins**: existing admin calls `POST /admin/user/create` with a valid admin JWT.
+- The seed script reuses existing infrastructure (config, DB, persistence, security) and lives in `cmd/seed/main.go`.
+
+### `errors.AsType` generic helper
+Use `errors.AsType[T](err)` instead of `var e T; errors.As(err, &e)` for typed error checks.
+This is the pattern used throughout `shared/errors.go` and `response/response.go`.
+
 ### Migrations
 Files are `NNN_description.sql`, ordered alphabetically. The runner tracks applied versions in
 `schema_migrations`. Use the separator `---- create above / drop below ----` to split up/down.
@@ -122,7 +185,7 @@ make build        # compile → bin/server
 
 Environment variables are loaded from `.env` via godotenv.
 Minimum required: `DATABASE_URL`, `JWT_SIGNING_KEY`.
-S3 and Paystack degrade gracefully when unconfigured.
+Storage requires either AWS or Cloudinary env vars (see Storage backends above). Paystack degrades gracefully when unconfigured.
 
 ```bash
 make up           # docker-compose: postgres + app
@@ -191,3 +254,5 @@ make swagger                 # regenerate from annotations
 | Change error mapping | `internal/interfaces/http/response/response.go:classify` |
 | Add env var | `internal/infrastructure/config/config.go` + `.env.example` |
 | Add email template | `templates/<name>.html` |
+| Add a new email type | `internal/infrastructure/mailer/queue.go` + `mailer.go` (interface) + template |
+| Change storage backend | `internal/infrastructure/storage/factory.go` |

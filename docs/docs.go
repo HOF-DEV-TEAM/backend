@@ -23,6 +23,401 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/audio_message/": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new audio message with optional access control. Access levels: \"leaders\" (leaders only), \"stewards\" (stewards+leaders), \"members\" (all roles). Defaults to \"members\". URLs are trimmed and checked for uniqueness.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Create a new audio message",
+                "parameters": [
+                    {
+                        "description": "Message payload with optional 'access' field",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.CreateMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid access value or other validation error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Audio URL already exists",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/audio_message/delete/{message_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Delete an audio message",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Message ID",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/audio_message/meditation": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Create a new meditation",
+                "parameters": [
+                    {
+                        "description": "Meditation payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.CreateMeditationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/audio_message/meditation/delete/{meditation_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Delete a meditation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Meditation ID",
+                        "name": "meditation_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/audio_message/meditation/{meditation_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Update an existing meditation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Meditation ID",
+                        "name": "meditation_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated meditation fields",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.UpdateMeditationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/audio_message/update/{message_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an audio message. Can change access level via 'access' field (leaders, stewards, members). URLs are trimmed and checked for uniqueness against other messages.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Update an existing audio message",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Message ID",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated message fields (all optional)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.UpdateMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid access value or other validation error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Audio URL already used by another message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/audio_series/": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Create a new audio series",
+                "parameters": [
+                    {
+                        "description": "Series payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.CreateSeriesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/audio_series/delete/{series_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Delete an audio series",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Series ID",
+                        "name": "series_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/audio_series/update/{series_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Update an existing audio series",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Series ID",
+                        "name": "series_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated series fields",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_content.UpdateSeriesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/global": {
             "get": {
                 "security": [
@@ -68,6 +463,171 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.UpdateGlobalParamsRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/admin/subscription/offering": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Create a subscription offering (admin only)",
+                "parameters": [
+                    {
+                        "description": "Offering payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/admin/subscription/offering/delete/{offering_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Delete a subscription offering (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Offering ID",
+                        "name": "offering_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/admin/subscription/plan": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Create a subscription plan (admin only)",
+                "parameters": [
+                    {
+                        "description": "Plan payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/admin/subscription/plan/offering": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Create a plan-offering mapping (admin only)",
+                "parameters": [
+                    {
+                        "description": "Plan offering payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanOfferingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/admin/subscription/plan/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Delete a subscription plan (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -240,6 +800,108 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/user/create": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create a new admin user (admin only)",
+                "parameters": [
+                    {
+                        "description": "Admin signup data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AdminSignupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user/delete/{user_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Permanently soft-deletes an admin account. Caller cannot delete themselves.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete an admin user (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Admin user ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user_id",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Cannot delete your own account",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Admin not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/admin/user/roles": {
             "post": {
                 "security": [
@@ -275,6 +937,302 @@ const docTemplate = `{
                 }
             }
         },
+        "/audio_message/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List audio messages filtered by viewer role (access control). Access parameter controls which messages are returned based on role hierarchy: \"leaders\" sees all, \"stewards\" sees stewards+members, \"members\" sees members only.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "List audio messages with optional filters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search term in title or author",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by series ID",
+                        "name": "series_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by free status",
+                        "name": "is_free",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Viewer role for access control (leaders, stewards, members)",
+                        "name": "access",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid access parameter",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/audio_message/id/message/{message_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a single audio message with optional viewer role for access control. Returns 403 if viewer role lacks permission for the message's access level.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Get a single audio message by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Message ID",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Viewer role for access control (leaders, stewards, members)",
+                        "name": "access",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid access parameter",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied for viewer role",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Message not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/audio_message/meditation/{meditation_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Get a single meditation by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Meditation ID",
+                        "name": "meditation_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation"
+                        }
+                    }
+                }
+            }
+        },
+        "/audio_message/meditations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "List meditations",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Admin view",
+                        "name": "admin",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/audio_series/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "List all audio series",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/audio_series/home": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Get the homepage content aggregation",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Homepage"
+                        }
+                    }
+                }
+            }
+        },
+        "/audio_series/id/series/{series_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "content"
+                ],
+                "summary": "Get a single audio series by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Series ID",
+                        "name": "series_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries"
+                        }
+                    }
+                }
+            }
+        },
         "/session/authenticate": {
             "post": {
                 "consumes": [
@@ -304,43 +1262,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.SessionResponse"
                         }
-                    }
-                }
-            }
-        },
-        "/session/device/{email}": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "devices"
-                ],
-                "summary": "Register a device for the user identified by email",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User email",
-                        "name": "email",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Device info",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created"
                     }
                 }
             }
@@ -520,44 +1441,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/session/sign_up/admin": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "session"
-                ],
-                "summary": "Admin sign up",
-                "parameters": [
-                    {
-                        "description": "Admin signup data",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AdminSignupRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/session/verify_token": {
             "put": {
                 "consumes": [
@@ -668,69 +1551,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "subscription"
-                ],
-                "summary": "Create a subscription offering",
-                "parameters": [
-                    {
-                        "description": "Offering payload",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreateOfferingRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created"
-                    }
-                }
-            }
-        },
-        "/subscription/offering/delete/{offering_id}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "subscription"
-                ],
-                "summary": "Delete a subscription offering",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Offering ID",
-                        "name": "offering_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
             }
         },
         "/subscription/plan": {
@@ -750,39 +1570,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "subscription"
-                ],
-                "summary": "Create a subscription plan",
-                "parameters": [
-                    {
-                        "description": "Plan payload",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created"
                     }
                 }
             }
@@ -806,39 +1593,6 @@ const docTemplate = `{
                         "description": "OK"
                     }
                 }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "subscription"
-                ],
-                "summary": "Create a plan-offering mapping",
-                "parameters": [
-                    {
-                        "description": "Plan offering payload",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_subscription.CreatePlanOfferingRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created"
-                    }
-                }
             }
         },
         "/subscription/plan/{id}": {
@@ -855,34 +1609,6 @@ const docTemplate = `{
                     "subscription"
                 ],
                 "summary": "Get a subscription plan by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Plan ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "subscription"
-                ],
-                "summary": "Delete a subscription plan",
                 "parameters": [
                     {
                         "type": "string",
@@ -1063,6 +1789,41 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    }
+                }
+            }
+        },
+        "/user/devices/add": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Register a device for the authenticated user",
+                "parameters": [
+                    {
+                        "description": "Device info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.DeviceInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
                     }
                 }
             }
@@ -1486,6 +2247,170 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_content.CreateMeditationRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "image": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_content.CreateMessageRequest": {
+            "type": "object",
+            "required": [
+                "audio_url",
+                "author",
+                "title"
+            ],
+            "properties": {
+                "access": {
+                    "description": "Access controls visibility: \"leaders\", \"stewards\", \"members\".\nOptional. If omitted, legacy AllowSteward will be used; otherwise defaults to \"members\".",
+                    "type": "string"
+                },
+                "allow_steward": {
+                    "type": "boolean"
+                },
+                "audio_url": {
+                    "type": "string"
+                },
+                "author": {
+                    "type": "string"
+                },
+                "date_released": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_free": {
+                    "type": "boolean"
+                },
+                "series_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_content.CreateSeriesRequest": {
+            "type": "object",
+            "required": [
+                "image_url",
+                "title"
+            ],
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "date_released": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "of_the_month": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_content.UpdateMeditationRequest": {
+            "type": "object",
+            "properties": {
+                "image": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_content.UpdateMessageRequest": {
+            "type": "object",
+            "properties": {
+                "access": {
+                    "description": "Optional access change. Valid values: \"leaders\", \"stewards\", \"members\".",
+                    "type": "string"
+                },
+                "allow_steward": {
+                    "type": "boolean"
+                },
+                "audio_url": {
+                    "type": "string"
+                },
+                "author": {
+                    "type": "string"
+                },
+                "date_released": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_free": {
+                    "type": "boolean"
+                },
+                "series_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_application_content.UpdateSeriesRequest": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "date_released": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "of_the_month": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
@@ -1936,6 +2861,141 @@ const docTemplate = `{
                 }
             }
         },
+        "bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage": {
+            "type": "object",
+            "properties": {
+                "accessLevel": {
+                    "description": "AccessLevel controls who may access this message.\nValid values: \"leaders\", \"stewards\", \"members\" (members includes stewards and leaders).",
+                    "type": "string"
+                },
+                "allowSteward": {
+                    "type": "boolean"
+                },
+                "audioURL": {
+                    "type": "string"
+                },
+                "author": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "dateReleased": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imageURL": {
+                    "type": "string"
+                },
+                "isFree": {
+                    "type": "boolean"
+                },
+                "series": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries"
+                },
+                "seriesID": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "dateReleased": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imageURL": {
+                    "type": "string"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage"
+                    }
+                },
+                "ofTheMonth": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_domain_content.Homepage": {
+            "type": "object",
+            "properties": {
+                "audio_series": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioSeries"
+                    }
+                },
+                "meditations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.Meditation"
+                    }
+                }
+            }
+        },
+        "bitbucket_org_hofng_hofApp_internal_domain_content.Meditation": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
         "bitbucket_org_hofng_hofApp_internal_domain_user.AppVersion": {
             "type": "object",
             "properties": {
@@ -2113,6 +3173,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
                     "type": "string"
                 },
                 "email": {

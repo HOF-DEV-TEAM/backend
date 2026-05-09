@@ -13,6 +13,7 @@ type Repository interface {
 	Create(ctx context.Context, u *User) error
 	GetByID(ctx context.Context, id uuid.UUID) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetByCustomerCode(ctx context.Context, code string) (*User, error)
 	Update(ctx context.Context, u *User) error
 	UpdateVerificationStatus(ctx context.Context, id uuid.UUID, status VerificationStatus) error

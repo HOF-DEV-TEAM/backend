@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,11 +30,31 @@ func NewContentRepository(db *gorm.DB, log *zap.Logger) domainContent.Repository
 func (r *contentRepository) CreateMessage(ctx context.Context, m *domainContent.AudioMessage) error {
 	if result := r.db.WithContext(ctx).Create(m); result.Error != nil {
 		if isUniqueViolation(result.Error) {
+			// Try to map unique constraint to a specific field. If the DB error mentions audio_url
+			// prefer returning an ErrAlreadyExists for the audio_url field; otherwise fall back to title.
+			errMsg := result.Error.Error()
+			if strings.Contains(errMsg, "audio_url") || strings.Contains(errMsg, "idx_audio_messages_audio_url") {
+				return shared.ErrAlreadyExists{Resource: "audio message", Field: "audio_url", Value: m.AudioURL}
+			}
 			return shared.ErrAlreadyExists{Resource: "audio message", Field: "title", Value: m.Title}
 		}
 		return fmt.Errorf("creating audio message: %w", result.Error)
 	}
 	return nil
+}
+
+func (r *contentRepository) GetMessageByAudioURL(ctx context.Context, audioURL string) (*domainContent.AudioMessage, error) {
+	var m domainContent.AudioMessage
+	result := r.db.WithContext(ctx).Preload("Series").
+		Where("deleted_at IS NULL").
+		First(&m, "audio_url = ?", audioURL)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, shared.ErrNotFound{Resource: "audio message", ID: audioURL}
+	}
+	if result.Error != nil {
+		return nil, fmt.Errorf("getting message by audio_url: %w", result.Error)
+	}
+	return &m, nil
 }
 
 func (r *contentRepository) GetMessages(ctx context.Context, filter domainContent.MessageFilter) ([]domainContent.AudioMessage, int64, error) {
@@ -46,6 +67,9 @@ func (r *contentRepository) GetMessages(ctx context.Context, filter domainConten
 	}
 	if filter.SeriesID != nil {
 		q = q.Where("series_id = ?", filter.SeriesID)
+	}
+	if len(filter.AccessIn) > 0 {
+		q = q.Where("access_level IN ?", filter.AccessIn)
 	}
 	if filter.IsFree != nil {
 		q = q.Where("is_free = ?", *filter.IsFree)

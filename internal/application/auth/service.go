@@ -56,6 +56,12 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (*SessionResp
 		return nil, err
 	}
 
+	// Upsert device on every login so the list stays current.
+	// Non-fatal: a device error must not block the session.
+	if req.Device != nil && req.Device.Identifier != "" {
+		s.upsertDevice(ctx, u, req.Device)
+	}
+
 	return s.buildSession(ctx, u)
 }
 
@@ -171,6 +177,54 @@ func (s *authService) resolveGlobalParameters(ctx context.Context) GlobalParamsD
 		return GlobalParamsDTO{ActivateSubscription: true}
 	}
 	return GlobalParamsDTO{ActivateSubscription: params.ActivateSubscription}
+}
+
+// upsertDevice refreshes an existing device entry or appends a new one.
+// Called after every successful login — errors are logged but never surface to the caller.
+func (s *authService) upsertDevice(ctx context.Context, u *domainUser.User, input *DeviceInput) {
+	rec, err := s.userRepo.GetDeviceRecord(ctx, u.ID)
+	if shared.IsNotFound(err) {
+		rec = &domainUser.DeviceRecord{UserID: u.ID}
+	} else if err != nil {
+		s.log.Warn("login: getting device record", zap.String("user_id", u.ID.String()), zap.Error(err))
+		return
+	}
+
+	now := time.Now().Format(time.RFC3339)
+
+	for i, d := range rec.Devices {
+		if d.Identifier == input.Identifier {
+			// Known device — refresh metadata and ensure it is active.
+			rec.Devices[i].Os = input.Os
+			rec.Devices[i].Brand = input.Brand
+			rec.Devices[i].Version = input.Version
+			rec.Devices[i].Status = domainUser.DeviceStatusActive
+			rec.Devices[i].LastUpdated = now
+			if err := s.userRepo.UpsertDeviceRecord(ctx, rec); err != nil {
+				s.log.Warn("login: updating device record", zap.Error(err))
+			}
+			return
+		}
+	}
+
+	// New device detected — append it.
+	s.log.Info("new device detected on login",
+		zap.String("user_id", u.ID.String()),
+		zap.String("identifier", input.Identifier))
+
+	rec.Devices = append(rec.Devices, domainUser.Device{
+		ID:        uuid.NewString(),
+		Who:       input.Who,
+		Identifier: input.Identifier,
+		Os:        input.Os,
+		Brand:     input.Brand,
+		Version:   input.Version,
+		Status:    domainUser.DeviceStatusActive,
+		DateAdded: now,
+	})
+	if err := s.userRepo.UpsertDeviceRecord(ctx, rec); err != nil {
+		s.log.Warn("login: inserting new device record", zap.Error(err))
+	}
 }
 
 func (s *authService) resolveSubscription(ctx context.Context, u *domainUser.User) SubscriptionDTO {

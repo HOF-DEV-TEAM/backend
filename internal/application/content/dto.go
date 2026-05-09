@@ -10,6 +10,9 @@ type CreateMessageRequest struct {
 	SeriesID     string  `json:"series_id"`
 	DateReleased string  `json:"date_released"`
 	IsFree       bool    `json:"is_free"`
+	// Access controls visibility: "leaders", "stewards", "members".
+	// Optional. If omitted, legacy AllowSteward will be used; otherwise defaults to "members".
+	Access       string  `json:"access"`
 	AllowSteward bool    `json:"allow_steward"`
 }
 
@@ -23,7 +26,9 @@ type UpdateMessageRequest struct {
 	SeriesID     string `json:"series_id"`
 	DateReleased string `json:"date_released"`
 	IsFree       *bool  `json:"is_free"`
-	AllowSteward *bool  `json:"allow_steward"`
+	// Optional access change. Valid values: "leaders", "stewards", "members".
+	Access       *string `json:"access"`
+	AllowSteward *bool   `json:"allow_steward"`
 }
 
 // CreateSeriesRequest is the payload for adding a new audio series.
@@ -50,6 +55,7 @@ type UpdateSeriesRequest struct {
 type CreateMeditationRequest struct {
 	Name   string `json:"name"   validate:"required"`
 	Image  string `json:"image"`
+	Text   string `json:"text"`
 	Status string `json:"status"`
 }
 
@@ -57,6 +63,7 @@ type CreateMeditationRequest struct {
 type UpdateMeditationRequest struct {
 	Name   string `json:"name"`
 	Image  string `json:"image"`
+	Text   string `json:"text"`
 	Status string `json:"status"`
 }
 
@@ -64,6 +71,7 @@ type UpdateMeditationRequest struct {
 type MessageListFilter struct {
 	Search   string `json:"search"`
 	SeriesID string `json:"series_id"`
+	Access   string `json:"access"`
 	IsFree   *bool  `json:"is_free"`
 	Page     int    `json:"page"`
 	PageSize int    `json:"page_size"`
