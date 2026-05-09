@@ -14,8 +14,10 @@ type MessageFilter struct {
 	// AccessIn is a list of access_level values to include (e.g., ["members","stewards"]).
 	AccessIn []string
 	IsFree   *bool
-	Page     int
-	PageSize int
+	// ExcludePrivate, when true, adds WHERE is_private = false to the query.
+	ExcludePrivate bool
+	Page           int
+	PageSize       int
 }
 
 // Repository defines every persistence operation the domain needs on content.

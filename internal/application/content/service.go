@@ -28,17 +28,17 @@ func isAccessAllowed(viewerRole, requiredAccess string) bool {
 	requiredAccess = strings.ToLower(strings.TrimSpace(requiredAccess))
 
 	if requiredAccess == "" {
-		requiredAccess = "members"
+		requiredAccess = domainContent.AccessMembers
 	}
 
 	// Rank: members=1, stewards=2, leaders=3
 	rank := func(r string) int {
 		switch r {
-		case "leaders":
+		case domainContent.AccessLeaders:
 			return 3
-		case "stewards":
+		case domainContent.AccessStewards:
 			return 2
-		case "members":
+		case domainContent.AccessMembers:
 			return 1
 		default:
 			return 0
@@ -53,14 +53,14 @@ type Service interface {
 	// Messages
 	CreateMessage(ctx context.Context, req *CreateMessageRequest) (*domainContent.AudioMessage, error)
 	ListMessages(ctx context.Context, filter MessageListFilter) ([]domainContent.AudioMessage, int64, error)
-	GetMessage(ctx context.Context, id uuid.UUID, viewerRole string) (*domainContent.AudioMessage, error)
+	GetMessage(ctx context.Context, id uuid.UUID, viewerRole string, isAdmin bool) (*domainContent.AudioMessage, error)
 	UpdateMessage(ctx context.Context, id uuid.UUID, req *UpdateMessageRequest) (*domainContent.AudioMessage, error)
 	DeleteMessage(ctx context.Context, id uuid.UUID) error
 
 	// Series
 	CreateSeries(ctx context.Context, req *CreateSeriesRequest) (*domainContent.AudioSeries, error)
 	ListSeries(ctx context.Context) ([]domainContent.AudioSeries, int64, error)
-	GetSeries(ctx context.Context, id uuid.UUID) (*domainContent.AudioSeries, error)
+	GetSeries(ctx context.Context, id uuid.UUID, isAdmin bool) (*domainContent.AudioSeries, error)
 	UpdateSeries(ctx context.Context, id uuid.UUID, req *UpdateSeriesRequest) (*domainContent.AudioSeries, error)
 	DeleteSeries(ctx context.Context, id uuid.UUID) error
 
@@ -72,7 +72,7 @@ type Service interface {
 	DeleteMeditation(ctx context.Context, id uuid.UUID) error
 
 	// Homepage
-	GetHomepage(ctx context.Context) (*domainContent.Homepage, error)
+	GetHomepage(ctx context.Context, isAdmin bool) (*domainContent.Homepage, error)
 }
 
 type contentService struct {
@@ -96,13 +96,12 @@ func (s *contentService) CreateMessage(ctx context.Context, req *CreateMessageRe
 	}
 
 	m := &domainContent.AudioMessage{
-		Title:        req.Title,
-		Author:       req.Author,
-		AudioURL:     req.AudioURL,
-		ImageURL:     req.ImageURL,
-		Description:  req.Description,
-		IsFree:       req.IsFree,
-		AllowSteward: req.AllowSteward,
+		Title:       req.Title,
+		Author:      req.Author,
+		AudioURL:    req.AudioURL,
+		ImageURL:    req.ImageURL,
+		Description: req.Description,
+		IsFree:      req.IsFree,
 	}
 
 	// Trim whitespace from audio and image URLs
@@ -131,17 +130,16 @@ func (s *contentService) CreateMessage(ctx context.Context, req *CreateMessageRe
 	if strings.TrimSpace(req.Access) != "" {
 		access = strings.ToLower(strings.TrimSpace(req.Access))
 		switch access {
-		case "leaders", "stewards", "members":
+		case domainContent.AccessLeaders, domainContent.AccessStewards, domainContent.AccessMembers:
 			// ok
 		default:
 			return nil, shared.ErrInvalidInput{Field: "access", Message: "must be one of: leaders, stewards, members"}
 		}
-	} else if req.AllowSteward {
-		access = "stewards"
 	} else {
-		access = "members"
+		access = domainContent.AccessMembers
 	}
 	m.AccessLevel = access
+	m.IsPrivate = req.IsPrivate
 
 	// Uniqueness check: ensure audio_url isn't already present
 	if m.AudioURL != "" {
@@ -162,10 +160,11 @@ func (s *contentService) CreateMessage(ctx context.Context, req *CreateMessageRe
 
 func (s *contentService) ListMessages(ctx context.Context, f MessageListFilter) ([]domainContent.AudioMessage, int64, error) {
 	filter := domainContent.MessageFilter{
-		Search:   f.Search,
-		IsFree:   f.IsFree,
-		Page:     f.Page,
-		PageSize: f.PageSize,
+		Search:         f.Search,
+		IsFree:         f.IsFree,
+		Page:           f.Page,
+		PageSize:       f.PageSize,
+		ExcludePrivate: !f.IsAdmin,
 	}
 	if f.SeriesID != "" {
 		sid, err := uuid.Parse(f.SeriesID)
@@ -180,15 +179,12 @@ func (s *contentService) ListMessages(ctx context.Context, f MessageListFilter) 
 		// viewer 'members' -> can see ["members"]
 		var accessIn []string
 		switch strings.ToLower(f.Access) {
-		case "leaders":
-			accessIn = []string{"leaders", "stewards", "members"}
-		case "stewards":
-			accessIn = []string{"stewards", "members"}
-		case "members":
-			accessIn = []string{"members"}
-		default:
-			// unknown viewer role: no filter applied
-			accessIn = nil
+		case domainContent.AccessLeaders:
+			accessIn = []string{domainContent.AccessLeaders, domainContent.AccessStewards, domainContent.AccessMembers}
+		case domainContent.AccessStewards:
+			accessIn = []string{domainContent.AccessStewards, domainContent.AccessMembers}
+		case domainContent.AccessMembers:
+			accessIn = []string{domainContent.AccessMembers}
 		}
 		if len(accessIn) > 0 {
 			filter.AccessIn = accessIn
@@ -197,14 +193,18 @@ func (s *contentService) ListMessages(ctx context.Context, f MessageListFilter) 
 	return s.repo.GetMessages(ctx, filter)
 }
 
-func (s *contentService) GetMessage(ctx context.Context, id uuid.UUID, viewerRole string) (*domainContent.AudioMessage, error) {
+func (s *contentService) GetMessage(ctx context.Context, id uuid.UUID, viewerRole string, isAdmin bool) (*domainContent.AudioMessage, error) {
 	m, err := s.repo.GetMessageByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	// Default to "members" if viewerRole is empty so access check always applies
+	// Private messages are invisible to non-admins — return 404 so existence is not revealed.
+	if m.IsPrivate && !isAdmin {
+		return nil, shared.ErrNotFound{Resource: "audio message", ID: id.String()}
+	}
+	// Default to "members" if viewerRole is empty so access check always applies.
 	if viewerRole == "" {
-		viewerRole = "members"
+		viewerRole = domainContent.AccessMembers
 	}
 	if !isAccessAllowed(viewerRole, m.AccessLevel) {
 		return nil, shared.ErrForbidden{Message: "access denied"}
@@ -248,20 +248,13 @@ func (s *contentService) UpdateMessage(ctx context.Context, id uuid.UUID, req *U
 		m.ImageURL = strings.TrimSpace(req.ImageURL)
 	}
 
-	// Access update: can change via Access string (preferred) or legacy AllowSteward pointer
 	if req.Access != nil {
 		acc := strings.ToLower(strings.TrimSpace(*req.Access))
 		switch acc {
-		case "leaders", "stewards", "members":
+		case domainContent.AccessLeaders, domainContent.AccessStewards, domainContent.AccessMembers:
 			m.AccessLevel = acc
 		default:
 			return nil, shared.ErrInvalidInput{Field: "access", Message: "must be one of: leaders, stewards, members"}
-		}
-	} else if req.AllowSteward != nil {
-		if *req.AllowSteward {
-			m.AccessLevel = "stewards"
-		} else {
-			m.AccessLevel = "members"
 		}
 	}
 	if req.Description != "" {
@@ -270,8 +263,8 @@ func (s *contentService) UpdateMessage(ctx context.Context, id uuid.UUID, req *U
 	if req.IsFree != nil {
 		m.IsFree = *req.IsFree
 	}
-	if req.AllowSteward != nil {
-		m.AllowSteward = *req.AllowSteward
+	if req.IsPrivate != nil {
+		m.IsPrivate = *req.IsPrivate
 	}
 	if req.SeriesID != "" {
 		sid, err := uuid.Parse(req.SeriesID)
@@ -336,8 +329,21 @@ func (s *contentService) ListSeries(ctx context.Context) ([]domainContent.AudioS
 	return s.repo.GetAllSeries(ctx)
 }
 
-func (s *contentService) GetSeries(ctx context.Context, id uuid.UUID) (*domainContent.AudioSeries, error) {
-	return s.repo.GetSeriesByID(ctx, id)
+func (s *contentService) GetSeries(ctx context.Context, id uuid.UUID, isAdmin bool) (*domainContent.AudioSeries, error) {
+	series, err := s.repo.GetSeriesByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if !isAdmin {
+		filtered := series.Messages[:0]
+		for i := range series.Messages {
+			if !series.Messages[i].IsPrivate {
+				filtered = append(filtered, series.Messages[i])
+			}
+		}
+		series.Messages = filtered
+	}
+	return series, nil
 }
 
 func (s *contentService) UpdateSeries(ctx context.Context, id uuid.UUID, req *UpdateSeriesRequest) (*domainContent.AudioSeries, error) {
@@ -452,6 +458,23 @@ func (s *contentService) DeleteMeditation(ctx context.Context, id uuid.UUID) err
 
 // ── Homepage ──────────────────────────────────────────────────────────────────
 
-func (s *contentService) GetHomepage(ctx context.Context) (*domainContent.Homepage, error) {
-	return s.repo.GetHomepage(ctx)
+func (s *contentService) GetHomepage(ctx context.Context, isAdmin bool) (*domainContent.Homepage, error) {
+	hp, err := s.repo.GetHomepage(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Homepage series do not preload messages today, but if they do in future,
+	// filter private messages for non-admin callers here.
+	if !isAdmin {
+		for i := range hp.Series {
+			filtered := hp.Series[i].Messages[:0]
+			for j := range hp.Series[i].Messages {
+				if !hp.Series[i].Messages[j].IsPrivate {
+					filtered = append(filtered, hp.Series[i].Messages[j])
+				}
+			}
+			hp.Series[i].Messages = filtered
+		}
+	}
+	return hp, nil
 }

@@ -18,6 +18,7 @@ const (
 	jobStatusFailed  = "failed"
 	maxAttempts      = 4 // 3 retries (1 min, 5 min, 15 min) + 1 initial attempt
 	chanBuffer       = 200
+	workerCount      = 5 // fixed SMTP concurrency limit
 )
 
 // retryDelays[attempt-1] is how long to wait before the next try.
@@ -80,14 +81,16 @@ func NewEmailQueue(m *Mailer, db *gorm.DB, log *zap.Logger) *EmailQueue {
 
 // Start is the startup sequence — call it once after NewEmailQueue, before any sends.
 //
-// Order of calls:
-//  1. loadPending — re-queues any jobs that survived a previous crash or restart
-//  2. worker (goroutine) — begins the long-running select loop that drains the channel
-//
-// Cancel ctx to stop the worker gracefully; in-flight sends finish, new ones are not started.
+// Launches workerCount fixed goroutines that each block on the jobs channel
+// (capping SMTP concurrency to workerCount), plus one poller goroutine that
+// runs the 5-minute DB recovery tick.
+// Cancel ctx to stop all goroutines gracefully; in-flight sends finish first.
 func (q *EmailQueue) Start(ctx context.Context) {
 	q.loadPending(ctx)
-	go q.worker(ctx)
+	for range workerCount {
+		go q.worker(ctx)
+	}
+	go q.poller(ctx)
 }
 
 // SendPasswordReset implements the EmailSender interface (defined in mailer.go).
@@ -137,7 +140,7 @@ func (q *EmailQueue) enqueue(to, subject, template string, data map[string]any) 
 
 	var dbOK bool
 	if q.db != nil {
-		if err := q.db.Create(&rec).Error; err != nil {
+		if err := q.db.WithContext(context.Background()).Create(&rec).Error; err != nil {
 			q.log.Error("failed to persist email job",
 				zap.String("to", to), zap.Error(err))
 		} else {
@@ -158,27 +161,31 @@ func (q *EmailQueue) enqueue(to, subject, template string, data map[string]any) 
 	return nil
 }
 
-// worker is the long-running goroutine started by Start. It blocks on three events:
-//   - ctx.Done()   → clean shutdown; exits the loop
-//   - jobs channel → a new job arrived; registers it as in-flight, then processes it in a
-//     separate goroutine so the worker can immediately accept the next job
-//   - 5-min ticker → safety-net poll; calls loadPending to catch anything the channel missed
-//     (e.g. jobs written to DB before a restart, or dropped because the channel was full)
+// worker is one member of the fixed pool started by Start.
+// It blocks on the jobs channel, processes one email at a time, and exits when ctx is canceled.
+// Concurrency is bounded to workerCount across the whole pool — no per-job goroutines are spawned.
 func (q *EmailQueue) worker(ctx context.Context) {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case job := <-q.jobs:
-			// Register before spawning so loadPending sees the ID immediately.
 			q.inFlight.Store(job.record.ID, struct{}{})
-			go func(j queuedJob) {
-				defer q.inFlight.Delete(j.record.ID)
-				q.process(ctx, &j)
-			}(job)
+			q.process(ctx, &job)
+			q.inFlight.Delete(job.record.ID)
+		}
+	}
+}
+
+// poller runs the 5-minute safety-net tick that calls loadPending.
+// Separated from worker so the fixed pool goroutines are never blocked by a DB poll.
+func (q *EmailQueue) poller(ctx context.Context) {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
 		case <-ticker.C:
 			q.loadPending(ctx)
 		}
@@ -248,7 +255,16 @@ func (q *EmailQueue) process(ctx context.Context, job *queuedJob) {
 	}
 
 	if q.db != nil {
-		if err := q.db.Save(&rec).Error; err != nil {
+		if err := q.db.WithContext(ctx).
+			Model(&emailJobRecord{}).
+			Where("id = ?", rec.ID).
+			Updates(map[string]any{
+				"status":            rec.Status,
+				"attempts":          rec.Attempts,
+				"last_error":        rec.LastError,
+				"last_attempted_at": rec.LastAttemptedAt,
+				"scheduled_at":      rec.ScheduledAt,
+			}).Error; err != nil {
 			q.log.Error("failed to update email job status", zap.String("id", rec.ID), zap.Error(err))
 		}
 	}

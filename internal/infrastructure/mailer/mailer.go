@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"path/filepath"
+	"time"
 
 	"bitbucket.org/hofng/hofApp/internal/infrastructure/config"
 	"go.uber.org/zap"
@@ -32,6 +33,7 @@ func New(cfg *config.MailerConfig, log *zap.Logger) *Mailer {
 	}
 
 	d := mail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
+	d.Timeout = 30 * time.Second // bound each DialAndSend (dial + TLS + auth + send)
 
 	return &Mailer{
 		cfg:    cfg,

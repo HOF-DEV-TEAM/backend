@@ -71,6 +71,9 @@ func (r *contentRepository) GetMessages(ctx context.Context, filter domainConten
 	if len(filter.AccessIn) > 0 {
 		q = q.Where("access_level IN ?", filter.AccessIn)
 	}
+	if filter.ExcludePrivate {
+		q = q.Where("is_private = false")
+	}
 	if filter.IsFree != nil {
 		q = q.Where("is_free = ?", *filter.IsFree)
 	}
@@ -117,8 +120,21 @@ func (r *contentRepository) GetMessageByID(ctx context.Context, id uuid.UUID) (*
 }
 
 func (r *contentRepository) UpdateMessage(ctx context.Context, m *domainContent.AudioMessage) error {
-	m.UpdatedAt = time.Now()
-	if result := r.db.WithContext(ctx).Save(m); result.Error != nil {
+	now := time.Now()
+	result := r.db.WithContext(ctx).Model(m).Updates(map[string]any{
+		"title":         m.Title,
+		"author":        m.Author,
+		"audio_url":     m.AudioURL,
+		"image_url":     m.ImageURL,
+		"description":   m.Description,
+		"is_free":       m.IsFree,
+		"access_level":  m.AccessLevel,
+		"is_private":    m.IsPrivate,
+		"series_id":     m.SeriesID,
+		"date_released": m.DateReleased,
+		"last_updated":  now,
+	})
+	if result.Error != nil {
 		return fmt.Errorf("updating audio message: %w", result.Error)
 	}
 	return nil
@@ -178,8 +194,17 @@ func (r *contentRepository) GetSeriesByID(ctx context.Context, id uuid.UUID) (*d
 }
 
 func (r *contentRepository) UpdateSeries(ctx context.Context, s *domainContent.AudioSeries) error {
-	s.UpdatedAt = time.Now()
-	if result := r.db.WithContext(ctx).Save(s); result.Error != nil {
+	now := time.Now()
+	result := r.db.WithContext(ctx).Model(s).Updates(map[string]any{
+		"title":         s.Title,
+		"author":        s.Author,
+		"image_url":     s.ImageURL,
+		"description":   s.Description,
+		"of_the_month":  s.OfTheMonth,
+		"date_released": s.DateReleased,
+		"last_updated":  now,
+	})
+	if result.Error != nil {
 		return fmt.Errorf("updating audio series: %w", result.Error)
 	}
 	return nil
@@ -237,7 +262,13 @@ func (r *contentRepository) GetMeditationByID(ctx context.Context, id uuid.UUID,
 }
 
 func (r *contentRepository) UpdateMeditation(ctx context.Context, m *domainContent.Meditation) error {
-	if result := r.db.WithContext(ctx).Save(m); result.Error != nil {
+	result := r.db.WithContext(ctx).Model(m).Updates(map[string]any{
+		"name":   m.Name,
+		"image":  m.Image,
+		"text":   m.Text,
+		"status": m.Status,
+	})
+	if result.Error != nil {
 		return fmt.Errorf("updating meditation: %w", result.Error)
 	}
 	return nil

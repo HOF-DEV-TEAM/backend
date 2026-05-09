@@ -3,12 +3,42 @@
 ## Instructions for Claude
 
 When this command runs, you must:
-1. **Only test the new implementations listed in this file** — do not run checks for unrelated endpoints.
-2. **Use curl exclusively** — no Go test files, no Postman, no browser.
-3. **Use the fixed credentials and device constants defined below** — do not generate random emails, timestamps, or UUIDs.
-4. **Test against the local server** (`http://localhost:8080`) — no Docker, no staging.
-5. Run each section in order. After every curl call, print the response and state whether it matches the expected result.
-6. At the end, fill in the Score table with PASS or FAIL for each check.
+
+1. **Identify what changed.** Run `git diff master...HEAD --name-only` and read every changed file.
+
+2. **Trace the blast radius.** For each changed file, follow its usage through the stack:
+   - Domain entity or repository changed → find every service method that calls it → find every handler that calls that service → those are the endpoints to test.
+   - Application service changed → find every handler that calls it → test those endpoints.
+   - Handler changed → test that endpoint directly.
+   - Infrastructure (persistence, mailer, storage) changed → find the service(s) that depend on it → trace up to the handler.
+   **Only test endpoints reachable from at least one changed file through this chain. Do not test unrelated endpoints.**
+
+3. **Use curl exclusively** — no Go test files, no Postman, no browser.
+
+4. **Use the fixed credentials and device constants defined below** — do not generate random emails, timestamps, or UUIDs.
+
+5. **Test against the local server** (`http://localhost:8080`) — no Docker, no staging.
+
+6. After every curl call — whether the expected result is a success or a deliberate failure — print:
+   - **Request:** method, URL, headers (excluding the full token — show only the first 20 chars), and the full request body/params.
+   - **Response:** the full raw response body.
+   - **Verdict:** PASS or FAIL against the stated expectation, with a one-line reason if FAIL.
+
+7. At the end, compile the full Score table (PASS / FAIL per endpoint) and post it as a GitHub PR comment using but ask first:
+   ```bash
+   gh pr comment <PR_NUMBER> --body "$(cat <<'BODY'
+   ## Deskcheck Results
+
+   | Endpoint | Scenario | Expected | Result |
+   |----------|----------|----------|--------|
+   | POST /session/sign_in | known device re-login | device count unchanged | PASS |
+   | ... | ... | ... | ... |
+
+   **Tested:** <date> · **Server:** localhost:8080 · **Branch:** <branch>
+   BODY
+   )"
+   ```
+   Derive the PR number from `gh pr view --json number -q .number`. Fill every row from the actual curl results — do not fabricate any entry.
 
 ---
 

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	appContent "bitbucket.org/hofng/hofApp/internal/application/content"
 	domainContent "bitbucket.org/hofng/hofApp/internal/domain/content"
+	"bitbucket.org/hofng/hofApp/internal/interfaces/http/middleware"
 	"bitbucket.org/hofng/hofApp/internal/interfaces/http/response"
 )
 
@@ -64,44 +64,33 @@ func (h *ContentHandler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 
 // ListMessages godoc
 // @Summary      List audio messages with optional filters
-// @Description  List audio messages filtered by viewer role (access control). Access parameter controls which messages are returned based on role hierarchy: "leaders" sees all, "stewards" sees stewards+members, "members" sees members only.
+// @Description  List audio messages filtered by the caller's role derived from JWT claims. Admins and team leads see all levels; stewards see stewards+members; members see members only.
 // @Tags         content
 // @Security     BearerAuth
 // @Produce      json
 // @Param        search query string false "Search term in title or author"
 // @Param        series_id query string false "Filter by series ID"
 // @Param        is_free query boolean false "Filter by free status"
-// @Param        access query string false "Viewer role for access control (leaders, stewards, members)"
 // @Param        page query integer false "Page number" default(1)
 // @Param        page_size query integer false "Page size" default(20)
 // @Success      200 {array} domainContent.AudioMessage
-// @Failure      400 {object} map[string]string "Invalid access parameter"
 // @Router       /audio_message/ [get]
 func (h *ContentHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	// Validate access query param if provided
-	if a := q.Get("access"); a != "" {
-		switch strings.ToLower(a) {
-		case "leaders", "stewards", "members":
-			// ok
-		default:
-			response.BadRequest(w, "invalid access parameter: must be leaders, stewards, or members")
-			return
-		}
-	}
 	filter := appContent.MessageListFilter{
 		Search:   q.Get("search"),
 		SeriesID: q.Get("series_id"),
-		Access:   q.Get("access"),
+		Access:   middleware.ViewerAccessFromContext(r.Context()),
+		IsAdmin:  middleware.IsAdminFromContext(r.Context()),
 		Page:     intParam(q.Get("page"), 1),
 		PageSize: intParam(q.Get("page_size"), 20),
 	}
 	if q.Get("is_free") == "true" {
-		t := true
-		filter.IsFree = &t
+		b := true
+		filter.IsFree = &b
 	} else if q.Get("is_free") == "false" {
-		f := false
-		filter.IsFree = &f
+		b := false
+		filter.IsFree = &b
 	}
 
 	messages, total, err := h.svc.ListMessages(r.Context(), filter)
@@ -115,15 +104,13 @@ func (h *ContentHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 
 // GetMessage godoc
 // @Summary      Get a single audio message by ID
-// @Description  Retrieve a single audio message with optional viewer role for access control. Returns 403 if viewer role lacks permission for the message's access level.
+// @Description  Retrieve a single audio message. Returns 403 if the caller's role (derived from JWT) lacks permission for the message's access level.
 // @Tags         content
 // @Security     BearerAuth
 // @Produce      json
 // @Param        message_id path string true "Message ID"
-// @Param        access query string false "Viewer role for access control (leaders, stewards, members)"
 // @Success      200 {object} domainContent.AudioMessage
-// @Failure      403 {object} map[string]string "Access denied for viewer role"
-// @Failure      400 {object} map[string]string "Invalid access parameter"
+// @Failure      403 {object} map[string]string "Access denied"
 // @Failure      404 {object} map[string]string "Message not found"
 // @Router       /audio_message/id/message/{message_id} [get]
 func (h *ContentHandler) GetMessage(w http.ResponseWriter, r *http.Request) {
@@ -132,18 +119,9 @@ func (h *ContentHandler) GetMessage(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, "invalid message_id")
 		return
 	}
-	viewerRole := r.URL.Query().Get("access")
-	if viewerRole != "" {
-		switch strings.ToLower(viewerRole) {
-		case "leaders", "stewards", "members":
-			// ok
-		default:
-			response.BadRequest(w, "invalid access parameter: must be leaders, stewards, or members")
-			return
-		}
-	}
 
-	m, err := h.svc.GetMessage(r.Context(), id, viewerRole)
+	isAdmin := middleware.IsAdminFromContext(r.Context())
+	m, err := h.svc.GetMessage(r.Context(), id, middleware.ViewerAccessFromContext(r.Context()), isAdmin)
 	if err != nil {
 		response.Error(w, err)
 		return
@@ -269,7 +247,7 @@ func (h *ContentHandler) GetSeries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := h.svc.GetSeries(r.Context(), id)
+	s, err := h.svc.GetSeries(r.Context(), id, middleware.IsAdminFromContext(r.Context()))
 	if err != nil {
 		response.Error(w, err)
 		return
@@ -369,8 +347,7 @@ func (h *ContentHandler) CreateMeditation(w http.ResponseWriter, r *http.Request
 // @Success      200 {array} domainContent.Meditation
 // @Router       /audio_message/meditations [get]
 func (h *ContentHandler) ListMeditations(w http.ResponseWriter, r *http.Request) {
-	admin := r.URL.Query().Get("admin") == "true"
-	meditations, err := h.svc.ListMeditations(r.Context(), admin)
+	meditations, err := h.svc.ListMeditations(r.Context(), middleware.IsAdminFromContext(r.Context()))
 	if err != nil {
 		response.Error(w, err)
 		return
@@ -468,7 +445,7 @@ func (h *ContentHandler) DeleteMeditation(w http.ResponseWriter, r *http.Request
 // @Success      200 {object} domainContent.Homepage
 // @Router       /audio_series/home [get]
 func (h *ContentHandler) GetHomepage(w http.ResponseWriter, r *http.Request) {
-	homepage, err := h.svc.GetHomepage(r.Context())
+	homepage, err := h.svc.GetHomepage(r.Context(), middleware.IsAdminFromContext(r.Context()))
 	if err != nil {
 		response.Error(w, err)
 		return

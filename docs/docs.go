@@ -944,7 +944,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "List audio messages filtered by viewer role (access control). Access parameter controls which messages are returned based on role hierarchy: \"leaders\" sees all, \"stewards\" sees stewards+members, \"members\" sees members only.",
+                "description": "List audio messages filtered by the caller's role derived from JWT claims. Admins and team leads see all levels; stewards see stewards+members; members see members only.",
                 "produces": [
                     "application/json"
                 ],
@@ -972,12 +972,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Viewer role for access control (leaders, stewards, members)",
-                        "name": "access",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "default": 1,
                         "description": "Page number",
@@ -1001,15 +995,6 @@ const docTemplate = `{
                                 "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage"
                             }
                         }
-                    },
-                    "400": {
-                        "description": "Invalid access parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
                     }
                 }
             }
@@ -1021,7 +1006,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve a single audio message with optional viewer role for access control. Returns 403 if viewer role lacks permission for the message's access level.",
+                "description": "Retrieve a single audio message. Returns 403 if the caller's role (derived from JWT) lacks permission for the message's access level.",
                 "produces": [
                     "application/json"
                 ],
@@ -1036,12 +1021,6 @@ const docTemplate = `{
                         "name": "message_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Viewer role for access control (leaders, stewards, members)",
-                        "name": "access",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1051,17 +1030,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_content.AudioMessage"
                         }
                     },
-                    "400": {
-                        "description": "Invalid access parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
                     "403": {
-                        "description": "Access denied for viewer role",
+                        "description": "Access denied",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1344,6 +1314,7 @@ const docTemplate = `{
         },
         "/session/sign_in": {
             "post": {
+                "description": "Include the optional ` + "`" + `device` + "`" + ` field to register/refresh the device on login.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1356,7 +1327,7 @@ const docTemplate = `{
                 "summary": "Sign in with email and password",
                 "parameters": [
                     {
-                        "description": "Login credentials",
+                        "description": "Login credentials (device field optional)",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1468,7 +1439,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.User"
+                            "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.UserResponse"
                         }
                     }
                 }
@@ -2164,6 +2135,26 @@ const docTemplate = `{
                 }
             }
         },
+        "bitbucket_org_hofng_hofApp_internal_application_auth.DeviceInput": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "os": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "who": {
+                    "type": "string"
+                }
+            }
+        },
         "bitbucket_org_hofng_hofApp_internal_application_auth.GlobalParamsDTO": {
             "type": "object",
             "properties": {
@@ -2179,8 +2170,8 @@ const docTemplate = `{
                 "password"
             ],
             "properties": {
-                "device_identifier": {
-                    "type": "string"
+                "device": {
+                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_application_auth.DeviceInput"
                 },
                 "email": {
                     "type": "string"
@@ -2279,11 +2270,8 @@ const docTemplate = `{
             ],
             "properties": {
                 "access": {
-                    "description": "Access controls visibility: \"leaders\", \"stewards\", \"members\".\nOptional. If omitted, legacy AllowSteward will be used; otherwise defaults to \"members\".",
+                    "description": "Access controls visibility: \"leaders\", \"stewards\", \"members\". Defaults to \"members\".",
                     "type": "string"
-                },
-                "allow_steward": {
-                    "type": "boolean"
                 },
                 "audio_url": {
                     "type": "string"
@@ -2301,6 +2289,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "is_free": {
+                    "type": "boolean"
+                },
+                "is_private": {
+                    "description": "IsPrivate hides the message from all non-admin users regardless of access level.",
                     "type": "boolean"
                 },
                 "series_id": {
@@ -2362,9 +2354,6 @@ const docTemplate = `{
                     "description": "Optional access change. Valid values: \"leaders\", \"stewards\", \"members\".",
                     "type": "string"
                 },
-                "allow_steward": {
-                    "type": "boolean"
-                },
                 "audio_url": {
                     "type": "string"
                 },
@@ -2381,6 +2370,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "is_free": {
+                    "type": "boolean"
+                },
+                "is_private": {
+                    "description": "IsPrivate, when non-nil, updates the private visibility flag.",
                     "type": "boolean"
                 },
                 "series_id": {
@@ -2868,9 +2861,6 @@ const docTemplate = `{
                     "description": "AccessLevel controls who may access this message.\nValid values: \"leaders\", \"stewards\", \"members\" (members includes stewards and leaders).",
                     "type": "string"
                 },
-                "allowSteward": {
-                    "type": "boolean"
-                },
                 "audioURL": {
                     "type": "string"
                 },
@@ -2896,6 +2886,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "isFree": {
+                    "type": "boolean"
+                },
+                "isPrivate": {
+                    "description": "IsPrivate hides the message from all non-admin users regardless of access level.",
                     "type": "boolean"
                 },
                 "series": {
@@ -3111,24 +3105,6 @@ const docTemplate = `{
                 }
             }
         },
-        "bitbucket_org_hofng_hofApp_internal_domain_user.PasswordVersion": {
-            "type": "string",
-            "enum": [
-                "bcrypt",
-                "md5"
-            ],
-            "x-enum-comments": {
-                "PasswordVersionMD5": "legacy only"
-            },
-            "x-enum-descriptions": [
-                "",
-                "legacy only"
-            ],
-            "x-enum-varnames": [
-                "PasswordVersionBcrypt",
-                "PasswordVersionMD5"
-            ]
-        },
         "bitbucket_org_hofng_hofApp_internal_domain_user.Role": {
             "type": "object",
             "properties": {
@@ -3164,81 +3140,6 @@ const docTemplate = `{
                 "RoleChurchFriend",
                 "RoleTeamLead",
                 "RoleChurchAdmin"
-            ]
-        },
-        "bitbucket_org_hofng_hofApp_internal_domain_user.User": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "deletedAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "firstName": {
-                    "type": "string"
-                },
-                "gender": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "isVerified": {
-                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.VerificationStatus"
-                },
-                "lastName": {
-                    "type": "string"
-                },
-                "mobile": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "passwordVersion": {
-                    "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.PasswordVersion"
-                },
-                "paystackCustomerCode": {
-                    "type": "string"
-                },
-                "paystackCustomerID": {
-                    "type": "string"
-                },
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/bitbucket_org_hofng_hofApp_internal_domain_user.Role"
-                    }
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "userName": {
-                    "type": "string"
-                }
-            }
-        },
-        "bitbucket_org_hofng_hofApp_internal_domain_user.VerificationStatus": {
-            "type": "integer",
-            "format": "int32",
-            "enum": [
-                0,
-                1,
-                2,
-                3
-            ],
-            "x-enum-varnames": [
-                "Unverified",
-                "PhoneVerified",
-                "EmailVerified",
-                "EmailAndPhoneVerified"
             ]
         }
     },
