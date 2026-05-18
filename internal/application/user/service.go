@@ -33,6 +33,7 @@ type Service interface {
 	GetRoles(ctx context.Context, userID uuid.UUID) ([]domainUser.Role, error)
 	AdminSignup(ctx context.Context, req AdminSignupRequest) (*domainUser.User, error)
 	DeleteAdmin(ctx context.Context, callerID, targetID uuid.UUID) error
+	ListAdmins(ctx context.Context) ([]AdminUserResponse, error)
 
 	AddFavourite(ctx context.Context, userID uuid.UUID, req AddFavouriteRequest) error
 	GetFavourites(ctx context.Context, userID uuid.UUID) ([]domainUser.FavouriteMessage, error)
@@ -163,6 +164,18 @@ func (s *userService) AdminSignup(ctx context.Context, req AdminSignupRequest) (
 	)
 
 	return s.repo.GetByID(ctx, u.ID)
+}
+
+func (s *userService) ListAdmins(ctx context.Context) ([]AdminUserResponse, error) {
+	users, err := s.repo.ListAdmins(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]AdminUserResponse, len(users))
+	for i, u := range users {
+		result[i] = ToAdminUserResponse(u)
+	}
+	return result, nil
 }
 
 func (s *userService) DeleteAdmin(ctx context.Context, callerID, targetID uuid.UUID) error {

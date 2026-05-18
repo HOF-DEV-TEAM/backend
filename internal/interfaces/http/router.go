@@ -208,6 +208,7 @@ func NewRouter(
 		r.Route("/admin", func(r chi.Router) {
 
 			// User management
+			r.Get("/users", userH.ListAdmins)
 			r.Post("/user/create", userH.AdminSignup)
 			r.Delete("/user/delete/{user_id}", userH.DeleteAdmin)
 			r.Post("/user/roles", userH.AssignRoles)

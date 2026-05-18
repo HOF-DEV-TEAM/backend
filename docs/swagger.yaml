@@ -351,6 +351,35 @@ definitions:
     - last_name
     - password
     type: object
+  bitbucket_org_hofng_hofApp_internal_application_user.AdminUserResponse:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      id:
+        type: string
+      is_verified:
+        type: integer
+      last_name:
+        type: string
+      mobile:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
   bitbucket_org_hofng_hofApp_internal_application_user.AppVersionUpdateRequest:
     properties:
       force:
@@ -1281,6 +1310,24 @@ paths:
       security:
       - BearerAuth: []
       summary: Assign roles to a user (admin)
+      tags:
+      - users
+  /admin/users:
+    get:
+      description: Returns all users with the church_admin role. Password fields are
+        never included.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/bitbucket_org_hofng_hofApp_internal_application_user.AdminUserResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List all admin users (admin only)
       tags:
       - users
   /audio_message/:

@@ -28,6 +28,44 @@ func ToUserResponse(u *domainUser.User) UserResponse {
 	}
 }
 
+// AdminUserResponse is the detailed, safe representation of an admin user.
+type AdminUserResponse struct {
+	ID         string   `json:"id"`
+	FirstName  string   `json:"first_name"`
+	LastName   string   `json:"last_name"`
+	UserName   string   `json:"username,omitempty"`
+	Email      string   `json:"email"`
+	Mobile     *string  `json:"mobile,omitempty"`
+	Address    *string  `json:"address,omitempty"`
+	Gender     *string  `json:"gender,omitempty"`
+	IsVerified uint8    `json:"is_verified"`
+	Roles      []string `json:"roles"`
+	CreatedAt  string   `json:"created_at"`
+	UpdatedAt  string   `json:"updated_at"`
+}
+
+// ToAdminUserResponse converts a domain User to the admin detail DTO.
+func ToAdminUserResponse(u *domainUser.User) AdminUserResponse {
+	roles := make([]string, len(u.Roles))
+	for i := range u.Roles {
+		roles[i] = string(u.Roles[i].Name)
+	}
+	return AdminUserResponse{
+		ID:         u.ID.String(),
+		FirstName:  u.FirstName,
+		LastName:   u.LastName,
+		UserName:   u.UserName,
+		Email:      u.Email,
+		Mobile:     u.Mobile,
+		Address:    u.Address,
+		Gender:     u.Gender,
+		IsVerified: uint8(u.IsVerified),
+		Roles:      roles,
+		CreatedAt:  u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:  u.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
 // SignUpRequest is the payload for creating a new user account.
 type SignUpRequest struct {
 	FirstName string        `json:"first_name" validate:"required"`
