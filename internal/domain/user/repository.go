@@ -49,4 +49,7 @@ type Repository interface {
 	// App version
 	GetAppVersion(ctx context.Context, id uuid.UUID) (*AppVersion, error)
 	UpdateAppVersion(ctx context.Context, v *AppVersion) error
+
+	// Admin listing
+	ListAdmins(ctx context.Context) ([]*User, error)
 }

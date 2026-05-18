@@ -129,6 +129,24 @@ func (h *UserHandler) DeleteAdmin(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, map[string]string{"message": "admin deleted"})
 }
 
+// ListAdmins godoc
+// @Summary      List all admin users (admin only)
+// @Description  Returns all users with the church_admin role. Password fields are never included.
+// @Tags         users
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200 {array} appUser.AdminUserResponse
+// @Router       /admin/users [get]
+func (h *UserHandler) ListAdmins(w http.ResponseWriter, r *http.Request) {
+	admins, err := h.svc.ListAdmins(r.Context())
+	if err != nil {
+		response.Error(w, err)
+		return
+	}
+
+	response.JSONList(w, http.StatusOK, admins, int64(len(admins)))
+}
+
 // UpdateProfile godoc
 // @Summary      Update the authenticated user's profile
 // @Tags         users

@@ -407,6 +407,21 @@ func (r *userRepository) UpdateAppVersion(ctx context.Context, v *domainUser.App
 	return nil
 }
 
+// ── Admin listing ─────────────────────────────────────────────────────────────
+
+func (r *userRepository) ListAdmins(ctx context.Context) ([]*domainUser.User, error) {
+	var users []*domainUser.User
+	result := r.db.WithContext(ctx).Preload("Roles").
+		Joins("JOIN user_roles ur ON ur.user_id = users.id").
+		Joins("JOIN roles ro ON ro.id = ur.role_id AND ro.name = ?", domainUser.RoleChurchAdmin).
+		Where("users.deleted_at IS NULL").
+		Find(&users)
+	if result.Error != nil {
+		return nil, fmt.Errorf("listing admins: %w", result.Error)
+	}
+	return users, nil
+}
+
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 func isUniqueViolation(err error) bool {
